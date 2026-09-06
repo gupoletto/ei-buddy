@@ -64,3 +64,6 @@ export {
   createInventoryQueries,
   createInventoryUnitOfWork,
 } from './inventory-repository.js'
+
+/* Historico de vendas — NR-027, US-021. */
+export { createSaleHistoryRepository } from './sale-history-repository.js'

@@ -1,5 +1,12 @@
-import { createSaleInputSchema } from '@na-regua/contracts'
-import { AppError, type RegisterSaleDeps, registerSale } from '@na-regua/core'
+import { createSaleInputSchema, saleHistoryInputSchema } from '@na-regua/contracts'
+import {
+  AppError,
+  getSale,
+  listSales,
+  type ListSalesDeps,
+  type RegisterSaleDeps,
+  registerSale,
+} from '@na-regua/core'
 import type { FastifyInstance } from 'fastify'
 import { IDEMPOTENCY_HEADER, requireContext } from '../plugins/execution-context.js'
 import { LIMITE_DE_ESCRITA } from '../plugins/rate-limit.js'
@@ -16,7 +23,44 @@ import { validate } from '../plugins/validate.js'
  * Recebe `deps` em vez de importar a composicao: e o que permite testar a rota
  * com repositorio em memoria, sem Postgres.
  */
-export function registerSaleRoutes(app: FastifyInstance, deps: RegisterSaleDeps): void {
+export type SaleRouteDeps = RegisterSaleDeps & ListSalesDeps
+
+export function registerSaleRoutes(app: FastifyInstance, deps: SaleRouteDeps): void {
+  /**
+   * O historico de vendas — NR-027, US-021.
+   *
+   * Esta rota faltava: existia `POST /sales` e mais nada, entao a venda entrava
+   * no banco e nao havia por onde le-la. A tela mostrava dados de exemplo.
+   *
+   * Periodo OPCIONAL, ao contrario do DRE e dos relatorios. La o periodo e a
+   * propria pergunta ("como fechou marco"); aqui a pergunta e "o que eu vendi",
+   * e a resposta natural comeca pelas mais recentes. Abrir a tela exigindo duas
+   * datas antes de mostrar qualquer coisa seria trabalho antes da resposta.
+   */
+  app.get('/sales', async (request, reply) => {
+    const ctx = requireContext(request)
+
+    const input = validate(saleHistoryInputSchema, request.query ?? {})
+    const pagina = await listSales(deps, ctx, input)
+
+    return reply.code(200).send(pagina)
+  })
+
+  /**
+   * Uma venda inteira — US-021.
+   *
+   * Venda de outra empresa cai em 404, e nao 403: um 403 confirmaria que ela
+   * existe em algum lugar, e o numero e sequencial por empresa.
+   */
+  app.get('/sales/:id', async (request, reply) => {
+    const ctx = requireContext(request)
+    const { id } = request.params as { id: string }
+
+    const venda = await getSale(deps, ctx, id)
+
+    return reply.code(200).send(venda)
+  })
+
   app.post('/sales', { config: { rateLimit: LIMITE_DE_ESCRITA } }, async (request, reply) => {
     /* Sem sessao valida isto lanca UNAUTHORIZED. Enquanto a NR-014 nao existe,
        toda chamada cai aqui — 401 e melhor que um contexto inventado. */

@@ -1590,3 +1590,41 @@
     display: none;
   }
 }
+
+/* --- Paginacao do historico — NR-027 --- */
+
+.paginacao {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--app-border);
+}
+
+.paginacaoResumo {
+  margin-top: 16px;
+  font-size: 13px;
+  color: var(--app-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.paginacao .paginacaoResumo {
+  margin-top: 0;
+}
+
+.paginacaoBotoes {
+  display: flex;
+  gap: 8px;
+}
+
+/* A chave de acesso da nota: 44 digitos que ninguem le, mas que sao pedidos
+   ao telefone quando ha divergencia com a SEFAZ. */
+.notaChave {
+  font-family: var(--font-mono, monospace);
+  font-size: 11.5px;
+  color: var(--app-muted);
+  word-break: break-all;
+}

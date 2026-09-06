@@ -1,17 +1,46 @@
 import type { CreateSaleInput } from '@na-regua/contracts'
 import type {
   CompanySettingsRepository,
-  RegisterSaleDeps,
   RegisteredSale,
+  SaleHistoryRepository,
   SaleTransaction,
   UnitOfWork,
+  VendaDoHistorico,
 } from '@na-regua/core'
 import { createDefaultSaleSettings } from '@na-regua/core'
 import Fastify, { type FastifyInstance } from 'fastify'
 import { afterEach, describe, expect, it } from 'vitest'
 import { registerErrorHandler } from '../plugins/error-handler.js'
 import type { AuthenticatedPrincipal } from '../plugins/execution-context.js'
-import { registerSaleRoutes } from './sales.js'
+import { registerSaleRoutes, type SaleRouteDeps } from './sales.js'
+
+/**
+ * Historico em memoria — a leitura das vendas.
+ *
+ * Guarda o que recebeu e devolve pagina e total como o repositorio de verdade:
+ * um falso que devolvesse tudo, ignorando `offset` e `limite`, deixaria passar
+ * um SQL sem paginacao — e o defeito so apareceria na loja com historico
+ * grande, que e a que menos pode travar.
+ */
+function historicoEmMemoria(vendas: VendaDoHistorico[] = []): SaleHistoryRepository {
+  return {
+    list: async (_companyId, filtro) => {
+      const validas = vendas.filter((v) => v.status !== 'cancelled')
+      return {
+        vendas: vendas.slice(filtro.offset, filtro.offset + filtro.limite),
+        total: vendas.length,
+        /* Cancelada fica FORA dos totais e DENTRO da lista, como no banco. */
+        resumo: {
+          salesCount: validas.length,
+          grossCents: validas.reduce((a, v) => a + v.grossAmountCents, 0),
+          netCents: validas.reduce((a, v) => a + v.netAmountCents, 0),
+          cardFeeCents: validas.reduce((a, v) => a + v.cardFeeAmountCents, 0),
+        },
+      }
+    },
+    findById: async (_companyId, saleId) => vendas.find((v) => v.id === saleId),
+  }
+}
 
 /**
  * Sobe um Fastify de verdade com `app.inject`: o que esta rota promete e um par
@@ -77,7 +106,7 @@ function unitOfWorkEmMemoria() {
    `undefined` acionaria o valor padrao do parametro e o teste de 401 anexaria
    o principal do mesmo jeito. `null` nao tem esse comportamento. */
 function buildApp(
-  over: Partial<RegisterSaleDeps> = {},
+  over: Partial<SaleRouteDeps> = {},
   principal: AuthenticatedPrincipal | null = PRINCIPAL,
 ): FastifyInstance {
   const app = Fastify({ logger: false })
@@ -88,9 +117,12 @@ function buildApp(
     if (principal !== null) request.principal = principal
   })
 
-  const deps: RegisterSaleDeps = {
+  const deps: SaleRouteDeps = {
     unitOfWork: unitOfWorkEmMemoria(),
     settings: createDefaultSaleSettings(),
+    /* O historico e leitura e nao participa do fechamento; um falso vazio
+       basta para os testes de escrita, e os de leitura o sobrescrevem. */
+    history: historicoEmMemoria(),
     ...over,
   }
 
@@ -279,5 +311,106 @@ describe('configuracao padrao de venda', () => {
   it('papel desconhecido cai em zero, nao no teto do owner', async () => {
     const s = await settings.forSale('empresa-1', 'papel-que-nao-existe')
     expect(s.discountPolicy.maxDiscountRate).toBe(0)
+  })
+})
+
+describe('historico de vendas — NR-027, US-021', () => {
+  const venda = (over: Partial<VendaDoHistorico> = {}): VendaDoHistorico => ({
+    id: 'venda-1',
+    number: 1,
+    soldAt: '2026-09-06T15:00:00.000Z',
+    customerId: null,
+    customerName: null,
+    status: 'registered',
+    grossAmountCents: 1990,
+    discountCents: 0,
+    netAmountCents: 1990,
+    taxAmountCents: 0,
+    cardFeeAmountCents: 0,
+    items: [{ description: 'Cafe', quantity: 1, unitPriceCents: 1990, totalCents: 1990 }],
+    payments: [{ method: 'cash', amountCents: 1990, installments: null }],
+    invoiceNumber: null,
+    invoiceAccessKey: null,
+    ...over,
+  })
+
+  it('lista sem periodo — a tela abre mostrando as mais recentes', async () => {
+    app = buildApp({ history: historicoEmMemoria([venda()]) })
+
+    const r = await app.inject({ method: 'GET', url: '/sales' })
+
+    /*
+     * Sem `from`/`to`. Diferente do DRE e dos relatorios, onde o periodo e a
+     * propria pergunta: aqui exigi-lo faria a tela pedir duas datas antes de
+     * mostrar qualquer coisa.
+     */
+    expect(r.statusCode).toBe(200)
+    expect(r.json().sales).toHaveLength(1)
+    expect(r.json().page).toBe(1)
+    expect(r.json().pageSize).toBe(20)
+  })
+
+  it('devolve o total do historico, e nao o tamanho da pagina', async () => {
+    const muitas = Array.from({ length: 30 }, (_, i) => venda({ id: `v-${i}`, number: i + 1 }))
+    app = buildApp({ history: historicoEmMemoria(muitas) })
+
+    const r = await app.inject({ method: 'GET', url: '/sales?pageSize=5' })
+
+    expect(r.json().sales).toHaveLength(5)
+    /* 30, e nao 5: e o que faz a tela dizer "5 de 30" e oferecer a proxima. */
+    expect(r.json().total).toBe(30)
+  })
+
+  it('converte pagina e tamanho, que chegam como TEXTO na query', async () => {
+    const muitas = Array.from({ length: 30 }, (_, i) => venda({ id: `v-${i}`, number: i + 1 }))
+    app = buildApp({ history: historicoEmMemoria(muitas) })
+
+    const r = await app.inject({ method: 'GET', url: '/sales?page=2&pageSize=5' })
+
+    expect(r.json().page).toBe(2)
+    expect(r.json().sales.map((v: { id: string }) => v.id)).toEqual([
+      'v-5',
+      'v-6',
+      'v-7',
+      'v-8',
+      'v-9',
+    ])
+  })
+
+  it('recusa periodo invertido', async () => {
+    app = buildApp()
+
+    const r = await app.inject({ method: 'GET', url: '/sales?from=2026-03-01&to=2026-01-31' })
+
+    expect(r.statusCode).toBe(400)
+  })
+
+  it('devolve uma venda inteira, com itens e pagamentos', async () => {
+    app = buildApp({ history: historicoEmMemoria([venda()]) })
+
+    const r = await app.inject({ method: 'GET', url: '/sales/venda-1' })
+
+    expect(r.statusCode).toBe(200)
+    expect(r.json().items).toHaveLength(1)
+    expect(r.json().payments[0]).toMatchObject({ method: 'cash', amountCents: 1990 })
+  })
+
+  it('venda que nao existe volta 404, e nao corpo vazio', async () => {
+    app = buildApp({ history: historicoEmMemoria([]) })
+
+    const r = await app.inject({ method: 'GET', url: '/sales/nao-existe' })
+
+    /* Acesso a RECURSO: "esta venda nao existe" e diferente de "esta busca nao
+       achou nada". E venda de outra empresa cai no mesmo 404 — um 403
+       confirmaria que ela existe em algum lugar. */
+    expect(r.statusCode).toBe(404)
+  })
+
+  it('sem sessao, o historico responde 401', async () => {
+    app = buildApp({ history: historicoEmMemoria([venda()]) }, null)
+
+    const r = await app.inject({ method: 'GET', url: '/sales' })
+
+    expect(r.statusCode).toBe(401)
   })
 })

@@ -15,7 +15,6 @@ import {
   InMemoryAuditTrail,
   InMemoryLoginThrottle,
   InMemorySessionIssuer,
-  type RegisterSaleDeps,
 } from '@na-regua/core'
 import type { AgendaDeps } from './routes/agenda.js'
 import type { AuthRouteDeps } from './routes/auth.js'
@@ -41,6 +40,7 @@ import {
   createProductRepository,
   createReconciliationQueries,
   createReconciliationUnitOfWork,
+  createSaleHistoryRepository,
   createSaleUnitOfWork,
   createUserDirectory,
   getClient,
@@ -52,6 +52,7 @@ import { createFakeInvoiceIssuer, criarEmissorFocusNfe } from '@na-regua/fiscal'
 import type { InvoiceIssuer } from '@na-regua/core'
 import type { CadastroDeps } from './routes/cadastro.js'
 import type { ConciliacaoDeps } from './routes/conciliacao.js'
+import type { SaleRouteDeps } from './routes/sales.js'
 import type { ContabilidadeDeps } from './routes/contabilidade.js'
 import type { EstoqueDeps } from './routes/estoque.js'
 import type { RelatoriosDeps } from './routes/relatorios.js'
@@ -161,10 +162,15 @@ export async function shutdown(): Promise<void> {
  * do modulo faria importar a composicao — inclusive num teste — conectar no
  * banco.
  */
-export function buildSaleDeps(): RegisterSaleDeps {
+export function buildSaleDeps(): SaleRouteDeps {
+  const sql = getClient(env.DATABASE_URL)
   return {
-    unitOfWork: createSaleUnitOfWork(getClient(env.DATABASE_URL)),
+    unitOfWork: createSaleUnitOfWork(sql),
     settings: createDefaultSaleSettings(),
+    /* O fuso vem da `TZ` pelo mesmo motivo dos relatorios: "vendas de 15 de
+       marco" e uma pergunta com fuso embutido, e a venda das 21h30 em Sao
+       Paulo e 16 de marco em UTC. */
+    history: createSaleHistoryRepository(sql, env.TZ),
   }
 }
 

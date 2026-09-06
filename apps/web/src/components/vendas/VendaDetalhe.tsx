@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { estornarVenda, FORMAS, type VendaHistorico } from '@/lib/vendas-api'
+import { estornarVenda, FORMAS, type VendaDoHistorico } from '@/lib/vendas-api'
 import { formatDateTime, formatMoney } from '@/lib/format'
 import { Badge, Card, PageHeader, Stat } from '@/components/ui/UI'
 import { Button, ButtonLink } from '@/components/ui/Button'
@@ -9,14 +9,25 @@ import Toast from '@/components/ui/Toast'
 import ConfirmarDialog from '@/components/app/ConfirmarDialog'
 import styles from './vendas.module.css'
 
-export default function VendaDetalhe({ venda }: { venda: VendaHistorico }) {
+export default function VendaDetalhe({ venda }: { venda: VendaDoHistorico }) {
   const [status, setStatus] = useState(venda.status)
   const [estornando, setEstornando] = useState(false)
   const [processando, setProcessando] = useState(false)
   const [toast, setToast] = useState<{ msg: string; tone: 'success' | 'error' } | null>(null)
 
-  const estornada = status === 'estornada'
+  /* Cancelada, devolvida ou devolvida em parte: nos tres o dinheiro nao ficou
+     inteiro, e o destaque verde do liquido deixa de fazer sentido. */
+  const estornada = status !== 'registered'
   const totalItens = venda.itens.reduce((acc, i) => acc + i.quantidade, 0)
+
+  /*
+   * Subtotal e liquido saem do que o servidor ja mandou, e nao de campos
+   * proprios: sao `bruto` e `total - taxaCartao`. Guardar os quatro no contrato
+   * abriria caminho para eles discordarem, e o unico jeito de descobrir seria o
+   * lojista somando na mao.
+   */
+  const subtotal = venda.bruto
+  const valorLiquido = venda.total - venda.taxaCartao
 
   async function confirmarEstorno() {
     setProcessando(true)
@@ -33,7 +44,7 @@ export default function VendaDetalhe({ venda }: { venda: VendaHistorico }) {
       return
     }
 
-    setStatus('estornada')
+    setStatus('cancelled')
     setToast({
       msg: `Venda estornada. ${r.itensDevolvidos} item(ns) devolvido(s) ao estoque.`,
       tone: 'success',
@@ -44,7 +55,7 @@ export default function VendaDetalhe({ venda }: { venda: VendaHistorico }) {
     <>
       <PageHeader
         title={`Venda #${venda.numero}`}
-        subtitle={`${venda.clienteNome} · ${formatDateTime(venda.data)}`}
+        subtitle={`${venda.clienteNome ?? 'Venda de balcao'} · ${formatDateTime(venda.data)}`}
         actions={
           <>
             <ButtonLink href="/app/vendas" variant="secondary">
@@ -70,7 +81,7 @@ export default function VendaDetalhe({ venda }: { venda: VendaHistorico }) {
         <Stat label="Total" value={formatMoney(venda.total)} hint={`${totalItens} item(ns)`} />
         <Stat
           label="Valor liquido"
-          value={formatMoney(venda.valorLiquido)}
+          value={formatMoney(valorLiquido)}
           hint="sem taxa de cartao"
           tone={estornada ? 'warning' : 'positive'}
         />
@@ -96,7 +107,7 @@ export default function VendaDetalhe({ venda }: { venda: VendaHistorico }) {
           <div className={styles.resumo}>
             <div className={styles.resumoLinha}>
               <span>Subtotal</span>
-              <span>{formatMoney(venda.subtotal)}</span>
+              <span>{formatMoney(subtotal)}</span>
             </div>
             {venda.desconto > 0 ? (
               <div className={styles.resumoLinha}>
@@ -133,13 +144,15 @@ export default function VendaDetalhe({ venda }: { venda: VendaHistorico }) {
 
         {/* --- Documentos fiscais --- */}
         <Card title="Documentos fiscais">
-          {venda.nota ? (
+          {venda.notaNumero !== null ? (
             <div className={styles.notaDetalhe}>
-              <Badge tone="info">{venda.nota.tipo === 'nfce' ? 'NFC-e' : 'NFS-e'}</Badge>
-              <strong>Numero {venda.nota.numero}</strong>
-              <Button variant="secondary" size="sm">
-                Baixar PDF
-              </Button>
+              {/* NFC-e e o unico modelo que o sistema emite hoje (NR-042). O
+                  seletor NFS-e existia so nos dados de exemplo. */}
+              <Badge tone="info">NFC-e</Badge>
+              <strong>Numero {venda.notaNumero}</strong>
+              {venda.notaChave !== null ? (
+                <span className={styles.notaChave}>{venda.notaChave}</span>
+              ) : null}
             </div>
           ) : (
             <p className={styles.semNota}>Nenhuma nota emitida para esta venda.</p>
@@ -160,7 +173,7 @@ export default function VendaDetalhe({ venda }: { venda: VendaHistorico }) {
                 Venda #{venda.numero} · {formatMoney(venda.total)}
               </strong>
               <span>
-                {venda.clienteNome} · {totalItens} item(ns)
+                {venda.clienteNome ?? 'Venda de balcao'} · {totalItens} item(ns)
               </span>
             </div>
           }
