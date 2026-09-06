@@ -1,8 +1,14 @@
 'use client'
 
 import Link from 'next/link'
-import { useMemo, useState } from 'react'
-import { produtos as todosProdutos } from '@/lib/mock-data'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  carregarCatalogo,
+  carregarResumoDoCatalogo,
+  type NivelDeEstoque,
+  type PaginaDoCatalogo,
+  type ResumoDoCatalogo,
+} from '@/lib/catalogo-api'
 import { calcularMargem, confirmarImportacaoProdutos, nivelEstoque } from '@/lib/produtos-api'
 import { formatMoney, formatPercent } from '@/lib/format'
 import { Badge, Card, EmptyState, PageHeader, Stat } from '@/components/ui/UI'
@@ -13,6 +19,27 @@ import ComandosWhatsApp from '@/components/app/ComandosWhatsApp'
 import ImportarPlanilha from '@/components/app/ImportarPlanilha'
 import ImportarXml from './ImportarXml'
 import styles from './produtos.module.css'
+
+/**
+ * O catalogo do lojista — NR-072, US-008.
+ *
+ * ## O catalogo e do SERVIDOR
+ *
+ * Esta tela mostrava `lib/mock-data`: o lojista cadastrava um produto e ele
+ * nao aparecia aqui. Agora busca, filtro e paginacao acontecem no banco.
+ *
+ * Nao e so trocar a fonte. Filtrar no navegador exigiria trazer o catalogo
+ * inteiro a cada abertura — e filtrar sobre a PAGINA daria respostas erradas
+ * com cara de certas: "esgotados" mostraria os esgotados daqueles 24 itens, e
+ * nao os da loja, que e exatamente o que esse filtro serve para achar.
+ *
+ * ## Os filtros de categoria e fornecedor sairam
+ *
+ * Nenhum dos dois existe do outro lado: `fornecedor` nao tem coluna em
+ * `products`, e de `categoria` so existe o `category_id`, sem rota que devolva
+ * o nome. Um `<select>` sobre dado que o servidor nao tem e um controle que
+ * mente. Voltam quando houver o dado — ver `lib/catalogo-api.ts`.
+ */
 
 /** Campos que a planilha de produtos pode alimentar. */
 const CAMPOS_PLANILHA = [
@@ -53,12 +80,6 @@ const CAMPOS_PLANILHA = [
     reconhece: (c: string) => c.includes('ncm'),
   },
   {
-    key: 'categoria',
-    label: 'Categoria',
-    obrigatorio: false,
-    reconhece: (c: string) => c.includes('categoria') || c.includes('grupo'),
-  },
-  {
     key: 'estoque',
     label: 'Estoque',
     obrigatorio: false,
@@ -67,56 +88,114 @@ const CAMPOS_PLANILHA = [
   },
 ]
 
-type FiltroEstoque = 'todos' | 'baixo' | 'esgotado'
+/** Quantos produtos por pagina. */
+const POR_PAGINA = 24
+
+/** Espera antes de buscar o que esta sendo digitado. */
+const ESPERA_DA_BUSCA_MS = 350
 
 export default function ProdutosLista() {
   const [busca, setBusca] = useState('')
-  const [categoria, setCategoria] = useState('')
-  const [fornecedor, setFornecedor] = useState('')
-  const [filtroEstoque, setFiltroEstoque] = useState<FiltroEstoque>('todos')
+  const [filtroEstoque, setFiltroEstoque] = useState<NivelDeEstoque>('todos')
+  const [pagina, setPagina] = useState(1)
+
+  const [dados, setDados] = useState<PaginaDoCatalogo | null>(null)
+  const [resumo, setResumo] = useState<ResumoDoCatalogo | null>(null)
+  const [carregando, setCarregando] = useState(true)
+  const [erro, setErro] = useState<string | null>(null)
+
   const [importandoPlanilha, setImportandoPlanilha] = useState(false)
   const [importandoXml, setImportandoXml] = useState(false)
 
-  /* Listas de filtro montadas a partir do proprio catalogo. */
-  const categorias = useMemo(() => [...new Set(todosProdutos.map((p) => p.categoria))].sort(), [])
-  const fornecedores = useMemo(
-    () => [...new Set(todosProdutos.map((p) => p.fornecedor))].sort(),
-    [],
-  )
+  /**
+   * A resposta que chegou fora de ordem e descartada.
+   *
+   * Digitar "cafe" dispara buscas encadeadas, e a de "caf" pode voltar depois
+   * da de "cafe" numa rede lenta — a tela mostraria o resultado do termo
+   * anterior sobre o campo com o termo atual. O contador diz qual pedido e o
+   * mais recente.
+   */
+  const pedido = useRef(0)
 
-  const lista = useMemo(() => {
-    const termo = busca.trim().toLowerCase()
+  const buscar = useCallback(async (termo: string, estoque: NivelDeEstoque, qualPagina: number) => {
+    const meu = ++pedido.current
 
-    return todosProdutos.filter((p) => {
-      if (termo) {
-        const casa =
-          p.descricao.toLowerCase().includes(termo) ||
-          p.codigo.toLowerCase().includes(termo) ||
-          p.categoria.toLowerCase().includes(termo) ||
-          p.ean.includes(termo.replace(/\D/g, ''))
-        if (!casa) return false
-      }
-
-      if (categoria && p.categoria !== categoria) return false
-      if (fornecedor && p.fornecedor !== fornecedor) return false
-
-      if (filtroEstoque !== 'todos' && nivelEstoque(p) !== filtroEstoque) {
-        return false
-      }
-
-      return true
+    const r = await carregarCatalogo({
+      termo,
+      estoque,
+      pagina: qualPagina,
+      porPagina: POR_PAGINA,
     })
-  }, [busca, categoria, fornecedor, filtroEstoque])
 
-  const precisamReposicao = todosProdutos.filter((p) => nivelEstoque(p) !== 'normal')
-  const valorEstoque = todosProdutos.reduce((acc, p) => acc + p.estoque * p.precoCusto, 0)
+    if (meu !== pedido.current) return
+
+    setCarregando(false)
+
+    if (!r.ok) {
+      setErro(r.erro)
+      return
+    }
+
+    setErro(null)
+    setDados(r.dados)
+  }, [])
+
+  /* O resumo fala do catalogo INTEIRO: nao depende de busca nem de pagina, e
+     por isso e buscado uma vez e nao a cada tecla. */
+  useEffect(() => {
+    void (async () => {
+      const r = await carregarResumoDoCatalogo()
+      if (r.ok) setResumo(r.dados)
+    })()
+  }, [])
+
+  /*
+   * O efeito so AGENDA a busca. O `carregando` e ligado por quem mexeu no
+   * filtro, e nao aqui: `setState` sincrono dentro de efeito encadeia renders,
+   * e o estado inicial ja nasce `true` para a primeira carga.
+   *
+   * A espera existe porque, sem ela, "detergente" dispara dez consultas ao
+   * banco para uma pergunta so — e as nove primeiras chegam para ser
+   * descartadas.
+   */
+  useEffect(() => {
+    const t = setTimeout(() => {
+      void buscar(busca, filtroEstoque, pagina)
+    }, ESPERA_DA_BUSCA_MS)
+
+    return () => clearTimeout(t)
+  }, [busca, filtroEstoque, pagina, buscar])
+
+  /* Trocar busca ou filtro volta para a primeira pagina: continuar na pagina 4
+     de um resultado que agora tem uma pagina mostraria vazio, e o lojista
+     concluiria que a busca nao achou nada. */
+  const mudarBusca = (valor: string) => {
+    setCarregando(true)
+    setBusca(valor)
+    setPagina(1)
+  }
+
+  const mudarFiltro = (valor: NivelDeEstoque) => {
+    setCarregando(true)
+    setFiltroEstoque(valor)
+    setPagina(1)
+  }
+
+  const irParaPagina = (p: number) => {
+    setCarregando(true)
+    setPagina(p)
+  }
 
   const limparFiltros = () => {
+    setCarregando(true)
     setBusca('')
-    setCategoria('')
-    setFornecedor('')
     setFiltroEstoque('todos')
+    setPagina(1)
   }
+
+  const total = dados?.total ?? 0
+  const ultimaPagina = Math.max(1, Math.ceil(total / POR_PAGINA))
+  const filtrando = busca.trim() !== '' || filtroEstoque !== 'todos'
 
   return (
     <>
@@ -141,16 +220,7 @@ export default function ProdutosLista() {
         }
       />
 
-      <div className="statRow">
-        <Stat label="Produtos no catalogo" value={String(todosProdutos.length)} />
-        <Stat
-          label="Precisam de reposicao"
-          value={String(precisamReposicao.length)}
-          hint={precisamReposicao.length ? 'abaixo do minimo' : 'tudo em ordem'}
-          tone={precisamReposicao.length ? 'warning' : 'positive'}
-        />
-        <Stat label="Valor em estoque" value={formatMoney(valorEstoque)} hint="a preco de custo" />
-      </div>
+      <Resumo resumo={resumo} />
 
       <Card>
         {/* --- Busca e filtros --- */}
@@ -160,41 +230,11 @@ export default function ProdutosLista() {
             <input
               type="search"
               value={busca}
-              onChange={(e) => setBusca(e.target.value)}
-              placeholder="Buscar por codigo, descricao ou categoria"
+              onChange={(e) => mudarBusca(e.target.value)}
+              placeholder="Buscar por codigo, descricao ou codigo de barras"
               aria-label="Buscar produto"
             />
           </label>
-
-          <div className={styles.selects}>
-            <select
-              className={styles.select}
-              value={categoria}
-              onChange={(e) => setCategoria(e.target.value)}
-              aria-label="Filtrar por categoria"
-            >
-              <option value="">Todas as categorias</option>
-              {categorias.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-
-            <select
-              className={styles.select}
-              value={fornecedor}
-              onChange={(e) => setFornecedor(e.target.value)}
-              aria-label="Filtrar por fornecedor"
-            >
-              <option value="">Todos os fornecedores</option>
-              {fornecedores.map((f) => (
-                <option key={f} value={f}>
-                  {f}
-                </option>
-              ))}
-            </select>
-          </div>
         </div>
 
         <div className={styles.filtros} role="group" aria-label="Filtro de estoque">
@@ -209,7 +249,7 @@ export default function ProdutosLista() {
               key={valor}
               type="button"
               className={`${styles.filtro} ${filtroEstoque === valor ? styles.filtroAtivo : ''}`}
-              onClick={() => setFiltroEstoque(valor)}
+              onClick={() => mudarFiltro(valor)}
               aria-pressed={filtroEstoque === valor}
             >
               {rotulo}
@@ -217,9 +257,37 @@ export default function ProdutosLista() {
           ))}
         </div>
 
-        {/* --- Grid --- */}
-        {lista.length === 0 ? (
-          todosProdutos.length === 0 ? (
+        {erro !== null ? (
+          <EmptyState
+            title="Nao deu para carregar o catalogo"
+            description={erro}
+            action={
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setCarregando(true)
+                  setErro(null)
+                  void buscar(busca, filtroEstoque, pagina)
+                }}
+              >
+                Tentar de novo
+              </Button>
+            }
+          />
+        ) : carregando && dados === null ? (
+          <EmptyState title="Carregando o catalogo" description="Buscando seus produtos." />
+        ) : total === 0 ? (
+          filtrando ? (
+            <EmptyState
+              title="Nenhum produto encontrado"
+              description="Nenhum resultado para esta busca ou filtro."
+              action={
+                <Button variant="secondary" onClick={limparFiltros}>
+                  Limpar filtros
+                </Button>
+              }
+            />
+          ) : (
             <EmptyState
               title="Nenhum produto cadastrado"
               description="Cadastre o primeiro produto, traga o catalogo de uma planilha ou importe o XML de uma nota de compra."
@@ -238,59 +306,62 @@ export default function ProdutosLista() {
                 </div>
               }
             />
-          ) : (
-            <EmptyState
-              title="Nenhum produto encontrado"
-              description="Nenhum resultado para esta busca ou filtro."
-              action={
-                <Button variant="secondary" onClick={limparFiltros}>
-                  Limpar filtros
-                </Button>
-              }
-            />
           )
         ) : (
-          <ul className={styles.grid}>
-            {lista.map((produto) => {
-              const nivel = nivelEstoque(produto)
-              const margem = calcularMargem(produto.precoCusto, produto.precoVenda)
+          <>
+            <ul className={styles.grid} aria-busy={carregando}>
+              {(dados?.produtos ?? []).map((produto) => {
+                const nivel = nivelEstoque(produto)
+                const margem = calcularMargem(produto.precoCusto, produto.precoVenda)
 
-              return (
-                <li key={produto.id}>
-                  <Link href={`/app/produtos/${produto.id}`} className={styles.card}>
-                    {/* Sem imagem cadastrada, mostra a inicial em vez de um
-                        quadrado vazio */}
-                    <span className={styles.imagem} aria-hidden="true">
-                      <IconBox size={22} />
-                    </span>
+                return (
+                  <li key={produto.id}>
+                    <Link href={`/app/produtos/${produto.id}`} className={styles.card}>
+                      {/* Sem imagem cadastrada, mostra o icone em vez de um
+                          quadrado vazio */}
+                      <span className={styles.imagem} aria-hidden="true">
+                        <IconBox size={22} />
+                      </span>
 
-                    <span className={styles.info}>
-                      <span className={styles.codigo}>{produto.codigo}</span>
-                      <strong className={styles.descricao}>{produto.descricao}</strong>
-                      <span className={styles.categoria}>{produto.categoria}</span>
-                    </span>
+                      <span className={styles.info}>
+                        <span className={styles.codigo}>{produto.codigo}</span>
+                        <strong className={styles.descricao}>{produto.descricao}</strong>
+                        {produto.ean !== null ? (
+                          <span className={styles.categoria}>{produto.ean}</span>
+                        ) : null}
+                      </span>
 
-                    <span className={styles.numeros}>
-                      <strong className={styles.preco}>{formatMoney(produto.precoVenda)}</strong>
-                      {margem !== null ? (
-                        <span className={styles.margem}>margem {formatPercent(margem)}</span>
-                      ) : null}
-                    </span>
+                      <span className={styles.numeros}>
+                        <strong className={styles.preco}>{formatMoney(produto.precoVenda)}</strong>
+                        {margem !== null ? (
+                          <span className={styles.margem}>margem {formatPercent(margem)}</span>
+                        ) : null}
+                      </span>
 
-                    <span className={styles.estoque}>
-                      {nivel === 'esgotado' ? (
-                        <Badge tone="danger">Esgotado</Badge>
-                      ) : nivel === 'baixo' ? (
-                        <Badge tone="warning">{produto.estoque} un · baixo</Badge>
-                      ) : (
-                        <Badge tone="success">{produto.estoque} un</Badge>
-                      )}
-                    </span>
-                  </Link>
-                </li>
-              )
-            })}
-          </ul>
+                      <span className={styles.estoque}>
+                        {nivel === 'esgotado' ? (
+                          <Badge tone="danger">Esgotado</Badge>
+                        ) : nivel === 'baixo' ? (
+                          <Badge tone="warning">{produto.estoque} un · baixo</Badge>
+                        ) : (
+                          <Badge tone="success">{produto.estoque} un</Badge>
+                        )}
+                      </span>
+                    </Link>
+                  </li>
+                )
+              })}
+            </ul>
+
+            <Paginacao
+              pagina={pagina}
+              ultimaPagina={ultimaPagina}
+              total={total}
+              nesta={dados?.produtos.length ?? 0}
+              carregando={carregando}
+              onIr={irParaPagina}
+            />
+          </>
         )}
       </Card>
 
@@ -302,7 +373,16 @@ export default function ProdutosLista() {
         <ImportarPlanilha
           titulo="Importar produtos"
           campos={CAMPOS_PLANILHA}
-          chavesExistentes={todosProdutos.map((p) => p.codigo.toUpperCase())}
+          /*
+           * Vazio, e nao os codigos da pagina.
+           *
+           * A checagem marca como repetido o que ja existe na base. Com o
+           * catalogo paginado, passar os 24 codigos carregados diria "novo"
+           * para um produto que existe na pagina 3 — pior que nao checar,
+           * porque parece checado. Repetido DENTRO da planilha continua sendo
+           * detectado, e o codigo interno e unico por empresa no banco.
+           */
+          chavesExistentes={[]}
           chaveDuplicidade={(v) => (v.codigo ?? '').trim().toUpperCase()}
           validar={(v) => {
             if (!v.codigo?.trim()) return 'Codigo vazio'
@@ -318,5 +398,109 @@ export default function ProdutosLista() {
 
       {importandoXml ? <ImportarXml onClose={() => setImportandoXml(false)} /> : null}
     </>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+
+/**
+ * Os numeros do topo, sobre o catalogo INTEIRO.
+ *
+ * Nunca somados da pagina: "valor em estoque" calculado sobre 24 de 300
+ * produtos erra por um fator de doze, e o lojista decide compra com ele.
+ *
+ * "Precisam de reposicao" usa `belowMinimum`, que JA inclui os zerados —
+ * somar as duas contagens contaria o produto zerado duas vezes.
+ */
+function Resumo({ resumo }: { resumo: ResumoDoCatalogo | null }) {
+  if (resumo === null) {
+    return (
+      <div className="statRow">
+        <Stat label="Produtos no catalogo" value="—" />
+        <Stat label="Precisam de reposicao" value="—" />
+        <Stat label="Valor em estoque" value="—" hint="a preco de custo" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="statRow">
+      <Stat label="Produtos no catalogo" value={String(resumo.total)} />
+      <Stat
+        label="Precisam de reposicao"
+        value={String(resumo.belowMinimum)}
+        hint={
+          resumo.belowMinimum
+            ? `${resumo.outOfStock} ${resumo.outOfStock === 1 ? 'esgotado' : 'esgotados'}`
+            : 'tudo em ordem'
+        }
+        tone={resumo.belowMinimum ? 'warning' : 'positive'}
+      />
+      <Stat
+        label="Valor em estoque"
+        value={formatMoney(resumo.stockValueCents / 100)}
+        hint="a preco de custo"
+      />
+    </div>
+  )
+}
+
+/**
+ * O rodape da lista — "24 de 300" e os dois botoes.
+ *
+ * O total e o que impede o lojista de parar de procurar: uma pagina cheia, sem
+ * ele, e indistinguivel do fim do catalogo.
+ *
+ * Some quando ha uma pagina so. Um paginador com os dois botoes desligados nao
+ * informa nada e ocupa espaco.
+ */
+function Paginacao({
+  pagina,
+  ultimaPagina,
+  total,
+  nesta,
+  carregando,
+  onIr,
+}: {
+  pagina: number
+  ultimaPagina: number
+  total: number
+  nesta: number
+  carregando: boolean
+  onIr: (p: number) => void
+}) {
+  if (ultimaPagina <= 1) {
+    return (
+      <p className={styles.paginacaoResumo}>
+        {total} {total === 1 ? 'produto' : 'produtos'}
+      </p>
+    )
+  }
+
+  const primeiro = (pagina - 1) * POR_PAGINA + 1
+
+  return (
+    <div className={styles.paginacao}>
+      <p className={styles.paginacaoResumo}>
+        {primeiro}–{primeiro + nesta - 1} de {total}
+      </p>
+
+      <div className={styles.paginacaoBotoes}>
+        <Button
+          variant="secondary"
+          onClick={() => onIr(pagina - 1)}
+          disabled={pagina <= 1 || carregando}
+        >
+          Anterior
+        </Button>
+        <Button
+          variant="secondary"
+          onClick={() => onIr(pagina + 1)}
+          disabled={pagina >= ultimaPagina || carregando}
+        >
+          Proxima
+        </Button>
+      </div>
+    </div>
   )
 }
