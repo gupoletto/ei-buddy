@@ -161,6 +161,9 @@
 
 .nome {
   overflow: hidden;
+  /* Sem isto o `ellipsis` nunca dispara: filho de grid ou flex nasce
+     com `min-width: auto` e cresce com o texto em vez de cortar. */
+  min-width: 0;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
