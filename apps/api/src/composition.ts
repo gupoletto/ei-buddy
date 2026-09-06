@@ -27,6 +27,9 @@ import {
   createAppointmentRepository,
   createBankTransactionWriter,
   createChartOfAccountsRepository,
+  createInventoryHistory,
+  createInventoryQueries,
+  createInventoryUnitOfWork,
   createReportRepository,
   createCompanyRepository,
   createCustomerRepository,
@@ -50,6 +53,7 @@ import type { InvoiceIssuer } from '@na-regua/core'
 import type { CadastroDeps } from './routes/cadastro.js'
 import type { ConciliacaoDeps } from './routes/conciliacao.js'
 import type { ContabilidadeDeps } from './routes/contabilidade.js'
+import type { EstoqueDeps } from './routes/estoque.js'
 import type { RelatoriosDeps } from './routes/relatorios.js'
 import type { ContasDeps } from './routes/contas.js'
 import { createInvoiceQueue } from './invoice-queue.js'
@@ -315,6 +319,24 @@ export function buildConciliacaoDeps(): ConciliacaoDeps {
 export function buildRelatoriosDeps(): RelatoriosDeps {
   const sql = getClient(env.DATABASE_URL)
   return { reports: createReportRepository(sql, env.TZ) }
+}
+
+/**
+ * Saldo, ajuste e trilha de estoque — NR-023.
+ *
+ * A trilha e obrigatoria e nao opcional: a RF-123 pede autoria do ajuste, e uma
+ * dependencia opcional aqui seria justamente a que some quando quem monta o
+ * grafo esquece dela. Enquanto `db` nao expuser repositorio de auditoria, ela e
+ * de memoria — mesma pendencia das outras, e a mesma guarda de producao.
+ */
+export function buildEstoqueDeps(): EstoqueDeps {
+  const sql = getClient(env.DATABASE_URL)
+  return {
+    products: createInventoryQueries(sql).products,
+    uow: createInventoryUnitOfWork(sql),
+    historico: createInventoryHistory(sql),
+    audit: new InMemoryAuditTrail(),
+  }
 }
 
 /** Plano de contas, classificacao e DRE — NR-077. */

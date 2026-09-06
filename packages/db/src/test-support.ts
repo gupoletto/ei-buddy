@@ -94,6 +94,26 @@ export async function conectarComoAplicacao(
        GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO ${PAPEL_DE_TESTE}`,
   )
 
+  /*
+   * SEQUENCIAS tambem — e nao e detalhe de teste.
+   *
+   * Coluna `bigserial` cria uma sequencia, e `GRANT ... ON TABLES` nao a cobre:
+   * o INSERT falha com "permission denied for sequence". A migration 0016
+   * introduziu a primeira sequencia do schema (a ordem da trilha de estoque), e
+   * a suite reprovou aqui antes de qualquer ambiente reprovar — que e o ponto
+   * de a conexao de teste usar um papel COMUM em vez do dono do banco.
+   *
+   * Quem provisionar o papel da aplicacao em producao precisa conceder o mesmo.
+   * Ver docs/engenharia/banco-de-dados.md.
+   */
+  await adminSql.unsafe(
+    `GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO ${PAPEL_DE_TESTE}`,
+  )
+  await adminSql.unsafe(
+    `ALTER DEFAULT PRIVILEGES IN SCHEMA public
+       GRANT USAGE, SELECT ON SEQUENCES TO ${PAPEL_DE_TESTE}`,
+  )
+
   const url = new URL(adminUrl)
   url.username = PAPEL_DE_TESTE
   url.password = SENHA_DE_TESTE
