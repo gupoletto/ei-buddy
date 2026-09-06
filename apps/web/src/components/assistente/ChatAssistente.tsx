@@ -167,9 +167,9 @@ export default function ChatAssistente() {
                 <IconSparkles size={15} />
               </span>
               <div className={`${styles.balao} ${styles.digitando}`}>
-                <span />
-                <span />
-                <span />
+                <span className={styles.ponto} />
+                <span className={styles.ponto} />
+                <span className={styles.ponto} />
                 <span className={styles.digitandoTexto}>digitando</span>
               </div>
             </div>

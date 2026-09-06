@@ -57,3 +57,10 @@ export { createSaleFiscalReader } from './sale-fiscal-repository.js'
 
 /* Faturamento e rankings — NR-077, US-041. */
 export { createReportRepository } from './report-repository.js'
+
+/* Estoque: ajuste, saldo e trilha — NR-023, RF-022 a RF-024. */
+export {
+  createInventoryHistory,
+  createInventoryQueries,
+  createInventoryUnitOfWork,
+} from './inventory-repository.js'
