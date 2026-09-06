@@ -15,6 +15,14 @@ import ImportarPlanilha from '@/components/app/ImportarPlanilha'
 import styles from './clientes.module.css'
 
 /** Campos que a planilha de clientes pode alimentar. */
+/*
+ * Cidade e UF NAO estao aqui, e a ausencia e de proposito.
+ *
+ * A tabela `customers` nao tem endereco — nem coluna, nem contrato. Enquanto
+ * elas ficavam no mapeamento, o lojista escolhia a coluna da planilha dele e o
+ * dado era descartado em silencio: pior que nao oferecer, porque parece que
+ * funcionou. Voltam quando houver onde guardar.
+ */
 const CAMPOS_PLANILHA = [
   {
     key: 'nome',
@@ -39,18 +47,6 @@ const CAMPOS_PLANILHA = [
     label: 'E-mail',
     obrigatorio: false,
     reconhece: (c: string) => c.includes('mail'),
-  },
-  {
-    key: 'cidade',
-    label: 'Cidade',
-    obrigatorio: false,
-    reconhece: (c: string) => c.includes('cidade') || c.includes('municip'),
-  },
-  {
-    key: 'uf',
-    label: 'UF',
-    obrigatorio: false,
-    reconhece: (c: string) => c === 'uf' || c.includes('estado'),
   },
 ]
 
@@ -253,7 +249,13 @@ export default function ClientesLista() {
         <ImportarPlanilha
           titulo="Importar clientes"
           campos={CAMPOS_PLANILHA}
-          chavesExistentes={todosClientes.map((c) => c.documento.replace(/\D/g, ''))}
+          /*
+           * Vazio: a lista desta tela ainda vem de `mock-data`, e conferir
+           * duplicidade contra dados de exemplo diria "ja cadastrado" para
+           * quem nunca foi cadastrado. Repetido DENTRO da planilha continua
+           * sendo detectado, e o servidor recusa o que precisar recusar.
+           */
+          chavesExistentes={[]}
           chaveDuplicidade={(v) => (v.documento ?? '').replace(/\D/g, '')}
           validar={(v) => {
             if (!v.nome?.trim()) return 'Nome vazio'

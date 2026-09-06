@@ -247,6 +247,11 @@ esses repositórios, e uma rota ligada a um _fake_ não é uma rota.
 | [DEC-012](../decisoes/README.md#dec-012) usuário e cupons                                        | NR-075        |          — |            3 |
 | [DEC-001](../decisoes/README.md#dec-001) nome/marca                                              | — (NR-011 ✅) |          — |            0 |
 
+> **Bloqueio de tarefa não é bloqueio de trabalho.** Quebrando as tarefas na
+> costura da porta — como a NR-042 fez de fato com a DEC-004 — cerca de 19 dos
+> 35 dias voltam ao quadro sem decidir nada. Ver
+> [destravar-os-bloqueios.md](destravar-os-bloqueios.md).
+
 **Os 35 dias-desenvolvedor que restam estão TODOS bloqueados** — 33 por decisão
 e 2 por dependência de tarefa que também está bloqueada. A coluna "⬜ a fazer"
 zerou: não sobrou nenhuma tarefa que dê para começar hoje.

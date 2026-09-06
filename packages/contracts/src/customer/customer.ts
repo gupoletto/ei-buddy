@@ -49,3 +49,42 @@ export const customerOutputSchema = z.object({
 })
 
 export type CustomerOutput = z.infer<typeof customerOutputSchema>
+
+/**
+ * Importacao de clientes em lote — NR-072, US-008.
+ *
+ * Mesma forma da importacao de produtos, e de proposito: as duas telas usam o
+ * mesmo dialogo, e formas diferentes fariam o relatorio significar uma coisa
+ * numa e outra na outra.
+ *
+ * `TETO_DA_IMPORTACAO_DE_CLIENTES` existe pelo mesmo motivo do teto de
+ * produtos: o lote roda numa requisicao so.
+ */
+export const TETO_DA_IMPORTACAO_DE_CLIENTES = 500
+
+export const importCustomersInputSchema = z
+  .object({
+    customers: z
+      .array(createCustomerInputSchema)
+      .min(1, 'Nenhuma linha valida para importar.')
+      .max(
+        TETO_DA_IMPORTACAO_DE_CLIENTES,
+        `A importacao aceita ate ${TETO_DA_IMPORTACAO_DE_CLIENTES} linhas por vez.`,
+      ),
+  })
+  .strict()
+
+export type ImportCustomersInput = z.infer<typeof importCustomersInputSchema>
+
+export const importCustomersOutputSchema = z.object({
+  imported: z.number().int(),
+  rejected: z.array(
+    z.object({
+      index: z.number().int(),
+      description: z.string(),
+      reason: z.string(),
+    }),
+  ),
+})
+
+export type ImportCustomersOutput = z.infer<typeof importCustomersOutputSchema>

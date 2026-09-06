@@ -1,5 +1,10 @@
-import type { CreateCustomerInput, CustomerOutput } from '@na-regua/contracts'
-import { AppError } from '../app-error.js'
+import type {
+  CreateCustomerInput,
+  CustomerOutput,
+  ImportCustomersInput,
+  ImportCustomersOutput,
+} from '@na-regua/contracts'
+import { AppError, isAppError } from '../app-error.js'
 import { assertCanWrite } from '../authorization.js'
 import type { ExecutionContext } from '../context.js'
 import type { CustomerRepository } from '../ports/registration-repositories.js'
@@ -87,4 +92,49 @@ export function assertIdentifiable(customer: CustomerOutput): void {
       [{ path: 'phone', message: 'Informe telefone ou documento.' }],
     )
   }
+}
+
+/**
+ * Importacao de clientes em lote — NR-072, US-008.
+ *
+ * ## O parecido entra, e nao vira recusa
+ *
+ * `registerCustomer` devolve `duplicate_found` quando acha alguem parecido, e
+ * no balcao isso e uma PERGUNTA que o operador responde com o cliente na
+ * frente. Numa planilha nao ha ninguem para responder, e travar 40 linhas
+ * esperando confirmacao transformaria a importacao num formulario.
+ *
+ * Entao o lote confirma (`allowDuplicate: true`) e o parecido entra. O
+ * lojista tem a tela de clientes para juntar depois; o contrario — a linha
+ * sumir sem aviso — deixaria o cadastro incompleto com cara de completo.
+ *
+ * Sequencial pelo mesmo motivo da importacao de produtos: a deteccao de
+ * parecido le o que ja existe, e em paralelo duas linhas iguais do proprio
+ * arquivo nao se enxergariam.
+ */
+export async function importCustomers(
+  deps: RegisterCustomerDeps,
+  ctx: ExecutionContext,
+  input: ImportCustomersInput,
+): Promise<ImportCustomersOutput> {
+  assertCanWrite(ctx)
+
+  const rejected: { index: number; description: string; reason: string }[] = []
+  let imported = 0
+
+  for (const [index, linha] of input.customers.entries()) {
+    try {
+      await registerCustomer(deps, ctx, linha, { allowDuplicate: true })
+      imported += 1
+    } catch (erro) {
+      /* Erro desconhecido SOBE: banco fora do ar nao e "linha invalida", e
+         transforma-lo numa faria a tela dizer "298 importados" para um lote
+         que parou no meio. */
+      if (!isAppError(erro)) throw erro
+
+      rejected.push({ index, description: linha.name, reason: erro.message })
+    }
+  }
+
+  return { imported, rejected }
 }

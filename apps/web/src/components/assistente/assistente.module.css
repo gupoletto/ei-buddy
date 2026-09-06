@@ -133,7 +133,20 @@
   gap: 5px;
 }
 
-.digitando > span {
+/*
+ * Os pontos tem CLASSE, e nao sao "todo span filho".
+ *
+ * O seletor `.digitando > span` acertava tambem o span do texto: a palavra
+ * "digitando" recebia 7px de largura, virava uma bolinha e transbordava para
+ * fora do balao — e ainda pulsava junto. Um seletor por posicao quebra assim
+ * toda vez que alguem acrescenta um filho, e quem acrescenta nao tem como
+ * saber. A classe diz o que a regra quer acertar.
+ *
+ * `flex: none` porque o pai e flex: sem isso os pontos encolhem quando o texto
+ * ao lado disputa espaco, e o "pulso" fica torto.
+ */
+.digitando > .ponto {
+  flex: none;
   width: 7px;
   height: 7px;
   border-radius: 50%;
@@ -141,12 +154,20 @@
   animation: pulsar 1.2s ease-in-out infinite;
 }
 
-.digitando > span:nth-child(2) {
+.digitando > .ponto:nth-child(2) {
   animation-delay: 0.15s;
 }
 
-.digitando > span:nth-child(3) {
+.digitando > .ponto:nth-child(3) {
   animation-delay: 0.3s;
+}
+
+/* Respeita quem pediu menos movimento — RNF-052. */
+@media (prefers-reduced-motion: reduce) {
+  .digitando > .ponto {
+    animation: none;
+    opacity: 0.6;
+  }
 }
 
 @keyframes pulsar {

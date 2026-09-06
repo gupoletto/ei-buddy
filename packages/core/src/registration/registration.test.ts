@@ -7,6 +7,9 @@ import {
   InMemoryCustomerRepository,
   InMemoryProductRepository,
 } from './fakes.js'
+import { InMemoryAuditTrail } from '../audit/fakes.js'
+import { InMemoryInventory } from '../inventory/fakes.js'
+import type { ProductRepository } from '../ports/registration-repositories.js'
 import { InMemoryChartOfAccounts } from '../accounting/fakes.js'
 import { PLANO_DE_CONTAS_PADRAO } from '../accounting/default-chart.js'
 import { registerCompany } from './register-company.js'
@@ -14,6 +17,7 @@ import { assertIdentifiable, registerCustomer } from './register-customer.js'
 import {
   catalogSummary,
   findProductByBarcode,
+  importProducts,
   generateInternalCode,
   listCatalog,
   registerProduct,
@@ -552,5 +556,177 @@ describe('resumo do catalogo — NR-072', () => {
     const r = await catalogSummary({ products: new InMemoryProductRepository() }, contexto())
 
     expect(r).toEqual({ total: 0, belowMinimum: 0, outOfStock: 0, stockValueCents: 0 })
+  })
+})
+
+describe('importacao de catalogo — NR-072, US-008', () => {
+  const linha = (description: string, over: Record<string, unknown> = {}) => ({
+    description,
+    unitOfMeasure: 'un' as const,
+    salePriceCents: 1000,
+    costPriceCents: 400,
+    stock: 0,
+    minStock: 0,
+    ...over,
+  })
+
+  /**
+   * Costura os dois falsos.
+   *
+   * Em producao o cadastro e o estoque falam da MESMA tabela `products`. Aqui
+   * sao dois falsos independentes, e sem esta ligacao o saldo inicial cairia em
+   * "produto nao encontrado" — um erro do teste, nao do codigo.
+   */
+  function cenario() {
+    const produtos = new InMemoryProductRepository()
+    const inventario = new InMemoryInventory()
+
+    const products: ProductRepository = {
+      create: async (p) => {
+        const criado = await produtos.create(p)
+        inventario.adicionarProduto(p.companyId, {
+          id: criado.id,
+          description: criado.description,
+          salePriceCents: criado.salePriceCents,
+          stockQuantity: 0,
+          location: null,
+          minStock: criado.minStock,
+        })
+        return criado
+      },
+      findByBarcode: (c, b) => produtos.findByBarcode(c, b),
+      search: (c, k) => produtos.search(c, k),
+      listCatalog: (c, k) => produtos.listCatalog(c, k),
+      catalogSummary: (c) => produtos.catalogSummary(c),
+      countAll: (c) => produtos.countAll(c),
+    }
+
+    return {
+      deps: { products, uow: inventario, audit: new InMemoryAuditTrail() },
+      inventario,
+      produtos,
+    }
+  }
+
+  it('importa todas as linhas validas e gera codigo interno em sequencia', async () => {
+    const c = cenario()
+
+    const r = await importProducts(c.deps, contexto(), {
+      products: [linha('Cafe'), linha('Acucar'), linha('Sal')],
+    })
+
+    expect(r.imported).toBe(3)
+    expect(r.rejected).toEqual([])
+
+    const catalogo = await c.produtos.listCatalog('emp-1', {
+      stock: 'todos',
+      offset: 0,
+      limite: 10,
+    })
+    /* Em sequencia, e nao em paralelo: em paralelo as tres leriam a mesma
+       contagem e receberiam o mesmo PROD-0001. */
+    expect(catalogo.produtos.map((p) => p.internalCode).sort()).toEqual([
+      'PROD-0001',
+      'PROD-0002',
+      'PROD-0003',
+    ])
+  })
+
+  it('uma linha ruim nao derruba as que vem depois dela', async () => {
+    const c = cenario()
+
+    /*
+     * A recusa e de NEGOCIO — codigo de barras que ja esta em outro produto.
+     * Forma invalida (preco abaixo do custo, descricao vazia) e recusada antes,
+     * no contrato, e nem chega aqui: quem valida forma e `contracts`, quem
+     * valida regra e `core`.
+     */
+    await registerProduct(c.deps, contexto(), linha('Ja cadastrado', { barcode: '7891234567895' }))
+
+    const r = await importProducts(c.deps, contexto(), {
+      products: [linha('Cafe'), linha('Repetido', { barcode: '7891234567895' }), linha('Sal')],
+    })
+
+    expect(r.imported).toBe(2)
+    expect(r.rejected).toHaveLength(1)
+    /* O indice e a descricao sao o que permite achar a linha na planilha. */
+    expect(r.rejected[0]).toMatchObject({ index: 1, description: 'Repetido' })
+
+    /* E a linha 2 entrou: a recusa nao interrompeu o lote. */
+    const catalogo = await c.produtos.listCatalog('emp-1', {
+      stock: 'todos',
+      offset: 0,
+      limite: 10,
+    })
+    expect(catalogo.produtos.map((p) => p.description)).toContain('Sal')
+  })
+
+  it('recusa codigo de barras repetido dentro do proprio lote', async () => {
+    const c = cenario()
+
+    const r = await importProducts(c.deps, contexto(), {
+      products: [
+        linha('Cafe', { barcode: '7891234567895' }),
+        linha('Cafe de novo', { barcode: '7891234567895' }),
+      ],
+    })
+
+    expect(r.imported).toBe(1)
+    expect(r.rejected[0]?.reason).toMatch(/codigo de barras/i)
+  })
+
+  it('saldo inicial vira MOVIMENTO, e nao coluna escrita direto', async () => {
+    const c = cenario()
+
+    await importProducts(c.deps, contexto(), { products: [linha('Cafe', { stock: 40 })] })
+
+    const [movimento] = c.inventario.movimentos
+
+    expect(movimento?.quantityDelta).toBe(40)
+    expect(movimento?.balanceAfter).toBe(40)
+    /* Sem o movimento, o saldo seria um numero que a trilha nao explica —
+       e a trilha existe justamente para explicar (RF-124). */
+    expect(movimento?.reason).toMatch(/inicial/i)
+  })
+
+  it('estoque zero nao gera movimento de zero unidade', async () => {
+    const c = cenario()
+
+    await importProducts(c.deps, contexto(), { products: [linha('Cafe', { stock: 0 })] })
+
+    /* Movimento que nao move nada e ruido na trilha, e o CHECK do schema o
+       recusa de qualquer jeito. */
+    expect(c.inventario.movimentos).toHaveLength(0)
+  })
+
+  it('quem nao pode escrever recebe UMA negativa, e nao 500 linhas recusadas', async () => {
+    const c = cenario()
+
+    await expect(
+      importProducts(c.deps, contexto({ role: 'accountant' as Role }), {
+        products: [linha('Cafe'), linha('Sal')],
+      }),
+    ).rejects.toSatisfy(isAppError)
+  })
+
+  it('erro desconhecido SOBE em vez de virar linha do relatorio', async () => {
+    const c = cenario()
+
+    const explode: ProductRepository = {
+      ...c.deps.products,
+      create: async () => {
+        throw new Error('banco fora do ar')
+      },
+    }
+
+    /*
+     * Se a queda do banco virasse "linha invalida", a tela diria "298
+     * importados, 2 ignorados" para um lote que na verdade parou no meio.
+     */
+    await expect(
+      importProducts({ ...c.deps, products: explode }, contexto(), {
+        products: [linha('Cafe')],
+      }),
+    ).rejects.toThrow('banco fora do ar')
   })
 })

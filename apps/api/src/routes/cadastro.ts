@@ -3,10 +3,15 @@ import {
   createCompanyInputSchema,
   createCustomerInputSchema,
   createProductInputSchema,
+  importCustomersInputSchema,
+  importProductsInputSchema,
 } from '@na-regua/contracts'
 import {
   AppError,
   catalogSummary,
+  importCustomers,
+  importProducts,
+  type ImportProductsDeps,
   listCatalog,
   registerCompany,
   type RegisterCompanyDeps,
@@ -30,7 +35,10 @@ import { validate } from '../plugins/validate.js'
  * caminho, com outras regras.
  */
 
-export type CadastroDeps = RegisterCompanyDeps & RegisterCustomerDeps & RegisterProductDeps
+export type CadastroDeps = ImportProductsDeps &
+  RegisterCompanyDeps &
+  RegisterCustomerDeps &
+  RegisterProductDeps
 
 export function registerCadastroRoutes(app: FastifyInstance, deps: CadastroDeps): void {
   /**
@@ -89,6 +97,26 @@ export function registerCadastroRoutes(app: FastifyInstance, deps: CadastroDeps)
   })
 
   /** Cadastrar produto — RF-017, RF-018, RF-019. */
+  /**
+   * Importacao de clientes em lote — NR-072, US-008.
+   *
+   * Mesma forma da importacao de produtos, e pelo mesmo motivo: as duas telas
+   * usam o mesmo dialogo, e formas diferentes fariam o relatorio significar uma
+   * coisa numa e outra na outra.
+   */
+  app.post(
+    '/clientes/importacao',
+    { config: { rateLimit: LIMITE_DE_ESCRITA } },
+    async (request, reply) => {
+      const ctx = requireContext(request)
+
+      const input = validate(importCustomersInputSchema, request.body)
+      const resultado = await importCustomers(deps, ctx, input)
+
+      return reply.code(200).send(resultado)
+    },
+  )
+
   app.post('/produtos', { config: { rateLimit: LIMITE_DE_ESCRITA } }, async (request, reply) => {
     const ctx = requireContext(request)
     const input = validate(createProductInputSchema, request.body)
@@ -141,6 +169,30 @@ export function registerCadastroRoutes(app: FastifyInstance, deps: CadastroDeps)
 
     return reply.code(200).send(pagina)
   })
+
+  /**
+   * Importacao de catalogo em lote — NR-072, US-008.
+   *
+   * PARCIAL de proposito: cada linha entra ou e recusada por conta propria, e a
+   * resposta diz quantas entraram e o motivo de cada recusa. Tudo-ou-nada faria
+   * uma planilha de 300 produtos com um preco errado nao importar nenhum.
+   *
+   * Por isso o status e 200 e nao 201: o lote pode ter entrado inteiro, pela
+   * metade ou nada, e um 201 diria "criei" para um pedido em que talvez nada
+   * tenha sido criado. Quem le a resposta decide o que dizer ao lojista.
+   */
+  app.post(
+    '/produtos/importacao',
+    { config: { rateLimit: LIMITE_DE_ESCRITA } },
+    async (request, reply) => {
+      const ctx = requireContext(request)
+
+      const input = validate(importProductsInputSchema, request.body)
+      const resultado = await importProducts(deps, ctx, input)
+
+      return reply.code(200).send(resultado)
+    },
+  )
 
   /** Os numeros do topo da tela, sobre o catalogo inteiro — NR-072. */
   app.get('/produtos/resumo', async (request, reply) => {

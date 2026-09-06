@@ -6,7 +6,12 @@ import type {
   NewProduct,
   ProductRepository,
 } from '@na-regua/core'
-import { InMemoryChartOfAccounts, TETO_DO_CATALOGO } from '@na-regua/core'
+import {
+  InMemoryAuditTrail,
+  InMemoryChartOfAccounts,
+  InMemoryInventory,
+  TETO_DO_CATALOGO,
+} from '@na-regua/core'
 import Fastify, { type FastifyInstance } from 'fastify'
 import { afterEach, describe, expect, it } from 'vitest'
 import { registerErrorHandler } from '../plugins/error-handler.js'
@@ -73,6 +78,8 @@ function cadastroEmMemoria() {
           ),
   }
 
+  const inventario = new InMemoryInventory()
+
   const products: ProductRepository = {
     /* O catalogo do balcao (RF-019). Imita o LIMITE e a ORDEM do repositorio de
        verdade: um falso que devolvesse tudo em qualquer ordem deixaria passar
@@ -137,6 +144,19 @@ function cadastroEmMemoria() {
         categoryId: p.categoryId ?? null,
       }
       produtos.push(pr)
+
+      /* Costura os dois falsos: em producao o cadastro e o estoque falam da
+         MESMA tabela `products`, e sem isto o saldo inicial da importacao
+         cairia em "produto nao encontrado" — erro do teste, nao do codigo. */
+      inventario.adicionarProduto(p.companyId, {
+        id: pr.id,
+        description: pr.description,
+        salePriceCents: pr.salePriceCents,
+        stockQuantity: 0,
+        location: null,
+        minStock: pr.minStock,
+      })
+
       return pr
     },
     /* Filtra por empresa de verdade: um falso que ignorasse isso faria o teste
@@ -151,7 +171,27 @@ function cadastroEmMemoria() {
      do 201 prova que a semeadura roda, em vez de so nao explodir. */
   const accounts = new InMemoryChartOfAccounts()
 
-  return { companies, customers, products, accounts, empresas, clientes, produtos }
+  /*
+   * O estoque entra porque a IMPORTACAO grava saldo inicial, e saldo so muda
+   * por movimento (RF-124). Em producao o cadastro e o estoque falam da mesma
+   * tabela `products`; aqui sao dois falsos, e o `create` acima ja registra
+   * cada produto novo no inventario para costura-los.
+   */
+  const uow = inventario
+  const audit = new InMemoryAuditTrail()
+
+  return {
+    companies,
+    customers,
+    products,
+    accounts,
+    uow,
+    audit,
+    empresas,
+    clientes,
+    produtos,
+    inventario,
+  }
 }
 
 async function buildApp(principal: AuthenticatedPrincipal | null = PRINCIPAL) {
@@ -584,5 +624,118 @@ describe('catalogo do backoffice — NR-072, US-008', () => {
        Entao os cinco estao esgotados, e o valor parado e zero. */
     expect(r.json().outOfStock).toBe(5)
     expect(r.json().stockValueCents).toBe(0)
+  })
+})
+
+describe('importacao de catalogo — NR-072, US-008', () => {
+  const linha = (description: string, over: Record<string, unknown> = {}) => ({
+    description,
+    unitOfMeasure: 'un',
+    salePriceCents: 1000,
+    costPriceCents: 400,
+    ...over,
+  })
+
+  it('importa o lote e devolve 200, e nao 201', async () => {
+    const c = await buildApp()
+    app = c.app
+
+    const r = await app.inject({
+      method: 'POST',
+      url: '/produtos/importacao',
+      payload: { products: [linha('Cafe'), linha('Acucar')] },
+    })
+
+    /*
+     * 200 e nao 201 porque o lote pode ter entrado inteiro, pela metade ou
+     * nada — e 201 diria "criei" para um pedido em que talvez nada tenha sido
+     * criado.
+     */
+    expect(r.statusCode).toBe(200)
+    expect(r.json()).toEqual({ imported: 2, rejected: [] })
+  })
+
+  it('recusa a linha ruim e importa o resto, dizendo qual falhou', async () => {
+    const c = await buildApp()
+    app = c.app
+
+    await app.inject({
+      method: 'POST',
+      url: '/produtos',
+      payload: linha('Ja existe', { barcode: '7891234567895' }),
+    })
+
+    const r = await app.inject({
+      method: 'POST',
+      url: '/produtos/importacao',
+      payload: {
+        products: [linha('Cafe'), linha('Repetido', { barcode: '7891234567895' })],
+      },
+    })
+
+    expect(r.json().imported).toBe(1)
+    expect(r.json().rejected).toHaveLength(1)
+    expect(r.json().rejected[0]).toMatchObject({ index: 1, description: 'Repetido' })
+  })
+
+  it('grava o saldo inicial como movimento de estoque', async () => {
+    const c = await buildApp()
+    app = c.app
+
+    await app.inject({
+      method: 'POST',
+      url: '/produtos/importacao',
+      payload: { products: [linha('Cafe', { stock: 40 })] },
+    })
+
+    /* Movimento, e nao coluna escrita direto: o saldo e consequencia da trilha
+       (RF-124). Antes disto, `stock` era aceito e descartado em silencio. */
+    expect(c.memoria.inventario.movimentos).toHaveLength(1)
+    expect(c.memoria.inventario.movimentos[0]).toMatchObject({
+      quantityDelta: 40,
+      balanceAfter: 40,
+    })
+  })
+
+  it('recusa forma invalida no contrato, antes de tocar em qualquer linha', async () => {
+    const c = await buildApp()
+    app = c.app
+
+    const r = await app.inject({
+      method: 'POST',
+      url: '/produtos/importacao',
+      /* Preco de venda abaixo do custo: quem recusa e o contrato, e a recusa
+         vale para o lote inteiro — forma errada nao e "linha ignorada". */
+      payload: { products: [linha('Prejuizo', { salePriceCents: 100, costPriceCents: 900 })] },
+    })
+
+    expect(r.statusCode).toBe(400)
+    expect(c.memoria.produtos).toHaveLength(0)
+  })
+
+  it('recusa lote acima do teto', async () => {
+    const c = await buildApp()
+    app = c.app
+
+    const r = await app.inject({
+      method: 'POST',
+      url: '/produtos/importacao',
+      payload: { products: Array.from({ length: 501 }, (_, i) => linha(`P${i}`)) },
+    })
+
+    expect(r.statusCode).toBe(400)
+  })
+
+  it('recusa lote vazio em vez de responder "importei zero"', async () => {
+    const c = await buildApp()
+    app = c.app
+
+    const r = await app.inject({
+      method: 'POST',
+      url: '/produtos/importacao',
+      payload: { products: [] },
+    })
+
+    expect(r.statusCode).toBe(400)
   })
 })

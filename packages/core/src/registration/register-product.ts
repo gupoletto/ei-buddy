@@ -3,11 +3,17 @@ import type {
   CatalogOutput,
   CatalogSummaryOutput,
   CreateProductInput,
+  ImportProductsInput,
+  ImportProductsOutput,
+  ImportRejection,
   ProductOutput,
 } from '@na-regua/contracts'
-import { AppError } from '../app-error.js'
+import { AppError, isAppError } from '../app-error.js'
 import { assertCanWrite } from '../authorization.js'
 import type { ExecutionContext } from '../context.js'
+import { adjustStock } from '../inventory/adjust-stock.js'
+import type { AuditTrail } from '../ports/audit-trail.js'
+import type { InventoryUnitOfWork } from '../ports/inventory-writers.js'
 import type { ProductRepository } from '../ports/registration-repositories.js'
 
 export type RegisterProductDeps = {
@@ -158,4 +164,78 @@ export async function catalogSummary(
   ctx: ExecutionContext,
 ): Promise<CatalogSummaryOutput> {
   return deps.products.catalogSummary(ctx.companyId)
+}
+
+export type ImportProductsDeps = RegisterProductDeps & {
+  /**
+   * O saldo inicial vira MOVIMENTO, e nao coluna escrita direto.
+   *
+   * O saldo e consequencia da trilha (RF-124). Um produto que nasce com 40
+   * unidades e nao tem movimento explicando de onde elas vieram e um saldo que
+   * a trilha nao fecha — e a trilha existe justamente para fechar.
+   */
+  readonly uow: InventoryUnitOfWork
+  readonly audit: AuditTrail
+}
+
+/**
+ * Importacao de catalogo em lote — NR-072, US-008.
+ *
+ * ## Parcial, e uma linha por vez
+ *
+ * Cada linha entra ou e recusada por conta propria, e o resultado diz quantas
+ * entraram e por que cada recusa aconteceu. Tudo-ou-nada faria uma planilha de
+ * 300 produtos com um preco errado nao importar nenhum, e o lojista teria de
+ * achar a linha, corrigir e mandar tudo de novo.
+ *
+ * ## Sequencial, e nao em paralelo
+ *
+ * `registerProduct` gera o codigo interno a partir da CONTAGEM de produtos da
+ * empresa. Em paralelo, dez linhas leriam a mesma contagem e receberiam o mesmo
+ * `PROD-0001` — nove falhariam no indice unico, e por um motivo que a mensagem
+ * de erro nao explicaria. Em sequencia, cada uma conta o que a anterior gravou.
+ *
+ * ## Erro conhecido e erro desconhecido nao sao a mesma coisa
+ *
+ * `AppError` e recusa de negocio — codigo de barras repetido, preco abaixo do
+ * custo — e vira uma linha do relatorio com a mensagem que o lojista precisa
+ * ler. Qualquer outra excecao SOBE: banco fora do ar no meio de uma importacao
+ * nao e "linha invalida", e transforma-la numa faria a tela dizer "298
+ * importados, 2 ignorados" para um lote que na verdade parou.
+ */
+export async function importProducts(
+  deps: ImportProductsDeps,
+  ctx: ExecutionContext,
+  input: ImportProductsInput,
+): Promise<ImportProductsOutput> {
+  /* Uma vez, no comeco: sem isto, quem nao pode escrever receberia 500 linhas
+     recusadas pelo mesmo motivo em vez de uma negativa clara. */
+  assertCanWrite(ctx)
+
+  const rejected: ImportRejection[] = []
+  let imported = 0
+
+  for (const [index, linha] of input.products.entries()) {
+    try {
+      const produto = await registerProduct(deps, ctx, linha)
+
+      /* Saldo inicial so quando ha saldo: movimento de zero unidade e ruido na
+         trilha, e o CHECK do schema o recusa de qualquer jeito. */
+      if (linha.stock > 0) {
+        await adjustStock(deps, ctx, {
+          productId: produto.id,
+          countedQuantity: linha.stock,
+          reason: 'Saldo inicial da importacao de planilha',
+        })
+      }
+
+      imported += 1
+    } catch (erro) {
+      if (!isAppError(erro)) throw erro
+
+      rejected.push({ index, description: linha.description, reason: erro.message })
+    }
+  }
+
+  return { imported, rejected }
 }

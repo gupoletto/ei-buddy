@@ -44,7 +44,15 @@ export const createProductInputSchema = z
     /* CST (2 digitos) no regime normal, CSOSN (3) no Simples. Qual vale sai do
        regime da empresa — ver `situacaoTributariaPadrao` em `domain`. */
     taxSituationCode: taxSituationCodeSchema.optional(),
-    stock: z.number().int('Estoque precisa ser inteiro.').default(0),
+    /**
+     * Saldo inicial. Vira um MOVIMENTO de abertura, e nao uma coluna escrita
+     * direto — o saldo e consequencia da trilha (RF-124), nunca o contrario.
+     *
+     * Ate a NR-023 ganhar implementacao no banco, este campo era aceito e
+     * DESCARTADO em silencio: o lojista informava 40 unidades e o produto
+     * nascia zerado, sem erro nenhum.
+     */
+    stock: z.number().int('Estoque precisa ser inteiro.').nonnegative().default(0),
     /** Abaixo disto a tela avisa que precisa repor. */
     minStock: z.number().int('Estoque minimo precisa ser inteiro.').nonnegative().default(0),
     categoryId: idSchema.optional(),
@@ -174,3 +182,50 @@ export const catalogSummaryOutputSchema = z.object({
 })
 
 export type CatalogSummaryOutput = z.infer<typeof catalogSummaryOutputSchema>
+
+/**
+ * Importacao de catalogo em lote — NR-072, US-008.
+ *
+ * ## Parcial de proposito
+ *
+ * Cada linha entra ou e recusada por conta propria. Tudo-ou-nada faria uma
+ * planilha de 300 produtos com um preco digitado errado nao importar nenhum —
+ * e o lojista teria de achar a linha, corrigir e mandar tudo de novo. A tela ja
+ * promete "importados / ignorados", com o motivo de cada recusa; a rota entrega
+ * exatamente isso.
+ *
+ * ## O teto
+ *
+ * `TETO_DA_IMPORTACAO` existe porque o lote roda numa requisicao so. Sem ele,
+ * uma planilha de cem mil linhas seguraria uma conexao ate estourar o tempo, e
+ * o lojista nao saberia se importou metade ou nada.
+ */
+export const TETO_DA_IMPORTACAO = 500
+
+export const importProductsInputSchema = z
+  .object({
+    products: z
+      .array(createProductInputSchema)
+      .min(1, 'Nenhuma linha valida para importar.')
+      .max(TETO_DA_IMPORTACAO, `A importacao aceita ate ${TETO_DA_IMPORTACAO} linhas por vez.`),
+  })
+  .strict()
+
+export type ImportProductsInput = z.infer<typeof importProductsInputSchema>
+
+export const importRejectionSchema = z.object({
+  /** Posicao na lista enviada, base zero — a tela soma o cabecalho de volta. */
+  index: z.number().int(),
+  /** O que estava na linha, para a pessoa achar na planilha dela. */
+  description: z.string(),
+  reason: z.string(),
+})
+
+export type ImportRejection = z.infer<typeof importRejectionSchema>
+
+export const importProductsOutputSchema = z.object({
+  imported: z.number().int(),
+  rejected: z.array(importRejectionSchema),
+})
+
+export type ImportProductsOutput = z.infer<typeof importProductsOutputSchema>

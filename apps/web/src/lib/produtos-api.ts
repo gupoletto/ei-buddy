@@ -19,6 +19,7 @@
  * vezes e registrar quem importou.
  */
 
+import { pedir } from './http'
 import { produtos } from './mock-data'
 import type { Produto } from './types'
 
@@ -213,12 +214,132 @@ export async function salvarProduto(
   return { ok: true, id: corpo.id! }
 }
 
-/** SUBSTITUIR POR: POST /produtos/importar */
+/** O que o servidor recusou, linha a linha. */
+export type LinhaRecusada = {
+  /** Posicao na lista enviada, base zero. */
+  index: number
+  description: string
+  reason: string
+}
+
+export type ResultadoDaImportacao = {
+  importados: number
+  recusadas: LinhaRecusada[]
+}
+
+/**
+ * Converte um numero digitado em planilha para centavos.
+ *
+ * Aceita "12,90", "12.90", "R$ 12,90" e "1.234,56" — sao todos formatos que
+ * saem de planilha em pt-BR. Devolve `null` quando nao da para ler, e nao zero:
+ * zero passaria como preco valido e o produto entraria custando nada.
+ */
+export function centavosDaPlanilha(texto: string | undefined): number | null {
+  const bruto = (texto ?? '').replace(/[^d,.-]/g, '').trim()
+  if (bruto === '') return null
+
+  /*
+   * A ULTIMA virgula ou ponto e o separador decimal; o resto e milhar. E o que
+   * distingue "1.234,56" de "1.234" — no primeiro o ponto separa milhar, no
+   * segundo tambem, e ler o ponto como decimal transformaria mil reais em um.
+   */
+  const ultimoSeparador = Math.max(bruto.lastIndexOf(','), bruto.lastIndexOf('.'))
+  const temDecimal = ultimoSeparador >= 0 && bruto.length - ultimoSeparador - 1 <= 2
+
+  const inteiro = temDecimal ? bruto.slice(0, ultimoSeparador) : bruto
+  const decimal = temDecimal ? bruto.slice(ultimoSeparador + 1) : ''
+
+  const numero = Number(`${inteiro.replace(/[.,]/g, '')}.${decimal.padEnd(2, '0') || '00'}`)
+
+  return Number.isFinite(numero) ? Math.round(numero * 100) : null
+}
+
+/** Quantidade inteira de planilha. `null` quando nao da para ler. */
+export function inteiroDaPlanilha(texto: string | undefined): number | null {
+  const bruto = (texto ?? '').replace(/[^d-]/g, '').trim()
+  if (bruto === '') return null
+  const n = Number(bruto)
+  return Number.isInteger(n) ? n : null
+}
+
+/**
+ * Importa o catalogo de verdade — NR-072, US-008.
+ *
+ * Ate agora esta funcao era `await delay(1200)`: a tela dizia "150 importados"
+ * e nao gravava nada. Agora ela manda o lote para `POST /produtos/importacao` e
+ * devolve o que o SERVIDOR aceitou — que e diferente do que o navegador achou
+ * que era valido, e a diferenca e justamente o que o lojista precisa ver.
+ *
+ * Preco ilegivel vira recusa AQUI, com a linha identificada, em vez de virar
+ * zero e passar. Um produto que entra custando nada e pior que um que nao
+ * entra: o primeiro so aparece no dia em que alguem vende no prejuizo.
+ */
 export async function confirmarImportacaoProdutos(
   registros: Record<string, string>[],
-): Promise<void> {
-  await delay(1200)
-  void registros
+): Promise<ResultadoDaImportacao> {
+  const recusadas: LinhaRecusada[] = []
+  const enviar: Record<string, unknown>[] = []
+  /* Mapeia a posicao no lote enviado de volta para a posicao original, para o
+     indice que o servidor devolver apontar para a linha certa da planilha. */
+  const origem: number[] = []
+
+  registros.forEach((r, index) => {
+    const venda = centavosDaPlanilha(r.precoVenda)
+    const custo = centavosDaPlanilha(r.precoCusto) ?? 0
+    const descricao = (r.descricao ?? '').trim()
+
+    if (descricao === '') {
+      recusadas.push({ index, description: descricao, reason: 'Descricao vazia.' })
+      return
+    }
+    if (venda === null) {
+      recusadas.push({ index, description: descricao, reason: 'Preco de venda ilegivel.' })
+      return
+    }
+
+    origem.push(index)
+    enviar.push({
+      description: descricao,
+      unitOfMeasure: 'un',
+      salePriceCents: venda,
+      costPriceCents: custo,
+      ...(r.ean?.trim() ? { barcode: r.ean.trim() } : {}),
+      ...(r.ncm?.trim() ? { ncm: r.ncm.trim() } : {}),
+      ...(inteiroDaPlanilha(r.estoque) !== null ? { stock: inteiroDaPlanilha(r.estoque) } : {}),
+    })
+  })
+
+  if (enviar.length === 0) return { importados: 0, recusadas }
+
+  const r = await pedir<{ imported: number; rejected: LinhaRecusada[] }>(
+    '/api/produtos/importacao',
+    { method: 'POST', body: JSON.stringify({ products: enviar }) },
+  )
+
+  if (!r.ok) {
+    /* O lote inteiro caiu. Dizer "0 importados" com o motivo e melhor que
+       lancar: a tela ja tem onde mostrar o relatorio, e a pessoa precisa saber
+       que nada entrou. */
+    return {
+      importados: 0,
+      recusadas: [
+        ...recusadas,
+        ...enviar.map((_, i) => ({
+          index: origem[i]!,
+          description: String(enviar[i]!.description),
+          reason: r.erro,
+        })),
+      ],
+    }
+  }
+
+  return {
+    importados: r.dados.imported,
+    recusadas: [
+      ...recusadas,
+      ...r.dados.rejected.map((rec) => ({ ...rec, index: origem[rec.index] ?? rec.index })),
+    ],
+  }
 }
 
 /* -------------------------------------------------------------------------- */
@@ -442,7 +563,18 @@ export async function importarXmlCompra(
 
 export type NivelEstoque = 'normal' | 'baixo' | 'esgotado'
 
-export function nivelEstoque(produto: Produto): NivelEstoque {
+/**
+ * Aceita QUALQUER coisa com saldo e minimo, e nao so `Produto`.
+ *
+ * O produto que vem da api nao tem `categoria` nem `fornecedor`, entao nao e
+ * um `Produto` — e a regra "zerado e esgotado, abaixo do minimo e baixo" e a
+ * mesma para os dois. Duplica-la faria a lista e o detalhe do produto
+ * discordarem sobre a mesma etiqueta.
+ */
+export function nivelEstoque(produto: {
+  readonly estoque: number
+  readonly estoqueMinimo: number
+}): NivelEstoque {
   if (produto.estoque <= 0) return 'esgotado'
   if (produto.estoque < produto.estoqueMinimo) return 'baixo'
   return 'normal'

@@ -8,6 +8,7 @@ import {
   type PlanilhaLida,
   type RelatorioImportacao,
 } from '@/lib/planilha'
+import type { ResultadoDaImportacao } from '@/lib/produtos-api'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/auth/Fields'
 import { IconClose, IconUpload } from '@/components/Icons'
@@ -30,8 +31,14 @@ type Props = {
   chavesExistentes: string[]
   /** Devolve o motivo quando a linha for invalida, ou null quando estiver ok. */
   validar: (valores: Record<string, string>) => string | null
-  /** SUBSTITUIR pela chamada real de importacao do modulo. */
-  onConfirmar: (registros: Record<string, string>[]) => Promise<void>
+  /**
+   * Importa de verdade e devolve o que o SERVIDOR aceitou.
+   *
+   * Devolvia `void`, e o relatorio era montado com o que o navegador tinha
+   * adivinhado na previa: a tela dizia "150 importados" mesmo quando o servidor
+   * recusava tudo. Quem manda no numero e quem gravou.
+   */
+  onConfirmar: (registros: Record<string, string>[]) => Promise<ResultadoDaImportacao>
   onClose: () => void
 }
 
@@ -155,11 +162,24 @@ export default function ImportarPlanilha({
 
   const obrigatoriosOk = campos.filter((c) => c.obrigatorio).every((c) => mapa[c.key])
 
-  function analisarLinhas(): { validos: Record<string, string>[]; erros: ErroImportacao[] } {
-    if (!planilha) return { validos: [], erros: [] }
+  /**
+   * `linhasDeOrigem[i]` e a linha da PLANILHA de onde saiu `validos[i]`.
+   *
+   * Sem isso o relatorio aponta para a linha errada assim que uma linha e
+   * barrada na previa: o servidor devolve um indice sobre a lista que ELE
+   * recebeu, e essa lista tem buracos em relacao a planilha. O lojista abriria
+   * o arquivo para corrigir um produto que estava certo.
+   */
+  function analisarLinhas(): {
+    validos: Record<string, string>[]
+    linhasDeOrigem: number[]
+    erros: ErroImportacao[]
+  } {
+    if (!planilha) return { validos: [], linhasDeOrigem: [], erros: [] }
 
     const erros: ErroImportacao[] = []
     const validos: Record<string, string>[] = []
+    const linhasDeOrigem: number[] = []
     const vistos = new Set(chavesExistentes)
 
     planilha.linhas.forEach((linha, i) => {
@@ -180,22 +200,46 @@ export default function ImportarPlanilha({
 
       if (chave) vistos.add(chave)
       validos.push(valores)
+      /* +2: a planilha e base 1 e a primeira linha e o cabecalho. */
+      linhasDeOrigem.push(i + 2)
     })
 
-    return { validos, erros }
+    return { validos, linhasDeOrigem, erros }
   }
 
   async function confirmar() {
     if (!planilha) return
 
     setImportando(true)
-    const { validos, erros } = analisarLinhas()
+    const { validos, linhasDeOrigem, erros } = analisarLinhas()
 
-    /* A validacao acima e adiantamento: o servidor precisa repetir, ja que
-       a base pode ter mudado entre a previa e a confirmacao. */
-    await onConfirmar(validos)
+    /*
+     * A analise acima e ADIANTAMENTO, nao decisao. O servidor valida de novo —
+     * a base pode ter mudado entre a previa e a confirmacao — e o que ele
+     * recusar entra no relatorio junto com o que o navegador ja tinha barrado.
+     *
+     * O numero de importados vem DELE. Antes vinha de `validos.length`, e por
+     * isso a tela dizia "150 importados" para uma importacao que nao gravava
+     * nada.
+     */
+    const r = await onConfirmar(validos)
 
-    setRelatorio({ importados: validos.length, ignorados: erros.length, erros })
+    /* O indice que o servidor devolve aponta para a lista que ELE recebeu; a
+       linha da planilha soma o cabecalho e as que nao foram enviadas. */
+    const recusadasDoServidor: ErroImportacao[] = r.recusadas.map((rec) => ({
+      linha: linhasDeOrigem[rec.index] ?? rec.index + 2,
+      nome: rec.description,
+      motivo: rec.reason,
+      tipo: 'invalido' as const,
+    }))
+
+    const todosOsErros = [...erros, ...recusadasDoServidor]
+
+    setRelatorio({
+      importados: r.importados,
+      ignorados: todosOsErros.length,
+      erros: todosOsErros,
+    })
     setImportando(false)
     setEtapa('relatorio')
   }
