@@ -155,6 +155,82 @@ export class InMemoryProductRepository implements ProductRepository {
       .map((p) => this.semTenant(p))
   }
 
+  /**
+   * O catalogo paginado, com o total que casa com o filtro.
+   *
+   * O falso corta a pagina DEPOIS de contar, como o SQL faz. Contar sobre a
+   * pagina daria `total` igual a `products.length` sempre — e a tela mostraria
+   * "24 de 24" para uma loja com 300 produtos, sem nunca oferecer a proxima
+   * pagina. Um falso que erra assim faz o teste concordar com o defeito.
+   */
+  async listCatalog(
+    companyId: CompanyId,
+    criterio: {
+      readonly termo?: string
+      readonly stock: 'todos' | 'baixo' | 'esgotado'
+      readonly offset: number
+      readonly limite: number
+    },
+  ): Promise<{ readonly produtos: readonly ProductOutput[]; readonly total: number }> {
+    const termo = criterio.termo?.trim().toLowerCase() ?? ''
+
+    const casam = [...this.registros.values()]
+      .filter((p) => p.companyId === companyId)
+      .filter(
+        (p) =>
+          termo === '' ||
+          p.description.toLowerCase().includes(termo) ||
+          p.internalCode.toLowerCase().includes(termo) ||
+          (p.barcode ?? '').includes(termo),
+      )
+      .filter((p) => {
+        if (criterio.stock === 'esgotado') return p.stock <= 0
+        if (criterio.stock === 'baixo') return p.stock > 0 && p.stock < p.minStock
+        return true
+      })
+      .sort((a, b) => a.description.localeCompare(b.description))
+
+    return {
+      total: casam.length,
+      produtos: casam
+        .slice(criterio.offset, criterio.offset + criterio.limite)
+        .map((p) => this.semTenant(p)),
+    }
+  }
+
+  async catalogSummary(companyId: CompanyId): Promise<{
+    readonly total: number
+    readonly belowMinimum: number
+    readonly outOfStock: number
+    readonly stockValueCents: number
+  }> {
+    const meus = [...this.registros.values()].filter((p) => p.companyId === companyId)
+
+    return {
+      total: meus.length,
+      /* Abaixo do minimo e ESGOTADO sao contagens diferentes e nao se somam:
+         um produto zerado tambem esta abaixo do minimo, e apresenta-los como
+         parcelas de um total faria a tela contar o mesmo produto duas vezes. */
+      belowMinimum: meus.filter((p) => p.stock < p.minStock).length,
+      outOfStock: meus.filter((p) => p.stock <= 0).length,
+      stockValueCents: meus.reduce((acc, p) => acc + p.stock * p.costPriceCents, 0),
+    }
+  }
+
+  /**
+   * Ajusta o saldo para os testes de catalogo.
+   *
+   * Existe porque `NewProduct` NAO tem `stock`, e isso e de proposito: o saldo
+   * so muda por movimento de estoque (NR-023). Sem este atalho, testar o filtro
+   * de "esgotados" exigiria montar a trilha de movimentos inteira dentro de um
+   * teste que nao e sobre ela. Como `semearPadrao` no plano de contas.
+   */
+  definirEstoque(id: string, quantidade: number): void {
+    const registro = this.registros.get(id)
+    if (registro === undefined) throw new Error(`produto ${id} nao existe no falso`)
+    this.registros.set(id, { ...registro, stock: quantidade })
+  }
+
   async countAll(companyId: CompanyId): Promise<number> {
     return [...this.registros.values()].filter((p) => p.companyId === companyId).length
   }

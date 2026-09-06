@@ -11,7 +11,13 @@ import { InMemoryChartOfAccounts } from '../accounting/fakes.js'
 import { PLANO_DE_CONTAS_PADRAO } from '../accounting/default-chart.js'
 import { registerCompany } from './register-company.js'
 import { assertIdentifiable, registerCustomer } from './register-customer.js'
-import { findProductByBarcode, generateInternalCode, registerProduct } from './register-product.js'
+import {
+  catalogSummary,
+  findProductByBarcode,
+  generateInternalCode,
+  listCatalog,
+  registerProduct,
+} from './register-product.js'
 
 const AGORA = new Date('2026-09-02T13:00:00.000Z')
 
@@ -381,5 +387,170 @@ describe('registerProduct — RF-017, RF-018', () => {
 
     expect(naPropria?.description).toBe('Cafe torrado 500g')
     expect(naOutra).toBeUndefined()
+  })
+})
+
+describe('catalogo do backoffice — NR-072, US-008', () => {
+  const base = {
+    unitOfMeasure: 'un' as const,
+    salePriceCents: 1000,
+    costPriceCents: 400,
+    stock: 0,
+    minStock: 5,
+  }
+
+  /** Cinco produtos, com saldos que cobrem os tres niveis de estoque. */
+  async function catalogo() {
+    const products = new InMemoryProductRepository()
+
+    const criados = []
+    for (const description of ['Cafe', 'Acucar', 'Biscoito', 'Detergente', 'Erva-mate']) {
+      criados.push(await registerProduct({ products }, contexto(), { ...base, description }))
+    }
+
+    /* Cafe esgotado, Acucar abaixo do minimo, o resto normal. */
+    products.definirEstoque(criados[0]!.id, 0)
+    products.definirEstoque(criados[1]!.id, 2)
+    products.definirEstoque(criados[2]!.id, 10)
+    products.definirEstoque(criados[3]!.id, 10)
+    products.definirEstoque(criados[4]!.id, 10)
+
+    return { products, criados }
+  }
+
+  const pedido = {
+    stock: 'todos' as const,
+    page: 1,
+    pageSize: 24,
+  }
+
+  it('devolve a pagina em ordem de descricao, com o total do catalogo', async () => {
+    const { products } = await catalogo()
+
+    const r = await listCatalog({ products }, contexto(), { ...pedido, pageSize: 2 })
+
+    expect(r.products.map((p) => p.description)).toEqual(['Acucar', 'Biscoito'])
+    /* CINCO, e nao dois: o total e o que faz a tela dizer "2 de 5". Se ele
+       viesse do tamanho da pagina, o lojista nunca saberia que ha mais. */
+    expect(r.total).toBe(5)
+    expect(r.page).toBe(1)
+  })
+
+  it('a segunda pagina continua de onde a primeira parou', async () => {
+    const { products } = await catalogo()
+
+    const r = await listCatalog({ products }, contexto(), { ...pedido, page: 2, pageSize: 2 })
+
+    expect(r.products.map((p) => p.description)).toEqual(['Cafe', 'Detergente'])
+    expect(r.total).toBe(5)
+  })
+
+  it('pagina alem do fim vem vazia, e o total continua dizendo quantos ha', async () => {
+    const { products } = await catalogo()
+
+    const r = await listCatalog({ products }, contexto(), { ...pedido, page: 99, pageSize: 2 })
+
+    expect(r.products).toEqual([])
+    expect(r.total).toBe(5)
+  })
+
+  it('busca por termo estreita o total, e nao so a pagina', async () => {
+    const { products } = await catalogo()
+
+    const r = await listCatalog({ products }, contexto(), { ...pedido, q: 'cafe' })
+
+    expect(r.products.map((p) => p.description)).toEqual(['Cafe'])
+    /* Se o total ignorasse o filtro, a tela mostraria "1 de 5" numa busca que
+       achou um so — e o lojista procuraria os outros quatro. */
+    expect(r.total).toBe(1)
+  })
+
+  it('filtra esgotados, e zerado NAO conta como estoque baixo', async () => {
+    const { products } = await catalogo()
+
+    const esgotados = await listCatalog({ products }, contexto(), { ...pedido, stock: 'esgotado' })
+    const baixos = await listCatalog({ products }, contexto(), { ...pedido, stock: 'baixo' })
+
+    expect(esgotados.products.map((p) => p.description)).toEqual(['Cafe'])
+    /*
+     * Os dois filtros sao EXCLUDENTES na lista, ainda que as contagens do
+     * resumo se sobreponham. Quem abre "estoque baixo" quer o que ainda da
+     * para vender e esta acabando; o zerado ja tem a propria aba, e aparecer
+     * nas duas faria o lojista contar o mesmo produto duas vezes ao repor.
+     */
+    expect(baixos.products.map((p) => p.description)).toEqual(['Acucar'])
+  })
+
+  it('nao enxerga o catalogo da outra loja', async () => {
+    const { products } = await catalogo()
+    await registerProduct({ products }, contexto({ companyId: 'outra' }), {
+      ...base,
+      description: 'Farinha',
+    })
+
+    const r = await listCatalog({ products }, contexto(), pedido)
+
+    expect(r.total).toBe(5)
+    expect(r.products.map((p) => p.description)).not.toContain('Farinha')
+  })
+})
+
+describe('resumo do catalogo — NR-072', () => {
+  it('conta o zerado nas DUAS contagens, porque ele esta nas duas', async () => {
+    const products = new InMemoryProductRepository()
+    const base = {
+      unitOfMeasure: 'un' as const,
+      salePriceCents: 1000,
+      costPriceCents: 400,
+      stock: 0,
+      minStock: 5,
+    }
+
+    const cafe = await registerProduct({ products }, contexto(), { ...base, description: 'Cafe' })
+    const acucar = await registerProduct({ products }, contexto(), {
+      ...base,
+      description: 'Acucar',
+    })
+    const cheio = await registerProduct({ products }, contexto(), { ...base, description: 'Sal' })
+
+    products.definirEstoque(cafe.id, 0)
+    products.definirEstoque(acucar.id, 2)
+    products.definirEstoque(cheio.id, 10)
+
+    const r = await catalogSummary({ products }, contexto())
+
+    expect(r.total).toBe(3)
+    /*
+     * 2 abaixo do minimo (Cafe e Acucar) e 1 esgotado (Cafe): o Cafe entra nos
+     * dois. Sao contagens que se SOBREPOEM, e nao parcelas de um total —
+     * somá-las daria 3 de 3 produtos precisando de reposicao, quando sao 2.
+     */
+    expect(r.belowMinimum).toBe(2)
+    expect(r.outOfStock).toBe(1)
+  })
+
+  it('valor em estoque e a preco de CUSTO, sobre o catalogo inteiro', async () => {
+    const products = new InMemoryProductRepository()
+
+    const p = await registerProduct({ products }, contexto(), {
+      description: 'Cafe',
+      unitOfMeasure: 'un' as const,
+      salePriceCents: 2000,
+      costPriceCents: 700,
+      stock: 0,
+      minStock: 0,
+    })
+    products.definirEstoque(p.id, 3)
+
+    const r = await catalogSummary({ products }, contexto())
+
+    /* 3 x 700, e nao 3 x 2000: o que o lojista tem parado e o que ele pagou. */
+    expect(r.stockValueCents).toBe(2100)
+  })
+
+  it('catalogo vazio devolve zeros, e nao erro', async () => {
+    const r = await catalogSummary({ products: new InMemoryProductRepository() }, contexto())
+
+    expect(r).toEqual({ total: 0, belowMinimum: 0, outOfStock: 0, stockValueCents: 0 })
   })
 })

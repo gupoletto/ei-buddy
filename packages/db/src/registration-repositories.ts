@@ -265,6 +265,99 @@ export function createProductRepository(sql: Sql): ProductRepository {
       return linhas.map(paraProduto)
     },
 
+    /**
+     * O catalogo do backoffice — NR-072.
+     *
+     * ## A pagina e o total saem da MESMA varredura
+     *
+     * `count(*) OVER ()` conta as linhas que casaram com o `WHERE` ANTES do
+     * `LIMIT`, e vem repetido em toda linha da pagina. E o que faz a tela dizer
+     * "24 de 300". Um `SELECT count(*)` separado varreria a tabela de novo, e
+     * entre as duas leituras um cadastro novo faria a conta deixar de fechar.
+     *
+     * A pagina vazia (busca sem resultado, ou pagina alem do fim) devolve zero
+     * linhas e, com elas, nenhum total — por isso `total` cai para 0 aqui, que
+     * e a resposta certa nos dois casos.
+     *
+     * ## O filtro de estoque e do BANCO
+     *
+     * "Esgotados" calculado sobre a pagina mostraria os esgotados DAQUELES 24,
+     * e nao os da loja. O lojista abre esse filtro justamente para achar o que
+     * nao esta na frente dele.
+     */
+    listCatalog: async (companyId, criterio) => {
+      const linhas = await withTenant(
+        sql,
+        companyId,
+        (tx) => tx<(LinhaProduto & { total_geral: string })[]>`
+          SELECT *, count(*) OVER () AS total_geral FROM products
+          WHERE deleted_at IS NULL
+          ${
+            criterio.termo === undefined
+              ? tx``
+              : tx`AND (description ILIKE ${'%' + criterio.termo + '%'}
+                     OR internal_code ILIKE ${'%' + criterio.termo + '%'}
+                     OR barcode = ${criterio.termo})`
+          }
+          ${
+            criterio.stock === 'esgotado'
+              ? tx`AND stock_quantity <= 0`
+              : criterio.stock === 'baixo'
+                ? tx`AND stock_quantity > 0 AND stock_quantity < min_stock`
+                : tx``
+          }
+          ORDER BY description, id
+          LIMIT ${criterio.limite} OFFSET ${criterio.offset}
+        `,
+      )
+
+      return {
+        produtos: linhas.map(paraProduto),
+        total: numero(linhas[0]?.total_geral ?? 0),
+      }
+    },
+
+    /**
+     * Os numeros do topo, sobre o catalogo inteiro — NR-072.
+     *
+     * Uma consulta so com quatro agregacoes, e nao quatro consultas. Alem de
+     * varrer a tabela uma vez, garante que os quatro numeros descrevem o MESMO
+     * instante: em quatro leituras, um cadastro no meio faria "produtos no
+     * catalogo" e "valor em estoque" discordarem.
+     *
+     * `belowMinimum` inclui os zerados de proposito — quem esta em zero esta
+     * abaixo do minimo. Sao duas contagens que se sobrepoem, e nao parcelas de
+     * um total; a tela nao pode soma-las.
+     */
+    catalogSummary: async (companyId) => {
+      const [linha] = await withTenant(
+        sql,
+        companyId,
+        (tx) => tx<
+          {
+            total: string
+            below_minimum: string
+            out_of_stock: string
+            stock_value_cents: string
+          }[]
+        >`
+          SELECT count(*)                                              AS total,
+                 count(*) FILTER (WHERE stock_quantity < min_stock)    AS below_minimum,
+                 count(*) FILTER (WHERE stock_quantity <= 0)           AS out_of_stock,
+                 COALESCE(SUM(stock_quantity * cost_price_cents), 0)   AS stock_value_cents
+          FROM products
+          WHERE deleted_at IS NULL
+        `,
+      )
+
+      return {
+        total: numero(linha?.total ?? 0),
+        belowMinimum: numero(linha?.below_minimum ?? 0),
+        outOfStock: numero(linha?.out_of_stock ?? 0),
+        stockValueCents: numero(linha?.stock_value_cents ?? 0),
+      }
+    },
+
     countAll: async (companyId) => {
       const [linha] = await withTenant(
         sql,

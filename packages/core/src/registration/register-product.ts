@@ -1,4 +1,10 @@
-import type { CreateProductInput, ProductOutput } from '@na-regua/contracts'
+import type {
+  CatalogInput,
+  CatalogOutput,
+  CatalogSummaryOutput,
+  CreateProductInput,
+  ProductOutput,
+} from '@na-regua/contracts'
 import { AppError } from '../app-error.js'
 import { assertCanWrite } from '../authorization.js'
 import type { ExecutionContext } from '../context.js'
@@ -119,4 +125,37 @@ export async function searchProducts(
       : { termo: input.termo.trim() }),
     limite: Math.max(1, limite),
   })
+}
+
+/**
+ * O catalogo do backoffice — NR-072, US-008.
+ *
+ * Leitura, sem `assertCanWrite`: `accountant` precisa ver o catalogo para
+ * conferir custo, e exigir papel de escrita o deixaria de fora.
+ *
+ * `core` nao filtra nem ordena nada aqui. Nao e preguica: filtrar em memoria
+ * exigiria trazer o catalogo inteiro para devolver 24 linhas, e o total — que
+ * e o que faz a tela dizer "23 de 300" — nao existe sem contar no banco.
+ */
+export async function listCatalog(
+  deps: SearchProductsDeps,
+  ctx: ExecutionContext,
+  input: CatalogInput,
+): Promise<CatalogOutput> {
+  const { produtos, total } = await deps.products.listCatalog(ctx.companyId, {
+    ...(input.q === undefined || input.q === '' ? {} : { termo: input.q }),
+    stock: input.stock,
+    offset: (input.page - 1) * input.pageSize,
+    limite: input.pageSize,
+  })
+
+  return { products: [...produtos], total, page: input.page, pageSize: input.pageSize }
+}
+
+/** Os numeros do topo da tela — sobre o catalogo inteiro, nao sobre a pagina. */
+export async function catalogSummary(
+  deps: SearchProductsDeps,
+  ctx: ExecutionContext,
+): Promise<CatalogSummaryOutput> {
+  return deps.products.catalogSummary(ctx.companyId)
 }
