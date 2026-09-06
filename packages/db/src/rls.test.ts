@@ -100,6 +100,27 @@ describe('RLS por linha — RF-121, RF-122', () => {
     expect(after[0]?.company_id).toBe(companyA)
   })
 
+  it('nao cria subscription_asaas ate o billing gravar a assinatura na conta-pai', async () => {
+    const rows = await admin<{ n: number }[]>`SELECT count(*)::int AS n FROM subscription_asaas`
+    expect(rows[0]?.n).toBe(0)
+  })
+
+  it('audit_logs rejeita UPDATE do papel da aplicacao — RF-124', async () => {
+    const logId = randomUUID()
+    await admin`
+      INSERT INTO audit_logs (id, company_id, channel, entity_type, entity_id, action)
+      VALUES (${logId}, ${companyA}, 'app', 'customers', ${randomUUID()}, 'created')
+    `
+
+    await expect(
+      withTenant(
+        app,
+        companyA,
+        (tx) => tx`UPDATE audit_logs SET action = 'updated' WHERE id = ${logId}`,
+      ),
+    ).rejects.toThrow(/permission denied/)
+  })
+
   it('produto nao mistura NCM com codigo de servico nacional', async () => {
     await expect(
       admin`

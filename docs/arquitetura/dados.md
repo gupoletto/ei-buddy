@@ -3,7 +3,8 @@
 Modelo de dados, isolamento multi-tenant, migrations e auditoria.
 
 Implementação em [`packages/db`](../../packages/db/README.md). Este documento
-define as **regras**; o pacote as materializa em schema Drizzle.
+define as **regras**; o catálogo físico está em
+[`esquema-postgresql.md`](esquema-postgresql.md).
 
 ---
 
@@ -61,37 +62,17 @@ E um teste automatizado, rodando na CI, que tenta ler dados de outro
 
 ## Modelo de dados
 
-Visão lógica do recorte A–J. O schema em [`packages/db`](../../packages/db)
-materializa o núcleo abaixo; o restante entra quando o módulo existir.
+Visão lógica do recorte A–J. Catálogo físico (colunas, CHECKs, índices, RLS):
+[`esquema-postgresql.md`](esquema-postgresql.md). Implementação em
+[`packages/db`](../../packages/db).
 
 Um usuário pertence a **uma** empresa ([ADR-0004](../decisoes/adr/0004-usuario-uma-empresa.md)):
 sem `company_users`. `users.company_id` fica nulo só entre o cadastro da conta
 e `/app/empresa` (jornada A); depois é 1:1. Staff futuro = outro `users` com o
 mesmo `company_id`.
 
-O que o Postgres **neste recorte** materializa (cadastro, venda, nota):
-
-```mermaid
-erDiagram
-    COMPANIES ||--o{ USERS : "company_id"
-    COMPANIES ||--o| COMPANY_FOCUS : "se emitir"
-    COMPANIES ||--o| COMPANY_ASAAS : "se KYC"
-    COMPANIES ||--o{ CUSTOMERS : "tem"
-    COMPANIES ||--o{ PRODUCTS : "tem"
-    COMPANIES ||--o{ SALES : "tem"
-    CUSTOMERS ||--o| CUSTOMER_ADDRESSES : "se tomador"
-    CUSTOMERS ||--o| CUSTOMER_ASAAS : "se cobrado"
-    CUSTOMERS ||--o{ SALES : "compra em"
-    SALES ||--|{ SALE_ITEMS : "contem"
-    SALES ||--|{ PAYMENTS : "quitada por"
-    SALES ||--o| INVOICES : "espelho Focus"
-    SALES ||--o{ INVENTORY_MOVEMENTS : "movimenta"
-    PRODUCTS ||--o{ SALE_ITEMS : "vendido em"
-    PRODUCTS ||--o{ INVENTORY_MOVEMENTS : "movimentado por"
-    PAYMENTS ||--o| PAYMENT_ASAAS : "se online"
-```
-
-Visão lógica A–J (inclui o que ainda não nasceu no banco):
+Visão lógica A–J (o Postgres já materializa estas tabelas, mais os satélites
+Focus/Asaas):
 
 ```mermaid
 erDiagram
@@ -130,24 +111,22 @@ erDiagram
 
 ### Agrupamento por módulo dono
 
-30 tabelas na visão lógica A–J. O Postgres **neste recorte** materializa o
-núcleo de cadastro, venda e nota (abaixo). CRM, assistente, assinatura e
-financeiro completo entram quando o módulo existir — tabela vazia não nasce
-antes.
+34 tabelas no Postgres deste recorte, incluindo satélites Focus/Asaas. Colunas
+e restrições: [`esquema-postgresql.md`](esquema-postgresql.md).
 
 Integrações (Focus, Asaas) são **satélites 1:0..1**, não colunas em
 `companies` / `payments`.
 
-| Grupo                  | Tabelas                                                                                    | Módulo dono       |
-| ---------------------- | ------------------------------------------------------------------------------------------ | ----------------- |
-| Empresa e acesso       | `companies`, `users` (`company_id` no owner/staff), `company_focus`, `company_asaas`       | `core` + `fiscal` |
+| Grupo                  | Tabelas                                                                                                  | Módulo dono       |
+| ---------------------- | -------------------------------------------------------------------------------------------------------- | ----------------- |
+| Empresa e acesso       | `companies`, `users` (`company_id` no owner/staff), `company_focus`, `company_asaas`                     | `core` + `fiscal` |
 | Cadastros e estoque    | `customers`, `customer_asaas`, `customer_addresses`, `products` (saldo na coluna), `inventory_movements` | `core`            |
-| Venda e nota           | `sales`, `sale_items`, `payments`, `payment_asaas`, `invoices` (`kind` `nfce` \| `nfse`)   | `core` + `fiscal` |
-| Financeiro             | `receivables`, `payables`, `settlements`, `ledger_accounts`                                | `core`            |
-| Agenda / CRM / suporte | `appointments`, `crm_cards`, `support_tickets`, `ticket_messages`                          | `core`            |
-| Assistente             | `conversations`, `messages`, `confirmations`                                               | `agent`           |
-| Assinatura             | `subscriptions`, `subscription_charges`, `coupons`                                         | `billing`         |
-| Plataforma             | `audit_logs`, `idempotency_keys`, `attachments`, `outbox`, `webhook_events`                | `core`            |
+| Venda e nota           | `sales`, `sale_items`, `payments`, `payment_asaas`, `invoices` (`kind` `nfce` \| `nfse`)                 | `core` + `fiscal` |
+| Financeiro             | `receivables`, `payables`, `settlements`, `ledger_accounts`                                              | `core`            |
+| Agenda / CRM / suporte | `appointments`, `crm_cards`, `support_tickets`, `ticket_messages`                                        | `core`            |
+| Assistente             | `conversations`, `messages`, `confirmations`                                                             | `agent`           |
+| Assinatura             | `subscriptions`, `subscription_asaas`, `subscription_charges`, `coupons`                                 | `billing`         |
+| Plataforma             | `audit_logs`, `idempotency_keys`, `attachments`, `outbox`, `webhook_events`                              | `core`            |
 
 **Fundido de propósito (não criar tabela):** `categories` e `suppliers` → texto em
 `products` / `payables`; `crm_comments` → `crm_cards.comments` jsonb;
@@ -170,10 +149,11 @@ TX), telefone de WhatsApp separado, endereço em jsonb, coluna derivada
 
 ### Catálogo de colunas (cadastro e fiscal)
 
-Só o que o lojista informa, o que mandamos à Focus/Asaas/CEP/CNPJ ou o que
-gravamos da resposta. Schema Drizzle + SQL em [`packages/db`](../../packages/db).
-Além das colunas abaixo, valem as [convenções](#convenções-de-schema)
-(`id`, `company_id` nas tabelas de negócio, `created_at` / `updated_at`).
+Origem de cada campo (lojista, Focus, Asaas, CEP) — não o tipo SQL. Tipos,
+CHECKs e índices: [`esquema-postgresql.md`](esquema-postgresql.md). Schema
+Drizzle + SQL em [`packages/db`](../../packages/db). Além das colunas abaixo,
+valem as [convenções](#convenções-de-schema) (`id`, `company_id` nas tabelas de
+negócio, `created_at` / `updated_at`).
 
 Elegibilidade de emissão **não** é coluna: `isEligibleForFiscalEmission` em
 `packages/domain` ([DEC-017](../decisoes/README.md#dec-017), RF-146). ERP
@@ -216,20 +196,20 @@ não tem satélite — evita dez nulos em toda empresa.
 Linha **só** quando o lojista inicia o KYC (subconta não-BaaS). Sem KYC, sem
 satélite.
 
-| Coluna                                                                 | Origem                                      |
-| ---------------------------------------------------------------------- | ------------------------------------------- |
-| `onboarding_status`, `asaas_account_id`, `wallet_id`                   | `POST /v3/accounts` / `GET /v3/myAccount/status` |
-| `api_key_secret_ref`, `webhook_auth_secret_ref`                        | cofre — nunca em claro                      |
-| `platform_customer_id`                                                 | `cus_` na conta-pai (SaaS)                  |
-| `estimated_monthly_income_cents`                                       | `incomeValue` na criação da subconta        |
+| Coluna                                               | Origem                                           |
+| ---------------------------------------------------- | ------------------------------------------------ |
+| `onboarding_status`, `asaas_account_id`, `wallet_id` | `POST /v3/accounts` / `GET /v3/myAccount/status` |
+| `api_key_secret_ref`, `webhook_auth_secret_ref`      | cofre — nunca em claro                           |
+| `platform_customer_id`                               | `cus_` na conta-pai (SaaS)                       |
+| `estimated_monthly_income_cents`                     | `incomeValue` na criação da subconta             |
 
 #### `customer_asaas`
 
 Id do cliente na **subconta**. Linha só quando a cobrança precisa de `customer`.
 
-| Coluna              | Origem                    |
-| ------------------- | ------------------------- |
-| `asaas_customer_id` | `POST /v3/customers`      |
+| Coluna              | Origem               |
+| ------------------- | -------------------- |
+| `asaas_customer_id` | `POST /v3/customers` |
 
 #### `products`
 
@@ -424,6 +404,7 @@ Backup não testado não é backup. O teste mensal é requisito, não boa práti
 
 ## Documentos relacionados
 
+- [Esquema PostgreSQL](esquema-postgresql.md) — catálogo físico das 34 tabelas
 - [`packages/db`](../../packages/db/README.md) — implementação do schema
 - [Princípios](principios.md) — a regra de dependência que `db` respeita
 - [Segurança](seguranca.md) — como o isolamento se conecta à autorização

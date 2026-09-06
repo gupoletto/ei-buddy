@@ -1,7 +1,9 @@
--- Schema enxuto: so o que o lojista informa, o que vai para Focus/Asaas/CEP
--- e o que volta dessas APIs. Satelites evitam coluna nula em toda empresa.
+-- Schema do recorte A–J. So o que o lojista informa, o que vai para
+-- Focus/Asaas/CEP e o que volta dessas APIs. Satelites (Focus, Asaas)
+-- evitam coluna nula em toda empresa. Sem PagMaxx.
 -- RLS com FORCE: o dono da tabela tambem obedece. Superuser continua bypass
 -- — a aplicacao usa naregua_app (NOSUPERUSER).
+-- Split (DEC-018) nao tem tabela: wallet_id ja esta em company_asaas.
 
 CREATE TABLE companies (
   id uuid PRIMARY KEY,
@@ -78,7 +80,8 @@ CREATE TABLE company_asaas (
   updated_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT company_asaas_onboarding_status_check CHECK (
     onboarding_status IN ('not_started', 'pending', 'approved', 'rejected')
-  )
+  ),
+  CONSTRAINT company_asaas_account_id_unique UNIQUE (asaas_account_id)
 );
 
 CREATE TABLE customers (
@@ -91,6 +94,7 @@ CREATE TABLE customers (
   notes text,
   wallet_limit_cents bigint NOT NULL DEFAULT 0,
   wallet_balance_cents bigint NOT NULL DEFAULT 0,
+  collection_consent_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
@@ -105,7 +109,8 @@ CREATE INDEX customers_company_phone_idx ON customers (company_id, phone)
 CREATE TABLE customer_asaas (
   customer_id uuid PRIMARY KEY REFERENCES customers (id) ON DELETE CASCADE,
   company_id uuid NOT NULL REFERENCES companies (id),
-  asaas_customer_id text NOT NULL
+  asaas_customer_id text NOT NULL,
+  CONSTRAINT customer_asaas_company_customer_unique UNIQUE (company_id, asaas_customer_id)
 );
 
 CREATE INDEX customer_asaas_company_idx ON customer_asaas (company_id);
@@ -235,7 +240,12 @@ CREATE TABLE payment_asaas (
   identification_field text,
   due_date date,
   card_token_ref text,
-  CONSTRAINT payment_asaas_event_id_unique UNIQUE (provider_event_id)
+  CONSTRAINT payment_asaas_event_id_unique UNIQUE (provider_event_id),
+  CONSTRAINT payment_asaas_provider_payment_id_unique UNIQUE (provider_payment_id),
+  CONSTRAINT payment_asaas_billing_type_check CHECK (
+    billing_type IS NULL
+    OR billing_type IN ('PIX', 'BOLETO', 'CREDIT_CARD', 'UNDEFINED')
+  )
 );
 
 CREATE INDEX payment_asaas_company_idx ON payment_asaas (company_id);
@@ -266,6 +276,307 @@ CREATE TABLE invoices (
 );
 
 CREATE INDEX invoices_company_sale_idx ON invoices (company_id, sale_id);
+
+-- D — financeiro. overdue e regra em domain (RF-056), nao coluna.
+-- Conta bancaria da baixa (RF-059) fica de fora: DEC-005.
+CREATE TABLE ledger_accounts (
+  id uuid PRIMARY KEY,
+  company_id uuid NOT NULL REFERENCES companies (id),
+  code text NOT NULL,
+  name text NOT NULL,
+  kind text NOT NULL,
+  is_system boolean NOT NULL DEFAULT false,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT ledger_accounts_kind_check CHECK (
+    kind IN ('revenue', 'deduction', 'cost', 'expense', 'asset', 'liability')
+  ),
+  CONSTRAINT ledger_accounts_company_code_unique UNIQUE (company_id, code)
+);
+
+CREATE TABLE receivables (
+  id uuid PRIMARY KEY,
+  company_id uuid NOT NULL REFERENCES companies (id),
+  sale_id uuid REFERENCES sales (id),
+  payment_id uuid REFERENCES payments (id),
+  customer_id uuid REFERENCES customers (id),
+  ledger_account_id uuid REFERENCES ledger_accounts (id),
+  origin text NOT NULL,
+  amount_cents bigint NOT NULL,
+  outstanding_cents bigint NOT NULL,
+  due_date date NOT NULL,
+  collection_url text,
+  last_collection_sent_at timestamptz,
+  last_collection_channel text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT receivables_origin_check CHECK (origin IN ('sale', 'manual'))
+);
+
+CREATE INDEX receivables_company_due_idx ON receivables (company_id, due_date)
+  WHERE outstanding_cents > 0;
+
+CREATE TABLE payables (
+  id uuid PRIMARY KEY,
+  company_id uuid NOT NULL REFERENCES companies (id),
+  ledger_account_id uuid REFERENCES ledger_accounts (id),
+  template_id uuid REFERENCES payables (id),
+  supplier text,
+  description text NOT NULL,
+  amount_cents bigint NOT NULL,
+  outstanding_cents bigint NOT NULL,
+  due_date date NOT NULL,
+  is_template boolean NOT NULL DEFAULT false,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX payables_company_due_idx ON payables (company_id, due_date)
+  WHERE outstanding_cents > 0 AND is_template = false;
+
+CREATE TABLE settlements (
+  id uuid PRIMARY KEY,
+  company_id uuid NOT NULL REFERENCES companies (id),
+  receivable_id uuid REFERENCES receivables (id),
+  payable_id uuid REFERENCES payables (id),
+  amount_cents bigint NOT NULL,
+  settled_at timestamptz NOT NULL,
+  reversed_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT settlements_one_target_check CHECK (
+    (receivable_id IS NOT NULL AND payable_id IS NULL)
+    OR (receivable_id IS NULL AND payable_id IS NOT NULL)
+  )
+);
+
+CREATE INDEX settlements_company_created_idx ON settlements (company_id, created_at DESC);
+
+-- E — agenda e CRM
+CREATE TABLE appointments (
+  id uuid PRIMARY KEY,
+  company_id uuid NOT NULL REFERENCES companies (id),
+  customer_id uuid REFERENCES customers (id),
+  title text NOT NULL,
+  starts_at timestamptz NOT NULL,
+  reminder_minutes integer,
+  cancelled_at timestamptz,
+  reminder_sent_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX appointments_company_starts_idx ON appointments (company_id, starts_at);
+
+CREATE TABLE crm_cards (
+  id uuid PRIMARY KEY,
+  company_id uuid NOT NULL REFERENCES companies (id),
+  customer_id uuid REFERENCES customers (id),
+  title text NOT NULL,
+  board_column text NOT NULL,
+  comments jsonb NOT NULL DEFAULT '[]',
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT crm_cards_column_check CHECK (board_column IN ('afazer', 'andamento', 'concluido'))
+);
+
+CREATE INDEX crm_cards_company_column_idx ON crm_cards (company_id, board_column);
+
+-- I — suporte
+CREATE TABLE support_tickets (
+  id uuid PRIMARY KEY,
+  company_id uuid NOT NULL REFERENCES companies (id),
+  protocol text NOT NULL,
+  category text NOT NULL,
+  subject text NOT NULL,
+  status text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT support_tickets_status_check CHECK (status IN ('open', 'waiting', 'closed')),
+  CONSTRAINT support_tickets_company_protocol_unique UNIQUE (company_id, protocol)
+);
+
+CREATE TABLE ticket_messages (
+  id uuid PRIMARY KEY,
+  company_id uuid NOT NULL REFERENCES companies (id),
+  ticket_id uuid NOT NULL REFERENCES support_tickets (id),
+  author_role text NOT NULL,
+  body text NOT NULL,
+  attachment_id uuid,
+  read_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT ticket_messages_author_check CHECK (author_role IN ('owner', 'staff', 'platform_admin'))
+);
+
+CREATE INDEX ticket_messages_company_ticket_idx ON ticket_messages (company_id, ticket_id);
+
+-- J — assistente
+CREATE TABLE conversations (
+  id uuid PRIMARY KEY,
+  company_id uuid NOT NULL REFERENCES companies (id),
+  channel text NOT NULL,
+  peer text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT conversations_channel_check CHECK (channel IN ('whatsapp', 'web', 'app'))
+);
+
+CREATE INDEX conversations_company_created_idx ON conversations (company_id, created_at DESC);
+
+CREATE TABLE messages (
+  id uuid PRIMARY KEY,
+  company_id uuid NOT NULL REFERENCES companies (id),
+  conversation_id uuid NOT NULL REFERENCES conversations (id),
+  role text NOT NULL,
+  body text NOT NULL,
+  tool_calls jsonb,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT messages_role_check CHECK (role IN ('user', 'assistant', 'system'))
+);
+
+CREATE INDEX messages_company_conversation_idx ON messages (company_id, conversation_id);
+
+CREATE TABLE confirmations (
+  id uuid PRIMARY KEY,
+  company_id uuid NOT NULL REFERENCES companies (id),
+  conversation_id uuid NOT NULL REFERENCES conversations (id),
+  action text NOT NULL,
+  payload jsonb,
+  expires_at timestamptz NOT NULL,
+  resolved_at timestamptz,
+  decision text,
+  CONSTRAINT confirmations_decision_check CHECK (
+    decision IS NULL OR decision IN ('accepted', 'rejected', 'expired')
+  )
+);
+
+CREATE INDEX confirmations_company_expires_idx ON confirmations (company_id, expires_at);
+
+-- H — assinatura SaaS (conta-pai Asaas). Cupom e da plataforma, sem tenant.
+CREATE TABLE coupons (
+  id uuid PRIMARY KEY,
+  code text NOT NULL,
+  kind text NOT NULL,
+  percent numeric(7, 4),
+  amount_cents bigint,
+  expires_at timestamptz,
+  max_redemptions integer,
+  redeemed_count integer NOT NULL DEFAULT 0,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT coupons_code_unique UNIQUE (code),
+  CONSTRAINT coupons_kind_check CHECK (kind IN ('percent', 'amount')),
+  CONSTRAINT coupons_value_check CHECK (
+    (kind = 'percent' AND percent IS NOT NULL AND amount_cents IS NULL)
+    OR (kind = 'amount' AND amount_cents IS NOT NULL AND percent IS NULL)
+  )
+);
+
+CREATE TABLE subscriptions (
+  id uuid PRIMARY KEY,
+  company_id uuid NOT NULL REFERENCES companies (id),
+  plan_code text NOT NULL,
+  status text NOT NULL,
+  trial_ends_at timestamptz,
+  current_period_ends_at timestamptz,
+  coupon_id uuid REFERENCES coupons (id),
+  restricted_at timestamptz,
+  cancelled_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT subscriptions_company_unique UNIQUE (company_id),
+  CONSTRAINT subscriptions_status_check CHECK (
+    status IN ('trial', 'active', 'overdue', 'restricted', 'cancelled')
+  )
+);
+
+-- Linha so quando billing cria POST /v3/subscriptions na conta-pai.
+CREATE TABLE subscription_asaas (
+  subscription_id uuid PRIMARY KEY REFERENCES subscriptions (id),
+  company_id uuid NOT NULL REFERENCES companies (id),
+  provider_subscription_id text,
+  provider_status text,
+  billing_type text,
+  next_due_date date,
+  provider_event_id text,
+  CONSTRAINT subscription_asaas_provider_id_unique UNIQUE (provider_subscription_id),
+  CONSTRAINT subscription_asaas_billing_type_check CHECK (
+    billing_type IS NULL OR billing_type IN ('PIX', 'BOLETO', 'CREDIT_CARD')
+  )
+);
+
+CREATE TABLE subscription_charges (
+  id uuid PRIMARY KEY,
+  company_id uuid NOT NULL REFERENCES companies (id),
+  subscription_id uuid NOT NULL REFERENCES subscriptions (id),
+  amount_cents bigint NOT NULL,
+  due_date date NOT NULL,
+  status text NOT NULL,
+  provider_payment_id text,
+  paid_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT subscription_charges_status_check CHECK (
+    status IN ('pending', 'paid', 'failed', 'refunded')
+  )
+);
+
+CREATE INDEX subscription_charges_company_due_idx ON subscription_charges (company_id, due_date);
+
+-- Plataforma
+CREATE TABLE attachments (
+  id uuid PRIMARY KEY,
+  company_id uuid NOT NULL REFERENCES companies (id),
+  storage_path text NOT NULL,
+  content_type text NOT NULL,
+  byte_size integer NOT NULL,
+  entity_type text NOT NULL,
+  entity_id uuid NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX attachments_company_entity_idx ON attachments (company_id, entity_type, entity_id);
+
+ALTER TABLE ticket_messages
+  ADD CONSTRAINT ticket_messages_attachment_id_fkey
+  FOREIGN KEY (attachment_id) REFERENCES attachments (id);
+
+CREATE TABLE idempotency_keys (
+  id uuid PRIMARY KEY,
+  company_id uuid NOT NULL REFERENCES companies (id),
+  key text NOT NULL,
+  request_hash text NOT NULL,
+  response jsonb,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT idempotency_keys_company_key_unique UNIQUE (company_id, key)
+);
+
+CREATE TABLE outbox (
+  id uuid PRIMARY KEY,
+  company_id uuid NOT NULL REFERENCES companies (id),
+  topic text NOT NULL,
+  payload jsonb NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  published_at timestamptz
+);
+
+CREATE INDEX outbox_company_pending_idx ON outbox (company_id, created_at)
+  WHERE published_at IS NULL;
+
+-- Somente insercao (RF-124). UPDATE/DELETE revogados do papel da aplicacao.
+CREATE TABLE audit_logs (
+  id uuid PRIMARY KEY,
+  company_id uuid NOT NULL REFERENCES companies (id),
+  occurred_at timestamptz NOT NULL DEFAULT now(),
+  actor_user_id uuid REFERENCES users (id),
+  channel text NOT NULL,
+  request_id text,
+  entity_type text NOT NULL,
+  entity_id uuid NOT NULL,
+  action text NOT NULL,
+  before jsonb,
+  after jsonb,
+  CONSTRAINT audit_logs_channel_check CHECK (channel IN ('app', 'whatsapp', 'api', 'job'))
+);
+
+CREATE INDEX audit_logs_company_occurred_idx ON audit_logs (company_id, occurred_at DESC);
 
 -- Inbox de webhook: company_id preenchido depois de casar o evento.
 -- Sem RLS no insert (a API ainda nao tem tenant). Ver dados.md.
@@ -357,7 +668,25 @@ BEGIN
     'sale_items',
     'payments',
     'payment_asaas',
-    'invoices'
+    'invoices',
+    'ledger_accounts',
+    'receivables',
+    'payables',
+    'settlements',
+    'appointments',
+    'crm_cards',
+    'support_tickets',
+    'ticket_messages',
+    'conversations',
+    'messages',
+    'confirmations',
+    'subscriptions',
+    'subscription_asaas',
+    'subscription_charges',
+    'attachments',
+    'idempotency_keys',
+    'outbox',
+    'audit_logs'
   ]
   LOOP
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
@@ -383,6 +712,7 @@ BEGIN
   IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'naregua_app') THEN
     GRANT USAGE ON SCHEMA public TO naregua_app;
     GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO naregua_app;
+    REVOKE UPDATE, DELETE ON TABLE audit_logs FROM naregua_app;
     GRANT EXECUTE ON FUNCTION find_login_by_email(text) TO naregua_app;
     GRANT EXECUTE ON FUNCTION register_owner(uuid, text, text, text, text) TO naregua_app;
     GRANT EXECUTE ON FUNCTION attach_user_company(uuid, uuid) TO naregua_app;

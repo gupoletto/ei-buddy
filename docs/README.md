@@ -34,15 +34,16 @@ Público: todo o time, fundadores, stakeholders.
 
 Público: desenvolvedores.
 
-| Doc                                                        | Conteúdo                                                                     |
-| ---------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| [`arquitetura/visao-geral.md`](arquitetura/visao-geral.md) | Diagramas C4 de contexto e containers, e o raciocínio por trás deles         |
-| [`arquitetura/principios.md`](arquitetura/principios.md)   | Arquitetura hexagonal, regra de dependência e a matriz de imports permitidos |
-| [`arquitetura/fluxos.md`](arquitetura/fluxos.md)           | Diagramas de sequência dos fluxos críticos ponta a ponta                     |
-| [`arquitetura/dados.md`](arquitetura/dados.md)             | Modelo de dados, estratégia multi-tenant, RLS, migrations e auditoria        |
-| [`arquitetura/seguranca.md`](arquitetura/seguranca.md)     | Autenticação, autorização, gestão de segredos e conformidade com a LGPD      |
-| [`arquitetura/modulos.md`](arquitetura/modulos.md)         | Tabela-índice de todos os módulos, com fronteiras e donos                    |
-| [`arquitetura/integracoes/`](arquitetura/integracoes/)     | Provedores: [Focus](arquitetura/integracoes/focusnfe.md), [Asaas](arquitetura/integracoes/asaas.md) ([fluxo](arquitetura/integracoes/fluxo-asaas.md), [split](arquitetura/integracoes/split-decision.md)) |
+| Doc                                                                          | Conteúdo                                                                     |
+| ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| [`arquitetura/visao-geral.md`](arquitetura/visao-geral.md)                   | Diagramas C4 de contexto e containers, e o raciocínio por trás deles         |
+| [`arquitetura/principios.md`](arquitetura/principios.md)                     | Arquitetura hexagonal, regra de dependência e a matriz de imports permitidos |
+| [`arquitetura/fluxos.md`](arquitetura/fluxos.md)                             | Diagramas de sequência dos fluxos críticos ponta a ponta                     |
+| [`arquitetura/dados.md`](arquitetura/dados.md)                               | Modelo de dados, estratégia multi-tenant, RLS, migrations e auditoria        |
+| [`arquitetura/esquema-postgresql.md`](arquitetura/esquema-postgresql.md)     | Catálogo físico: tabelas, colunas, CHECKs, índices e políticas RLS           |
+| [`arquitetura/seguranca.md`](arquitetura/seguranca.md)                       | Autenticação, autorização, gestão de segredos e conformidade com a LGPD      |
+| [`arquitetura/modulos.md`](arquitetura/modulos.md)                           | Tabela-índice de todos os módulos, com fronteiras e donos                    |
+| [`arquitetura/integracoes/`](arquitetura/integracoes/)                       | Provedores: [Focus](arquitetura/integracoes/focusnfe.md), [Asaas](arquitetura/integracoes/asaas.md) ([fluxo](arquitetura/integracoes/fluxo-asaas.md), [split](arquitetura/integracoes/split-decision.md)) |
 
 ### 🔧 Engenharia — _como trabalhamos_
 

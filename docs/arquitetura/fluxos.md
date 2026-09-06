@@ -293,4 +293,5 @@ caminho sem A1. Staff e Open Finance não entram neste fluxo.
 - [Princípios](principios.md) — as regras que estes fluxos respeitam
 - [Visão geral](visao-geral.md) — os containers envolvidos
 - [Dados](dados.md) — as tabelas tocadas por estas transações
+- [Esquema PostgreSQL](esquema-postgresql.md) — catálogo físico
 - [User Stories](../produto/user-stories.md) — os critérios de aceite

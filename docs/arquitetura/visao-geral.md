@@ -176,5 +176,6 @@ Estas **não** estão decididas e não devem ser assumidas em código:
 - [Princípios](principios.md) — as regras que estruturam tudo isso
 - [Fluxos](fluxos.md) — as sequências detalhadas
 - [Dados](dados.md) — modelo, multi-tenant e RLS
+- [Esquema PostgreSQL](esquema-postgresql.md) — catálogo físico das tabelas
 - [Segurança](seguranca.md) — autenticação, autorização e LGPD
 - [Módulos](modulos.md) — o detalhe de cada caixa destes diagramas

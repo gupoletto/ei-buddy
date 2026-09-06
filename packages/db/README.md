@@ -2,14 +2,16 @@
 
 Schema Drizzle, migrations SQL, políticas RLS.
 
-**Estado:** 🟡 schema de cadastro, venda e nota (`NR-007`, `NR-008` em andamento) ·
+**Estado:** 🟡 schema do recorte A–J (`NR-007`, `NR-008` em andamento) ·
 isolamento: [ADR-0001](../../docs/decisoes/adr/0001-rls-por-linha.md)
 
-O Postgres materializa o [catálogo enxuto](../../docs/arquitetura/dados.md#catálogo-de-colunas-cadastro-e-fiscal):
-só o que o lojista informa, o que vai para Focus/Asaas/CEP e o que volta.
-Focus e Asaas são satélites (`company_focus`, `company_asaas`,
-`customer_asaas`, `payment_asaas`) — empresa inelegível para nota **não**
-ganha colunas nulas.
+O Postgres materializa o [modelo A–J](../../docs/arquitetura/dados.md#modelo-de-dados)
+([catálogo físico](../../docs/arquitetura/esquema-postgresql.md)):
+cadastro, venda, nota, financeiro, agenda/CRM/suporte, assistente, assinatura
+SaaS e plataforma. Focus e Asaas são satélites (`company_focus`,
+`company_asaas`, `customer_asaas`, `payment_asaas`, `subscription_asaas`) —
+empresa sem KYC ou inelegível para nota **não** ganha colunas nulas. Sem
+PagMaxx. Sem tabela de Split ([DEC-018](../../docs/decisoes/README.md#dec-018)).
 
 Isolamento entre **lojas** é RLS por linha. Um **usuário** pertence a uma
 empresa (`users.company_id`, nullable até `/app/empresa`) —
@@ -88,7 +90,8 @@ Tabela `snake_case` plural · coluna `snake_case` · `id uuid` · FK `<singular>
 Todo índice de tabela de negócio **começa por `company_id`**.
 
 SQL versionado em [`migrations/0001_init.sql`](migrations/0001_init.sql).
-Tipos Drizzle em [`src/schema.ts`](src/schema.ts).
+Tipos Drizzle em [`src/schema.ts`](src/schema.ts). Catálogo para leitura:
+[`esquema-postgresql.md`](../../docs/arquitetura/esquema-postgresql.md).
 
 ## Migrations
 
