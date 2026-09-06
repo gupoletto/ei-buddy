@@ -122,6 +122,42 @@ export type ProductRepository = {
   ): Promise<readonly ProductOutput[]>
 
   /**
+   * O catalogo do backoffice, paginado — NR-072.
+   *
+   * Metodo proprio, e nao `search` com mais parametros. O `search` e a busca
+   * do BALCAO: teto rigido, sem total, sem filtro de estoque, e o PDV depende
+   * desse formato. Somar paginacao nele mudaria o contrato de quem ja usa.
+   *
+   * Devolve a pagina E o total que casa com o filtro. O total sai da mesma
+   * chamada porque e o complemento da pagina: pedi-lo em separado varreria a
+   * mesma tabela de novo, e entre as duas leituras um cadastro novo faria a
+   * conta "23 de 300" deixar de fechar.
+   */
+  listCatalog(
+    companyId: CompanyId,
+    criterio: {
+      readonly termo?: string
+      readonly stock: 'todos' | 'baixo' | 'esgotado'
+      readonly offset: number
+      readonly limite: number
+    },
+  ): Promise<{ readonly produtos: readonly ProductOutput[]; readonly total: number }>
+
+  /**
+   * Os numeros do topo da tela, sobre o catalogo INTEIRO.
+   *
+   * Nao sao somaveis a partir da pagina: "valor em estoque" calculado sobre 24
+   * de 300 produtos da um numero que parece certo e erra por um fator de doze
+   * — e o lojista decide compra com ele.
+   */
+  catalogSummary(companyId: CompanyId): Promise<{
+    readonly total: number
+    readonly belowMinimum: number
+    readonly outOfStock: number
+    readonly stockValueCents: number
+  }>
+
+  /**
    * Quantos produtos a empresa tem, para gerar o proximo codigo interno.
    *
    * Contagem, e nao "proximo codigo": gerar o codigo e regra (o formato), e

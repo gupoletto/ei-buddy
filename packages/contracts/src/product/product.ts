@@ -106,3 +106,71 @@ export const productOutputSchema = z.object({
 })
 
 export type ProductOutput = z.infer<typeof productOutputSchema>
+
+/**
+ * O catalogo do backoffice — NR-072, US-008.
+ *
+ * Separado de `GET /produtos`, que e a busca do BALCAO e tem teto rigido de
+ * `TETO_DO_CATALOGO` itens. Os dois respondem perguntas diferentes: o balcao
+ * quer achar UM produto para vender agora, e a tela de catalogo quer percorrer
+ * TODOS. Dar paginacao a rota do balcao mudaria o contrato de quem ja depende
+ * do teto; ler o catalogo inteiro pela rota do balcao mostraria 50 produtos ao
+ * lojista que tem 300, sem nenhum aviso de que faltam 250.
+ */
+export const NIVEL_DE_ESTOQUE = ['todos', 'baixo', 'esgotado'] as const
+
+export const stockLevelSchema = z.enum(NIVEL_DE_ESTOQUE)
+
+export type StockLevel = z.infer<typeof stockLevelSchema>
+
+export const PAGINA_PADRAO_DO_CATALOGO = 24
+export const PAGINA_MAXIMA_DO_CATALOGO = 100
+
+export const catalogInputSchema = z
+  .object({
+    /** Descricao, codigo interno ou codigo de barras. */
+    q: z.string().trim().max(120).optional(),
+    stock: stockLevelSchema.default('todos'),
+    page: z.coerce.number().int().min(1, 'A primeira pagina e a 1.').default(1),
+    pageSize: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(PAGINA_MAXIMA_DO_CATALOGO, `A pagina vai ate ${PAGINA_MAXIMA_DO_CATALOGO} itens.`)
+      .default(PAGINA_PADRAO_DO_CATALOGO),
+  })
+  .strict()
+
+export type CatalogInput = z.infer<typeof catalogInputSchema>
+
+export const catalogOutputSchema = z.object({
+  products: z.array(productOutputSchema),
+  /**
+   * Quantos casam com o filtro — NAO quantos vieram nesta pagina.
+   *
+   * E o que permite a tela dizer "23 de 300" em vez de "23". Sem ele, uma
+   * pagina cheia e indistinguivel do fim do catalogo, e o lojista para de
+   * procurar achando que acabou.
+   */
+  total: z.number().int(),
+  page: z.number().int(),
+  pageSize: z.number().int(),
+})
+
+export type CatalogOutput = z.infer<typeof catalogOutputSchema>
+
+/**
+ * O resumo do catalogo INTEIRO — os numeros do topo da tela.
+ *
+ * Consulta propria, e nao soma da pagina. "Valor em estoque" calculado sobre
+ * 24 dos 300 produtos daria um numero que parece certo e esta errado por um
+ * fator de doze — e o lojista usa esse numero para decidir compra.
+ */
+export const catalogSummaryOutputSchema = z.object({
+  total: z.number().int(),
+  belowMinimum: z.number().int(),
+  outOfStock: z.number().int(),
+  stockValueCents: z.number().int(),
+})
+
+export type CatalogSummaryOutput = z.infer<typeof catalogSummaryOutputSchema>

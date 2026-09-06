@@ -117,8 +117,10 @@ export type {
   RegisterCustomerResult,
 } from './registration/register-customer.js'
 export {
+  catalogSummary,
   findProductByBarcode,
   generateInternalCode,
+  listCatalog,
   registerProduct,
   searchProducts,
   TETO_DO_CATALOGO,

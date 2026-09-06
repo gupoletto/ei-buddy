@@ -86,6 +86,37 @@ function cadastroEmMemoria() {
         .slice(0, criterio.limite)
     },
 
+    /* O catalogo do backoffice (NR-072). Corta a pagina DEPOIS de contar,
+       como o SQL faz: contar sobre a pagina daria `total` sempre igual ao
+       tamanho dela, e a tela nunca ofereceria a proxima. */
+    listCatalog: async (companyId, criterio) => {
+      const termo = criterio.termo?.toLowerCase() ?? ''
+      const casam = produtos
+        .filter((p) => p.companyId === companyId)
+        .filter((p) => termo === '' || p.description.toLowerCase().includes(termo))
+        .filter((p) => {
+          if (criterio.stock === 'esgotado') return p.stock <= 0
+          if (criterio.stock === 'baixo') return p.stock > 0 && p.stock < p.minStock
+          return true
+        })
+        .sort((a, b) => a.description.localeCompare(b.description))
+
+      return {
+        total: casam.length,
+        produtos: casam.slice(criterio.offset, criterio.offset + criterio.limite),
+      }
+    },
+
+    catalogSummary: async (companyId) => {
+      const meus = produtos.filter((p) => p.companyId === companyId)
+      return {
+        total: meus.length,
+        belowMinimum: meus.filter((p) => p.stock < p.minStock).length,
+        outOfStock: meus.filter((p) => p.stock <= 0).length,
+        stockValueCents: meus.reduce((acc, p) => acc + p.stock * p.costPriceCents, 0),
+      }
+    },
+
     create: async (p: NewProduct) => {
       seq += 1
       const pr = {
@@ -467,5 +498,91 @@ describe('catalogo do balcao — RF-019', () => {
     app = c.app
 
     expect((await app.inject({ method: 'GET', url: '/produtos' })).statusCode).toBe(401)
+  })
+})
+
+describe('catalogo do backoffice — NR-072, US-008', () => {
+  const produto = (description: string, salePriceCents: number) => ({
+    description,
+    unitOfMeasure: 'un' as const,
+    salePriceCents,
+    costPriceCents: 400,
+  })
+
+  async function comCatalogo() {
+    const c = await buildApp()
+    app = c.app
+    for (const d of ['Acucar', 'Biscoito', 'Cafe', 'Detergente', 'Erva-mate']) {
+      await app.inject({ method: 'POST', url: '/produtos', payload: produto(d, 1000) })
+    }
+    return c
+  }
+
+  it('devolve a pagina com o total do catalogo, e nao o tamanho da pagina', async () => {
+    await comCatalogo()
+
+    const r = await app.inject({ method: 'GET', url: '/produtos/catalogo?pageSize=2' })
+
+    expect(r.statusCode).toBe(200)
+    expect(r.json().products).toHaveLength(2)
+    /* CINCO. E o que faz a tela dizer "2 de 5" e oferecer a proxima pagina. */
+    expect(r.json().total).toBe(5)
+  })
+
+  it('converte pagina e tamanho, que chegam como TEXTO na query', async () => {
+    await comCatalogo()
+
+    const r = await app.inject({ method: 'GET', url: '/produtos/catalogo?page=2&pageSize=2' })
+
+    /* Numeros, e nao "2": um OFFSET com texto passaria aqui e explodiria no
+       banco. E o `page` ecoado prova que a rota nao caiu no padrao. */
+    expect(r.json().page).toBe(2)
+    expect(r.json().pageSize).toBe(2)
+    expect(r.json().products.map((p: { description: string }) => p.description)).toEqual([
+      'Cafe',
+      'Detergente',
+    ])
+  })
+
+  it('usa o padrao quando ninguem pede pagina', async () => {
+    await comCatalogo()
+
+    const r = await app.inject({ method: 'GET', url: '/produtos/catalogo' })
+
+    expect(r.json().page).toBe(1)
+    expect(r.json().pageSize).toBe(24)
+  })
+
+  it('recusa pagina acima do teto em vez de varrer o catalogo inteiro', async () => {
+    await comCatalogo()
+
+    const r = await app.inject({ method: 'GET', url: '/produtos/catalogo?pageSize=5000' })
+
+    expect(r.statusCode).toBe(400)
+  })
+
+  it('nao confunde /produtos/catalogo com /produtos/codigo-de-barras/:codigo', async () => {
+    await comCatalogo()
+
+    /* As duas sao GET sob `/produtos/`. Se a rota de codigo de barras casasse
+       primeiro, "catalogo" viraria um codigo procurado e a tela receberia 404
+       em vez do catalogo. */
+    const r = await app.inject({ method: 'GET', url: '/produtos/catalogo' })
+
+    expect(r.statusCode).toBe(200)
+    expect(r.json().products).toHaveLength(5)
+  })
+
+  it('o resumo fala do catalogo inteiro', async () => {
+    await comCatalogo()
+
+    const r = await app.inject({ method: 'GET', url: '/produtos/resumo' })
+
+    expect(r.statusCode).toBe(200)
+    expect(r.json().total).toBe(5)
+    /* Produto nasce com estoque zero — o saldo so muda por movimento (NR-023).
+       Entao os cinco estao esgotados, e o valor parado e zero. */
+    expect(r.json().outOfStock).toBe(5)
+    expect(r.json().stockValueCents).toBe(0)
   })
 })

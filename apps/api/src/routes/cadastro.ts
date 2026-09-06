@@ -1,10 +1,13 @@
 import {
+  catalogInputSchema,
   createCompanyInputSchema,
   createCustomerInputSchema,
   createProductInputSchema,
 } from '@na-regua/contracts'
 import {
   AppError,
+  catalogSummary,
+  listCatalog,
   registerCompany,
   type RegisterCompanyDeps,
   registerCustomer,
@@ -120,6 +123,32 @@ export function registerCadastroRoutes(app: FastifyInstance, deps: CadastroDeps)
     })
 
     return reply.code(200).send({ products: produtos })
+  })
+
+  /**
+   * O catalogo do backoffice — NR-072, US-008.
+   *
+   * Rota SEPARADA de `GET /produtos`, que continua sendo a busca do balcao com
+   * teto de `TETO_DO_CATALOGO`. Dar paginacao aquela mudaria o contrato do PDV,
+   * que ja depende do teto; e ler o catalogo por ela mostraria 50 produtos ao
+   * lojista que tem 300, sem nenhum aviso de que faltam 250.
+   */
+  app.get('/produtos/catalogo', async (request, reply) => {
+    const ctx = requireContext(request)
+
+    const input = validate(catalogInputSchema, request.query ?? {})
+    const pagina = await listCatalog(deps, ctx, input)
+
+    return reply.code(200).send(pagina)
+  })
+
+  /** Os numeros do topo da tela, sobre o catalogo inteiro — NR-072. */
+  app.get('/produtos/resumo', async (request, reply) => {
+    const ctx = requireContext(request)
+
+    const resumo = await catalogSummary(deps, ctx)
+
+    return reply.code(200).send(resumo)
   })
 
   app.get('/produtos/codigo-de-barras/:codigo', async (request, reply) => {
