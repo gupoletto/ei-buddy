@@ -213,3 +213,33 @@
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* --- Paginacao do catalogo — NR-072 --- */
+
+.paginacao {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--app-border);
+}
+
+.paginacaoResumo {
+  margin-top: 16px;
+  font-size: 13px;
+  color: var(--app-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Dentro do paginador ele ja tem a borda de cima do container. */
+.paginacao .paginacaoResumo {
+  margin-top: 0;
+}
+
+.paginacaoBotoes {
+  display: flex;
+  gap: 8px;
+}

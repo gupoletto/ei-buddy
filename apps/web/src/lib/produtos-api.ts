@@ -442,7 +442,18 @@ export async function importarXmlCompra(
 
 export type NivelEstoque = 'normal' | 'baixo' | 'esgotado'
 
-export function nivelEstoque(produto: Produto): NivelEstoque {
+/**
+ * Aceita QUALQUER coisa com saldo e minimo, e nao so `Produto`.
+ *
+ * O produto que vem da api nao tem `categoria` nem `fornecedor`, entao nao e
+ * um `Produto` — e a regra "zerado e esgotado, abaixo do minimo e baixo" e a
+ * mesma para os dois. Duplica-la faria a lista e o detalhe do produto
+ * discordarem sobre a mesma etiqueta.
+ */
+export function nivelEstoque(produto: {
+  readonly estoque: number
+  readonly estoqueMinimo: number
+}): NivelEstoque {
   if (produto.estoque <= 0) return 'esgotado'
   if (produto.estoque < produto.estoqueMinimo) return 'baixo'
   return 'normal'
