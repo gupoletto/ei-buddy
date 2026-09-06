@@ -68,6 +68,18 @@ export const inventoryMovementOutputSchema = z.object({
   reason: z.string().nullable(),
   /** Preenchido quando a causa e uma venda, para a trilha fechar com ela. */
   saleId: idSchema.nullable(),
+  /**
+   * Sempre presente, e sem FK para `users` — a mesma regra da `audit_log`.
+   *
+   * Guardar o id de quem fez, sem referencia viva, e o que permite a pessoa
+   * sair da empresa sem que o movimento dela deixe de valer (US-061).
+   *
+   * A migration 0016 alinhou a coluna a esta promessa. Antes ela era anulavel
+   * com `ON DELETE SET NULL`, o que numa trilha somente-insercao nao funciona:
+   * `SET NULL` e um UPDATE, o gatilho de imutabilidade o recusa, e apagar um
+   * usuario que ja mexeu no estoque falhava com uma mensagem que nao apontava
+   * para nada.
+   */
   createdBy: idSchema,
   createdAt: z.string(),
 })
