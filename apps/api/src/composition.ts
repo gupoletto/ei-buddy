@@ -248,6 +248,14 @@ export function buildCadastroDeps(): CadastroDeps {
     products: createProductRepository(sql),
     /* O onboarding semeia o plano de contas padrao — RF-081, NR-077. */
     accounts: createChartOfAccountsRepository(sql),
+    /*
+     * A importacao de planilha grava o saldo inicial, e saldo so muda por
+     * MOVIMENTO (RF-124). Por isso o cadastro precisa do estoque: sem ele, o
+     * lojista informaria 40 unidades na planilha e o produto nasceria zerado —
+     * que era exatamente o que acontecia antes.
+     */
+    uow: createInventoryUnitOfWork(sql),
+    audit: new InMemoryAuditTrail(),
   }
 }
 

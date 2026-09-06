@@ -110,7 +110,11 @@ export type { RegisterSaleDeps, RegisterSaleResult, StockWarning } from './sales
 /* --- Cadastros — NR-021 --- */
 export { registerCompany } from './registration/register-company.js'
 export type { RegisterCompanyDeps } from './registration/register-company.js'
-export { assertIdentifiable, registerCustomer } from './registration/register-customer.js'
+export {
+  assertIdentifiable,
+  importCustomers,
+  registerCustomer,
+} from './registration/register-customer.js'
 export type {
   RegisterCustomerDeps,
   RegisterCustomerOptions,
@@ -119,13 +123,18 @@ export type {
 export {
   catalogSummary,
   findProductByBarcode,
+  importProducts,
   generateInternalCode,
   listCatalog,
   registerProduct,
   searchProducts,
   TETO_DO_CATALOGO,
 } from './registration/register-product.js'
-export type { RegisterProductDeps, SearchProductsDeps } from './registration/register-product.js'
+export type {
+  ImportProductsDeps,
+  RegisterProductDeps,
+  SearchProductsDeps,
+} from './registration/register-product.js'
 
 /* --- LGPD: exportacao e anonimizacao — NR-031 --- */
 export { anonymizeCustomer, NOME_ANONIMIZADO } from './privacy/anonymize-customer.js'
@@ -236,3 +245,7 @@ export type { RevenueReportDeps } from './reports/revenue-by-month.js'
 export { rankCustomers, rankProducts } from './reports/rankings.js'
 export type { RankingDeps } from './reports/rankings.js'
 export type { MesFaturado, Ranking, ReportRepository } from './ports/report-repository.js'
+
+/* Estoque em memoria — o falso da NR-023, usado por teste de rota e composicao
+   de desenvolvimento, como os outros falsos deste pacote. */
+export { InMemoryInventory } from './inventory/fakes.js'

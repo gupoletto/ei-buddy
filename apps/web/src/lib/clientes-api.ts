@@ -16,6 +16,8 @@
  * como "consulta indisponivel" e o cadastro segue manual.
  */
 
+import { pedir } from './http'
+import type { LinhaRecusada, ResultadoDaImportacao } from './produtos-api'
 import type { Cliente } from './types'
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms))
@@ -340,10 +342,77 @@ export type { Cliente }
 /* Importacao                                                                 */
 /* -------------------------------------------------------------------------- */
 
-/** SUBSTITUIR POR: POST /clientes/importar */
+/**
+ * Importa clientes de verdade — NR-072, US-008.
+ *
+ * Ate agora era `await delay(1200)`: a tela dizia "80 importados" e nao gravava
+ * nada. Agora manda o lote para `POST /clientes/importacao` e devolve o que o
+ * SERVIDOR aceitou.
+ *
+ * Documento e celular vao so com DIGITOS. Planilha vem com ponto, traco,
+ * parenteses e espaco, e o contrato valida o formato limpo — mandar como veio
+ * faria toda linha ser recusada por um motivo que nao e culpa de quem digitou.
+ *
+ * Linha sem nome e recusada aqui, com o numero da linha. O contrato tambem
+ * recusaria, mas a recusa dele derruba o LOTE INTEIRO por forma invalida — e
+ * uma planilha com uma linha em branco no fim e o caso mais comum que existe.
+ */
 export async function confirmarImportacaoClientes(
   registros: Record<string, string>[],
-): Promise<void> {
-  await delay(1200)
-  void registros
+): Promise<ResultadoDaImportacao> {
+  const recusadas: LinhaRecusada[] = []
+  const enviar: Record<string, unknown>[] = []
+  const origem: number[] = []
+
+  const digitos = (v: string | undefined) => (v ?? '').replace(/D/g, '')
+
+  registros.forEach((r, index) => {
+    const nome = (r.nome ?? '').trim()
+
+    if (nome.length < 2) {
+      recusadas.push({ index, description: nome, reason: 'Nome vazio ou curto demais.' })
+      return
+    }
+
+    const documento = digitos(r.documento)
+    const celular = digitos(r.celular)
+    const email = (r.email ?? '').trim()
+
+    origem.push(index)
+    enviar.push({
+      name: nome,
+      ...(documento !== '' ? { document: documento } : {}),
+      ...(celular !== '' ? { phone: celular } : {}),
+      ...(email !== '' ? { email } : {}),
+    })
+  })
+
+  if (enviar.length === 0) return { importados: 0, recusadas }
+
+  const r = await pedir<{ imported: number; rejected: LinhaRecusada[] }>(
+    '/api/clientes/importacao',
+    { method: 'POST', body: JSON.stringify({ customers: enviar }) },
+  )
+
+  if (!r.ok) {
+    return {
+      importados: 0,
+      recusadas: [
+        ...recusadas,
+        ...enviar.map((_, i) => ({
+          index: origem[i]!,
+          description: String(enviar[i]!.name),
+          reason: r.erro,
+        })),
+      ],
+    }
+  }
+
+  return {
+    importados: r.dados.imported,
+    recusadas: [
+      ...recusadas,
+      ...r.dados.rejected.map((rec) => ({ ...rec, index: origem[rec.index] ?? rec.index })),
+    ],
+  }
 }
