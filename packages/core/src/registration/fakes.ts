@@ -1,4 +1,9 @@
-import type { CompanyOutput, CustomerOutput, ProductOutput } from '@na-regua/contracts'
+import type {
+  CompanyOutput,
+  CustomerListItem,
+  CustomerOutput,
+  ProductOutput,
+} from '@na-regua/contracts'
 import type { CompanyId } from '../context.js'
 import type {
   CompanyRepository,
@@ -86,6 +91,53 @@ export class InMemoryCustomerRepository implements CustomerRepository {
   }
 
   /** `companyId` nao sai do repositorio: e do contexto, nao da resposta. */
+  /**
+   * A lista, com o historico que a tela mostra.
+   *
+   * O falso NAO guarda venda, entao o historico volta zerado — e isso e
+   * honesto: quem testa a lista com este falso esta testando a paginacao, o
+   * filtro e o isolamento, e nao a agregacao de compras, que so o banco faz.
+   *
+   * Corta a pagina DEPOIS de contar, como o SQL: contar sobre a pagina daria
+   * `total` sempre igual ao tamanho dela, e a tela nunca ofereceria a proxima.
+   */
+  async list(
+    companyId: CompanyId,
+    criterio: {
+      readonly termo?: string
+      readonly filtro: 'todos' | 'inativos' | 'fiado'
+      readonly diasParaInativo: number
+      readonly hoje: Date
+      readonly offset: number
+      readonly limite: number
+    },
+  ): Promise<{ readonly clientes: readonly CustomerListItem[]; readonly total: number }> {
+    const termo = criterio.termo?.trim().toLowerCase() ?? ''
+
+    const casam = [...this.registros.values()]
+      .filter((c) => c.companyId === companyId)
+      .filter(
+        (c) =>
+          termo === '' ||
+          c.name.toLowerCase().includes(termo) ||
+          (c.document ?? '').includes(termo) ||
+          (c.phone ?? '').includes(termo),
+      )
+      /* Sem venda no falso, "inativo" e todo mundo e "fiado" e quem tem saldo. */
+      .filter((c) => (criterio.filtro === 'fiado' ? c.walletBalanceCents > 0 : true))
+      .sort((a, b) => a.name.localeCompare(b.name))
+
+    return {
+      total: casam.length,
+      clientes: casam.slice(criterio.offset, criterio.offset + criterio.limite).map((c) => ({
+        ...this.semTenant(c),
+        lastSaleOn: null,
+        salesCount: 0,
+        totalSpentCents: 0,
+      })),
+    }
+  }
+
   private semTenant(registro: CustomerOutput & { companyId: CompanyId }): CustomerOutput {
     const { companyId: _omitido, ...resto } = registro
     return resto

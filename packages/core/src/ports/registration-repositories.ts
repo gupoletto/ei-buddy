@@ -1,4 +1,9 @@
-import type { CompanyOutput, CustomerOutput, ProductOutput } from '@na-regua/contracts'
+import type {
+  CompanyOutput,
+  CustomerListItem,
+  CustomerOutput,
+  ProductOutput,
+} from '@na-regua/contracts'
 import type { CompanyId, UserId } from '../context.js'
 
 /**
@@ -76,6 +81,30 @@ export type CustomerRepository = {
     companyId: CompanyId,
     criteria: { readonly phone?: string | undefined; readonly document?: string | undefined },
   ): Promise<readonly CustomerOutput[]>
+
+  /**
+   * A lista da tela, paginada e com o historico de compra — RF-011.
+   *
+   * O historico vem na MESMA consulta. A tela mostra "ultima compra" em toda
+   * linha, e busca-lo por cliente daria vinte e cinco idas ao banco para uma
+   * pagina — o problema N+1 na sua forma mais cara, porque cresce com o
+   * tamanho da tela.
+   *
+   * Devolve a pagina E o total que casa com o filtro. Sem o total, pagina cheia
+   * e indistinguivel de fim da lista.
+   */
+  list(
+    companyId: CompanyId,
+    criterio: {
+      readonly termo?: string
+      readonly filtro: 'todos' | 'inativos' | 'fiado'
+      /** Dias sem comprar que tornam o cliente inativo. Vem de `contracts`. */
+      readonly diasParaInativo: number
+      readonly hoje: Date
+      readonly offset: number
+      readonly limite: number
+    },
+  ): Promise<{ readonly clientes: readonly CustomerListItem[]; readonly total: number }>
 }
 
 export type NewProduct = {
