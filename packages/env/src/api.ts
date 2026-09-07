@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { baseEnvSchema, providerSchema } from './base.js'
+import { baseEnvSchema, opcionalNaoVazia, providerSchema } from './base.js'
 import { parseEnv } from './parse.js'
 
 /**
@@ -48,7 +48,7 @@ export const apiEnvSchema = baseEnvSchema.extend({
    * propria, e `lerChaveDeSegredo` (em `db`) confere tamanho e forca — validar
    * nos dois lugares daria duas respostas para "esta chave serve".
    */
-  SECRETS_KEY: z.string().optional(),
+  SECRETS_KEY: opcionalNaoVazia,
 })
 
 export type ApiEnv = z.infer<typeof apiEnvSchema>
