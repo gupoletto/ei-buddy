@@ -7,6 +7,7 @@ import {
   selectCompany,
   signup,
   type SignupDeps,
+  loadProfile,
 } from '@na-regua/core'
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { LIMITE_DE_AUTENTICACAO } from '../plugins/rate-limit.js'
@@ -128,6 +129,26 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthRouteDeps): v
    * fresco chama a rota do recurso. Uma consulta aqui seria uma consulta em
    * toda abertura de tela.
    */
+  /**
+   * O perfil de quem esta logado — NR-013, RF-119.
+   *
+   * Separada de `/auth/me`, que responde so o que a sessao carrega, sem ida ao
+   * banco. Esta VAI ao banco, e e por isso que sao duas: a barra do topo precisa
+   * do nome da pessoa e da loja, e nome nao mora no token — se morasse, quem
+   * renomeia a loja continuaria vendo o nome antigo ate a sessao expirar.
+   *
+   * Antes desta rota a tela mostrava "Marina Alves / Mercearia Sol Nascente"
+   * fixo no codigo, para toda loja.
+   */
+  app.get('/auth/perfil', async (request, reply) => {
+    const claims = request.sessionClaims
+    if (claims === undefined) {
+      throw AppError.unauthorized('Entre na sua conta para continuar.')
+    }
+
+    return reply.code(200).send(await loadProfile(deps, claims))
+  })
+
   app.get('/auth/me', async (request, reply) => {
     const claims = request.sessionClaims
     if (claims === undefined) {

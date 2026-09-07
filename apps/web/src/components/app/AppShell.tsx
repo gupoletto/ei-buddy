@@ -6,6 +6,8 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState, type ComponentType, type ReactNode } from 'react'
 import { BRAND } from '@/content/site'
 import { MODULOS_BLOQUEADOS } from '@/lib/access'
+import { carregarAvisos, type Aviso } from '@/lib/avisos-api'
+import { carregarPerfil, iniciaisDe, type Perfil } from '@/lib/perfil-api'
 import { sair as encerrarSessao } from '@/lib/session-client'
 import { listarChamados, totalNaoLidas } from '@/lib/suporte-api'
 import PaymentOverdueBanner from '../billing/PaymentOverdueBanner'
@@ -92,6 +94,9 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const [navOpen, setNavOpen] = useState(false)
+  const [perfil, setPerfil] = useState<Perfil | null>(null)
+  const [avisos, setAvisos] = useState<Aviso[]>([])
+  const [avisosAbertos, setAvisosAbertos] = useState(false)
   const { bloqueado, pedirRegularizacao } = useSubscription()
 
   /* SUBSTITUIR POR: GET /suporte/chamados (ou contador dedicado) — hoje
@@ -107,8 +112,32 @@ export default function AppShell({ children }: { children: ReactNode }) {
   if (rotaAnterior !== pathname) {
     setRotaAnterior(pathname)
     setNavOpen(false)
+    /* O painel de avisos fecha junto: e um menu, e menu aberto sobre outra
+       pagina e lixo visual que ninguem pediu. Aqui e nao num efeito — o
+       arquivo ja trata troca de rota durante o render, que e o padrao
+       recomendado do React e o que o lint cobra. */
+    setAvisosAbertos(false)
     if (pathname.startsWith('/app/financeiro')) setFinanceiroAberto(true)
   }
+
+  /*
+   * O perfil e os avisos, uma vez na montagem.
+   *
+   * `async` explicito dentro do efeito: os `setState` vem todos DEPOIS do
+   * await, nunca sincronos no corpo — e o que o compilador do React cobra.
+   *
+   * Os dois em paralelo e com falha silenciosa: nenhum deles e a razao de a
+   * pessoa ter aberto a tela, e um erro de rede aqui nao pode impedir de vender.
+   * O perfil que nao carrega deixa o esqueleto no lugar; o aviso que nao carrega
+   * simplesmente nao aparece.
+   */
+  useEffect(() => {
+    void (async () => {
+      const [p, a] = await Promise.all([carregarPerfil(), carregarAvisos()])
+      if (p.ok) setPerfil(p.dados)
+      setAvisos(a)
+    })()
+  }, [])
 
   useEffect(() => {
     document.body.style.overflow = navOpen ? 'hidden' : ''
@@ -282,17 +311,82 @@ export default function AppShell({ children }: { children: ReactNode }) {
           </label>
 
           <div className={styles.topActions}>
-            <button type="button" className={styles.iconButton} aria-label="Notificacoes">
-              <IconBell size={19} />
-              <span className={styles.badgeDot} />
-            </button>
+            {/*
+              O ponto so acende quando HA aviso.
+              Antes ele era um <span> fixo no HTML: sempre aceso, em toda loja,
+              desde o primeiro segundo. Aviso que nunca apaga deixa de ser
+              aviso — quem o ve todo dia para de olhar.
+            */}
+            <div className={styles.avisosWrap}>
+              <button
+                type="button"
+                className={styles.iconButton}
+                aria-label={
+                  avisos.length === 0
+                    ? 'Notificacoes — nada pendente'
+                    : `Notificacoes — ${avisos.length} pendente(s)`
+                }
+                aria-expanded={avisosAbertos}
+                onClick={() => setAvisosAbertos((v) => !v)}
+              >
+                <IconBell size={19} />
+                {avisos.length > 0 ? <span className={styles.badgeDot} /> : null}
+              </button>
 
+              {avisosAbertos ? (
+                <div className={styles.avisosPainel} role="dialog" aria-label="Notificacoes">
+                  {avisos.length === 0 ? (
+                    <p className={styles.avisoVazio}>Nada pendente por aqui.</p>
+                  ) : (
+                    <ul className={styles.avisosLista}>
+                      {avisos.map((a) => (
+                        <li key={a.href + a.texto}>
+                          <Link
+                            href={a.href}
+                            className={styles.aviso}
+                            onClick={() => setAvisosAbertos(false)}
+                          >
+                            <span
+                              className={`${styles.avisoPonto} ${
+                                a.tom === 'perigo' ? styles.avisoPerigo : styles.avisoAtencao
+                              }`}
+                              aria-hidden="true"
+                            />
+                            {a.texto}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              ) : null}
+            </div>
+
+            {/*
+              Quem entrou, e nao um nome inventado.
+              Enquanto o perfil nao chega, o espaco fica reservado com um
+              esqueleto: trocar um nome por outro depois que a tela ja pintou
+              faz o cabecalho pular, e um nome provisorio seria a mesma mentira
+              de antes, so que por menos tempo.
+            */}
             <div className={styles.user}>
-              <span className={styles.avatar}>MA</span>
-              <span className={styles.userText}>
-                <strong>Marina Alves</strong>
-                <span>Mercearia Sol Nascente</span>
-              </span>
+              {perfil === null ? (
+                <>
+                  <span className={`${styles.avatar} ${styles.avatarVazio}`} aria-hidden="true" />
+                  <span className={styles.userText} aria-hidden="true">
+                    <span className={styles.esqueletoLinha} />
+                    <span className={`${styles.esqueletoLinha} ${styles.esqueletoCurta}`} />
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className={styles.avatar}>{iniciaisDe(perfil.userName)}</span>
+                  <span className={styles.userText}>
+                    <strong>{perfil.userName}</strong>
+                    <span>{perfil.companyName ?? 'Nenhuma loja selecionada'}</span>
+                  </span>
+                </>
+              )}
             </div>
 
             <button type="button" className={styles.iconButton} onClick={sair} aria-label="Sair">
