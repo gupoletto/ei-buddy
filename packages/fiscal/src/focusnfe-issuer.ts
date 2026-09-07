@@ -279,6 +279,37 @@ export function criarEmissorFocusNfe(opcoes: FocusNfeOptions): {
       },
     })
 
+    /*
+     * DENEGADA nao e recusada — RF-047.
+     *
+     * A SEFAZ tem cinco desfechos documentados: `autorizado`,
+     * `erro_autorizacao`, `denegado`, `cancelado` e
+     * `processando_autorizacao`. Tudo que nao fosse `autorizado` caia na mesma
+     * rejeicao generica, e isso achatava a diferenca que mais custa dinheiro.
+     *
+     * Denegacao acontece quando ha irregularidade fiscal do emitente ou do
+     * destinatario, e ela CONSOME O NUMERO: a nota denegada existe, nao pode
+     * ser reemitida com a mesma numeracao e nao pode ser cancelada. Uma
+     * rejeicao comum, ao contrario, deixa o numero livre para tentar de novo.
+     *
+     * Dizer "a SEFAZ recusou, tente de novo" a quem levou denegacao manda o
+     * lojista repetir uma operacao que nunca vai passar, em vez de mandar ele
+     * regularizar a situacao cadastral — que e o unico caminho.
+     */
+    if (corpo.status === 'denegado') {
+      return {
+        status: 'rejected',
+        rejection: {
+          code: corpo.status_sefaz ?? 'SEFAZ-DENEGADA',
+          message:
+            (corpo.mensagem_sefaz ?? 'A SEFAZ denegou a nota.') +
+            ' Denegacao e irregularidade cadastral do emitente ou do destinatario: ' +
+            'o numero foi consumido, a nota nao pode ser reemitida nem cancelada, ' +
+            'e reenviar nao resolve. Regularize a situacao fiscal antes de emitir de novo.',
+        },
+      }
+    }
+
     if (corpo.status !== 'autorizado') return rejeicao()
 
     const chave = corpo.chave_nfe
@@ -397,8 +428,15 @@ export function criarEmissorFocusNfe(opcoes: FocusNfeOptions): {
      * criar a nota — confundir consulta com emissao faria uma reconciliacao
      * gerar documentos fiscais.
      *
-     * O provedor NAO documenta como uma nota emitida em contingencia chega a
-     * SEFAZ depois; ha um campo `contingencia_offline_efetivada` que sugere que
+     * A efetivacao EXISTE na documentacao do provedor, e nao serve para nos:
+     * `PUT /v2/fiscal/nfce/{ref}/efetivar` pertence ao Comunicador Offline, um
+     * agente instalado NA LOJA, e responde em `localhost:55555`. Nossa emissao
+     * fala com a API na nuvem, de um servidor — nao ha localhost de loja
+     * nenhuma ao alcance. (Registro isto porque antes escrevi aqui que o
+     * provedor "nao documenta", o que estava errado: documenta, para outra
+     * arquitetura.)
+     *
+     * Na nuvem ha um campo `contingencia_offline_efetivada` que sugere que
      * ele resolve sozinho, e sugerir nao basta para um documento fiscal. Por
      * isso o que fazemos e PERGUNTAR: se a nota autorizou, a guarda passa a
      * refletir isso; se nao, ela continua em contingencia, visivel.
@@ -423,6 +461,18 @@ export function criarEmissorFocusNfe(opcoes: FocusNfeOptions): {
       /* Ainda processando nao e desfecho: devolver `rejected` aqui marcaria como
          recusada uma nota que talvez autorize em segundos. */
       if (resposta.status === 'processando_autorizacao') return undefined
+
+      /*
+       * Ja cancelada tambem nao e desfecho de EMISSAO.
+       *
+       * Sem isto, a consulta a uma nota cancelada caia na rejeicao generica e
+       * voltava como `rejected`. Na reconciliacao de contingencia (RF-053) isso
+       * TRAVA a fila: o laco para na primeira nao autorizada, e uma cancelada
+       * ficaria ali para sempre, impedindo todas as posteriores de serem
+       * reconhecidas. `undefined` e "esta venda nao tem nota valendo", que e a
+       * verdade — e quem cuida de cancelamento e a guarda, nao a emissao.
+       */
+      if (resposta.status === 'cancelado') return undefined
 
       return paraResultado(resposta, {
         companyId: request.companyId,
