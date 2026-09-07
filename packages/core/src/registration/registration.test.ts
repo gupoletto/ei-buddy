@@ -13,7 +13,7 @@ import type { ProductRepository } from '../ports/registration-repositories.js'
 import { InMemoryChartOfAccounts } from '../accounting/fakes.js'
 import { PLANO_DE_CONTAS_PADRAO } from '../accounting/default-chart.js'
 import { registerCompany } from './register-company.js'
-import { assertIdentifiable, registerCustomer } from './register-customer.js'
+import { assertIdentifiable, getCustomer, registerCustomer } from './register-customer.js'
 import {
   catalogSummary,
   findProductByBarcode,
@@ -253,6 +253,55 @@ describe('registerCustomer — RF-009, RF-010', () => {
     if (r.status !== 'created') throw new Error('esperava created')
 
     expect(() => assertIdentifiable(r.customer)).not.toThrow()
+  })
+})
+
+describe('getCustomer — RF-011', () => {
+  it('devolve a ficha com o endereco que foi cadastrado', async () => {
+    const customers = new InMemoryCustomerRepository()
+    const r = await registerCustomer({ customers }, contexto(), {
+      name: 'Joao do Bar',
+      phone: '41999990000',
+      address: { zipCode: '80010000', city: 'Curitiba', state: 'PR' },
+    })
+    if (r.status !== 'created') throw new Error('esperava created')
+
+    const ficha = await getCustomer({ customers }, contexto(), r.customer.id)
+
+    expect(ficha.address.city).toBe('Curitiba')
+    expect(ficha.address.state).toBe('PR')
+    /* O que nao foi informado volta `null`, e nao ausente: a tela distingue
+       "nao tem numero" de "esqueci de mandar o campo". */
+    expect(ficha.address.number).toBeNull()
+  })
+
+  it('cliente de outra empresa responde NOT_FOUND, e nao FORBIDDEN', async () => {
+    const customers = new InMemoryCustomerRepository()
+    const r = await registerCustomer({ customers }, contexto({ companyId: 'emp-1' }), {
+      name: 'Joao do Bar',
+      phone: '41999990000',
+    })
+    if (r.status !== 'created') throw new Error('esperava created')
+
+    /* FORBIDDEN confirmaria que o id existe em alguma loja — quem varre ids
+       aprenderia o cadastro do vizinho sem nunca ler uma linha dele. */
+    const erro = await getCustomer(
+      { customers },
+      contexto({ companyId: 'emp-2' }),
+      r.customer.id,
+    ).catch((e: unknown) => e)
+
+    expect(isAppError(erro) && erro.code).toBe('NOT_FOUND')
+  })
+
+  it('id que nunca existiu responde NOT_FOUND', async () => {
+    const customers = new InMemoryCustomerRepository()
+
+    const erro = await getCustomer({ customers }, contexto(), 'cli-inexistente').catch(
+      (e: unknown) => e,
+    )
+
+    expect(isAppError(erro) && erro.code).toBe('NOT_FOUND')
   })
 })
 

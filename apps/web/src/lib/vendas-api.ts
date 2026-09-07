@@ -104,7 +104,7 @@ export function paraItemCarrinho(produto: {
  * segundo nao.
  */
 export async function buscarPorEan(ean: string): Promise<ProdutoDoCatalogo | null> {
-  const limpo = ean.replace(/D/g, '')
+  const limpo = ean.replace(/\D/g, '')
   if (limpo === '') return null
 
   let resposta: Response

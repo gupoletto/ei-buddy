@@ -1,11 +1,18 @@
 export {
+  addressOutputSchema,
+  addressSchema,
   cnpjSchema,
   cpfSchema,
+  dddDe,
   documentSchema,
   isValidCnpj,
   isValidCpf,
   onlyDigits,
+  tipoDePessoa,
+  ufSchema,
+  UFS,
 } from './document.js'
+export type { Address, AddressOutput, UF } from './document.js'
 export {
   barcodeSchema,
   dateSchema,

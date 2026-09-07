@@ -25,6 +25,17 @@ const PRINCIPAL: AuthenticatedPrincipal = {
   role: 'owner',
 }
 
+/** Endereco em branco — o que a loja que nunca preencheu o cadastro tem. */
+const SEM_ENDERECO = {
+  zipCode: null,
+  street: null,
+  number: null,
+  complement: null,
+  district: null,
+  city: null,
+  state: null,
+}
+
 function cadastroEmMemoria() {
   const empresas: CompanyOutput[] = []
   const clientes: (CustomerOutput & { companyId: string })[] = []
@@ -41,6 +52,7 @@ function cadastroEmMemoria() {
         cnpj: c.cnpj,
         email: c.email,
         phone: c.phone,
+        address: SEM_ENDERECO,
         createdAt: c.createdAt.toISOString(),
       }
       empresas.push(e)
@@ -62,6 +74,17 @@ function cadastroEmMemoria() {
         notes: c.notes ?? null,
         walletLimitCents: c.walletLimitCents ?? 0,
         walletBalanceCents: 0,
+        /* Campo a campo, e nao `c.address ?? SEM_ENDERECO`: quem manda so o
+           CEP tem que ver os outros seis voltarem `null`, e nao sumirem. */
+        address: {
+          zipCode: c.address?.zipCode ?? null,
+          street: c.address?.street ?? null,
+          number: c.address?.number ?? null,
+          complement: c.address?.complement ?? null,
+          district: c.address?.district ?? null,
+          city: c.address?.city ?? null,
+          state: c.address?.state ?? null,
+        },
         createdAt: c.createdAt.toISOString(),
       }
       clientes.push(cl)
@@ -84,6 +107,9 @@ function cadastroEmMemoria() {
           .map((c) => ({ ...c, lastSaleOn: null, salesCount: 0, totalSpentCents: 0 })),
       }
     },
+
+    findById: async (companyId, customerId) =>
+      clientes.find((c) => c.id === customerId && c.companyId === companyId),
 
     findSimilar: async (companyId, criteria) =>
       criteria.phone === undefined && criteria.document === undefined
@@ -212,8 +238,17 @@ function cadastroEmMemoria() {
   }
 }
 
-async function buildApp(principal: AuthenticatedPrincipal | null = PRINCIPAL) {
-  const memoria = cadastroEmMemoria()
+/**
+ * `memoria` entra por fora para testar isolamento entre lojas.
+ *
+ * Sem isso, "a outra empresa nao ve" passaria pelo motivo errado: cada
+ * `buildApp` teria um banco novo, e o cliente nao existiria para NINGUEM. O
+ * teste ficaria verde provando nada.
+ */
+async function buildApp(
+  principal: AuthenticatedPrincipal | null = PRINCIPAL,
+  memoria = cadastroEmMemoria(),
+) {
   const app = Fastify({ logger: false })
   registerErrorHandler(app)
   await registerRateLimit(app)
@@ -371,6 +406,70 @@ describe('cadastrar cliente — RF-009, RF-010', () => {
     expect(
       (await app.inject({ method: 'POST', url: '/clientes', payload: CLIENTE })).statusCode,
     ).toBe(403)
+  })
+
+  it('grava o endereco que veio, e devolve na ficha — RF-009', async () => {
+    const c = await buildApp()
+    app = c.app
+
+    const criado = await app.inject({
+      method: 'POST',
+      url: '/clientes',
+      payload: {
+        ...CLIENTE,
+        address: { zipCode: '80010000', street: 'Rua XV', number: '100', state: 'PR' },
+      },
+    })
+
+    const r = await app.inject({ method: 'GET', url: `/clientes/${criado.json().id}` })
+
+    expect(r.statusCode).toBe(200)
+    expect(r.json().address.street).toBe('Rua XV')
+    expect(r.json().address.state).toBe('PR')
+    /* O que nao veio volta `null`. Antes da migration 0019 nao havia coluna, e
+       a tela pedia os sete campos so para descarta-los. */
+    expect(r.json().address.district).toBeNull()
+  })
+
+  it('cliente de outra empresa responde 404, e nao 403', async () => {
+    const c = await buildApp()
+    app = c.app
+    const criado = await app.inject({ method: 'POST', url: '/clientes', payload: CLIENTE })
+    await app.close()
+
+    /* O MESMO banco, outra loja — e o que torna o teste honesto: o cliente
+       existe, e some por isolamento e nao por o banco estar vazio.
+       403 confirmaria que aquele id existe em algum lugar, e quem varre ids
+       aprenderia o cadastro do vizinho sem ler uma linha dele. */
+    const outra = await buildApp({ ...PRINCIPAL, companyId: 'emp-outra' }, c.memoria)
+    app = outra.app
+
+    const r = await app.inject({ method: 'GET', url: `/clientes/${criado.json().id}` })
+
+    expect(r.statusCode).toBe(404)
+  })
+
+  it('id desconhecido responde 404, e nao 200 com corpo vazio', async () => {
+    const c = await buildApp()
+    app = c.app
+
+    const r = await app.inject({ method: 'GET', url: '/clientes/cli-999' })
+
+    expect(r.statusCode).toBe(404)
+  })
+
+  it('nao confunde /clientes/importacao com /clientes/:id', async () => {
+    const c = await buildApp()
+    app = c.app
+
+    const r = await app.inject({
+      method: 'POST',
+      url: '/clientes/importacao',
+      payload: { customers: [{ name: 'Do lote' }] },
+    })
+
+    expect(r.statusCode).toBe(200)
+    expect(r.json().imported).toBe(1)
   })
 })
 

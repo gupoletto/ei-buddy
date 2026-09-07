@@ -1,14 +1,15 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
+  buscarCliente,
   comprasDoCliente,
   contatosDoCliente,
   pendenciasDoCliente,
+  type ClienteDaFicha,
   type ContatoCliente,
 } from '@/lib/clientes-api'
-import type { Cliente } from '@/lib/types'
 import { describeDueDate, formatDate, formatMoney } from '@/lib/format'
 import { Badge, Card, EmptyState, PageHeader, Stat } from '@/components/ui/UI'
 import { Button } from '@/components/ui/Button'
@@ -23,23 +24,114 @@ const TIPO_CONTATO: Record<ContatoCliente['tipo'], string> = {
   observacao: 'Observacao',
 }
 
-export default function ClienteDetalhe({ cliente }: { cliente: Cliente }) {
+/** Documento so com digitos nao se le. CPF vira 000.000.000-00, CNPJ o seu. */
+function formatarDocumento(documento: string | null): string | null {
+  if (documento === null) return null
+  const d = documento.replace(/\D/g, '')
+
+  if (d.length === 11) return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`
+  if (d.length === 14) {
+    return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`
+  }
+
+  /* Comprimento fora do padrao volta como veio: mascarar um documento que nao
+     e CPF nem CNPJ desenharia pontos onde nao ha nada. */
+  return documento
+}
+
+function formatarTelefone(ddd: string | null, celular: string | null): string | null {
+  if (celular === null) return null
+  return ddd === null ? celular : `(${ddd}) ${celular}`
+}
+
+/**
+ * O endereco em duas linhas, pulando o que nao foi preenchido.
+ *
+ * `null` quando NADA foi preenchido — a tela mostra "Nao informado" em vez de
+ * uma virgula solta, que e o que sai de juntar campos vazios sem conferir.
+ */
+function linhasDoEndereco(e: ClienteDaFicha['endereco']): [string, string] | null {
+  const rua = [e.logradouro, e.numero, e.complemento].filter((v) => v !== null && v !== '')
+  const cidade = [
+    e.bairro,
+    e.cidade !== null && e.uf !== null ? `${e.cidade}/${e.uf}` : (e.cidade ?? e.uf),
+    e.cep !== null ? `CEP ${e.cep}` : null,
+  ].filter((v) => v !== null && v !== '')
+
+  if (rua.length === 0 && cidade.length === 0) return null
+
+  return [rua.join(', '), cidade.join(' · ')]
+}
+
+export default function ClienteDetalhe({ clienteId }: { clienteId: string }) {
   const [toast, setToast] = useState<string | null>(null)
+  const [cliente, setCliente] = useState<ClienteDaFicha | null>(null)
+  const [carregando, setCarregando] = useState(true)
+  const [erro, setErro] = useState<string | null>(null)
+
+  const carregar = useCallback(async () => {
+    const r = await buscarCliente(clienteId)
+    setCarregando(false)
+
+    if (!r.ok) {
+      setErro(r.erro)
+      return
+    }
+
+    setErro(null)
+    setCliente(r.dados)
+  }, [clienteId])
+
+  useEffect(() => {
+    /* `async` explicito: os `setState` de `carregar` vem todos depois do
+       await, nunca sincronos no corpo do efeito. */
+    void (async () => {
+      await carregar()
+    })()
+  }, [carregar])
+
+  if (carregando) {
+    return <PageHeader title="Carregando…" subtitle="Buscando a ficha do cliente" />
+  }
+
+  if (cliente === null) {
+    return (
+      <>
+        <PageHeader title="Cliente" />
+        <Card>
+          <EmptyState
+            title="Nao foi possivel abrir a ficha"
+            description={erro ?? 'Este cliente nao existe ou nao e da sua loja.'}
+            action={
+              <Link href="/app/clientes" className={styles.verMais}>
+                Voltar para a lista
+                <IconArrowRight size={14} />
+              </Link>
+            }
+          />
+        </Card>
+      </>
+    )
+  }
 
   const compras = comprasDoCliente(cliente.id)
   const pendencias = pendenciasDoCliente(cliente.id)
   const contatos = contatosDoCliente(cliente.id)
 
-  const totalPendente = pendencias.reduce((acc, p) => acc + p.valor, 0)
   const totalComprado = compras.reduce((acc, c) => acc + c.valor, 0)
+  const documento = formatarDocumento(cliente.documento)
+  const telefone = formatarTelefone(cliente.ddd, cliente.celular)
+  const endereco = linhasDoEndereco(cliente.endereco)
 
-  const whatsapp = `https://wa.me/55${cliente.ddd}${cliente.celular.replace(/\D/g, '')}`
+  /* O subtitulo so mostra o que existe. Cliente cadastrado so com nome —
+     que a RF-009 permite — teria " · " sozinho embaixo do titulo. */
+  const subtitulo = [documento, telefone].filter((v) => v !== null).join(' · ')
 
   return (
     <>
       <PageHeader
         title={cliente.nome}
-        subtitle={`${cliente.documento} · (${cliente.ddd}) ${cliente.celular}`}
+        {...(subtitulo === '' ? {} : { subtitle: subtitulo })}
         actions={
           <>
             <Button
@@ -58,35 +150,42 @@ export default function ClienteDetalhe({ cliente }: { cliente: Cliente }) {
               <IconCalendar size={16} />
               Lancar contato
             </Button>
-            {/* Link direto para o WhatsApp do cliente — abre o app instalado */}
-            <a
-              href={whatsapp}
-              target="_blank"
-              rel="noreferrer noopener"
-              className={styles.whatsBotao}
-            >
-              Enviar WhatsApp
-              <IconArrowRight size={15} />
-            </a>
+            {/*
+              O botao de WhatsApp so aparece com telefone. Antes ele era sempre
+              desenhado, e para quem nao tem numero abria `wa.me/55` — uma aba
+              em branco que parecia falha do aplicativo.
+            */}
+            {cliente.telefone === null ? null : (
+              <a
+                href={`https://wa.me/55${cliente.telefone.replace(/\D/g, '')}`}
+                target="_blank"
+                rel="noreferrer noopener"
+                className={styles.whatsBotao}
+              >
+                Enviar WhatsApp
+                <IconArrowRight size={15} />
+              </a>
+            )}
           </>
         }
       />
 
       <div className="statRow">
         <Stat
-          label="Compras"
-          value={String(cliente.totalCompras)}
-          hint={formatMoney(totalComprado)}
+          label="Fiado em aberto"
+          value={formatMoney(cliente.saldoFiado)}
+          hint={
+            cliente.limiteFiado > 0
+              ? `limite ${formatMoney(cliente.limiteFiado)}`
+              : 'sem limite liberado'
+          }
+          tone={cliente.saldoFiado > 0 ? 'warning' : 'positive'}
         />
-        <Stat
-          label="Em aberto"
-          value={formatMoney(totalPendente)}
-          hint={pendencias.length ? `${pendencias.length} titulo(s)` : 'nada pendente'}
-          tone={totalPendente > 0 ? 'warning' : 'positive'}
-        />
+        <Stat label="Compras" value={String(compras.length)} hint={formatMoney(totalComprado)} />
         <Stat
           label="Ultima compra"
-          value={cliente.ultimaCompra ? formatDate(cliente.ultimaCompra) : '—'}
+          value={compras[0] ? formatDate(compras[0].data) : '—'}
+          hint={compras.length === 0 ? 'nunca comprou' : undefined}
         />
       </div>
 
@@ -96,17 +195,26 @@ export default function ClienteDetalhe({ cliente }: { cliente: Cliente }) {
           <dl className={styles.dados}>
             <div>
               <dt>Documento</dt>
-              <dd>{cliente.documento}</dd>
+              <dd>{documento ?? 'Nao informado'}</dd>
             </div>
             <div>
               <dt>Tipo</dt>
-              <dd>{cliente.tipoPessoa === 'fisica' ? 'Pessoa fisica' : 'Pessoa juridica'}</dd>
+              {/*
+                Derivado do documento, e nao um campo proprio: guardar os dois
+                deixaria a ficha dizer "pessoa fisica" com um CNPJ ao lado no
+                dia em que alguem corrigisse so um deles.
+              */}
+              <dd>
+                {cliente.tipoPessoa === 'fisica'
+                  ? 'Pessoa fisica'
+                  : cliente.tipoPessoa === 'juridica'
+                    ? 'Pessoa juridica'
+                    : '—'}
+              </dd>
             </div>
             <div>
               <dt>Celular</dt>
-              <dd>
-                ({cliente.ddd}) {cliente.celular}
-              </dd>
+              <dd>{telefone ?? 'Nao informado'}</dd>
             </div>
             <div>
               <dt>E-mail</dt>
@@ -115,13 +223,23 @@ export default function ClienteDetalhe({ cliente }: { cliente: Cliente }) {
             <div className={styles.dadosLargo}>
               <dt>Endereco</dt>
               <dd>
-                {cliente.endereco.logradouro}, {cliente.endereco.numero}
-                {cliente.endereco.complemento ? ` · ${cliente.endereco.complemento}` : ''}
-                <br />
-                {cliente.endereco.bairro} · {cliente.endereco.cidade}/{cliente.endereco.uf} · CEP{' '}
-                {cliente.endereco.cep}
+                {endereco === null ? (
+                  'Nao informado'
+                ) : (
+                  <>
+                    {endereco[0]}
+                    {endereco[0] !== '' && endereco[1] !== '' ? <br /> : null}
+                    {endereco[1]}
+                  </>
+                )}
               </dd>
             </div>
+            {cliente.observacao === null ? null : (
+              <div className={styles.dadosLargo}>
+                <dt>Observacao</dt>
+                <dd>{cliente.observacao}</dd>
+              </div>
+            )}
           </dl>
         </Card>
 

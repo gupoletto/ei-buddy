@@ -10,6 +10,7 @@ import {
 import {
   AppError,
   catalogSummary,
+  getCustomer,
   importCustomers,
   importProducts,
   type ImportProductsDeps,
@@ -133,6 +134,25 @@ export function registerCadastroRoutes(app: FastifyInstance, deps: CadastroDeps)
     const pagina = await listCustomers(deps, ctx, input)
 
     return reply.code(200).send(pagina)
+  })
+
+  /**
+   * A ficha de um cliente — RF-011.
+   *
+   * Rota propria e nao `GET /clientes?id=`: e acesso a recurso, e a diferenca
+   * aparece na resposta — 404 quando nao existe, contra a lista vazia que a
+   * busca devolve legitimamente.
+   *
+   * Cliente de outra empresa cai no mesmo 404, de proposito: um 403 confirmaria
+   * que aquele id existe em alguma loja.
+   */
+  app.get('/clientes/:id', async (request, reply) => {
+    const ctx = requireContext(request)
+    const { id } = request.params as { id: string }
+
+    const cliente = await getCustomer(deps, ctx, id)
+
+    return reply.code(200).send(cliente)
   })
 
   app.post('/produtos', { config: { rateLimit: LIMITE_DE_ESCRITA } }, async (request, reply) => {

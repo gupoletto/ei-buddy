@@ -30,8 +30,41 @@ type LinhaEmpresa = {
   phone: string
   tax_regime: string
   is_active: boolean
+  zip_code: string | null
+  street: string | null
+  number: string | null
+  complement: string | null
+  district: string | null
+  city: string | null
+  state: string | null
   created_at: Date
 }
+
+/**
+ * O endereco de qualquer linha de cadastro.
+ *
+ * Um mapeador so para `companies` e `customers`: as colunas tem o mesmo nome
+ * nas duas de proposito (migration 0019), e escrever a conversao duas vezes
+ * abriria espaco para uma esquecer um campo — o tipo de defeito que aparece
+ * como "o complemento some quando salvo por esta tela e nao pela outra".
+ */
+const paraEndereco = (l: {
+  zip_code: string | null
+  street: string | null
+  number: string | null
+  complement: string | null
+  district: string | null
+  city: string | null
+  state: string | null
+}) => ({
+  zipCode: l.zip_code,
+  street: l.street,
+  number: l.number,
+  complement: l.complement,
+  district: l.district,
+  city: l.city,
+  state: l.state,
+})
 
 const paraEmpresa = (l: LinhaEmpresa): CompanyOutput => ({
   id: l.id,
@@ -42,6 +75,7 @@ const paraEmpresa = (l: LinhaEmpresa): CompanyOutput => ({
   cnpj: l.cnpj,
   email: l.email,
   phone: l.phone,
+  address: paraEndereco(l),
   createdAt: l.created_at.toISOString(),
 })
 
@@ -113,6 +147,13 @@ type LinhaCliente = {
   notes: string | null
   wallet_limit_cents: string | number
   wallet_balance_cents: string | number
+  zip_code: string | null
+  street: string | null
+  number: string | null
+  complement: string | null
+  district: string | null
+  city: string | null
+  state: string | null
   created_at: Date
 }
 
@@ -125,6 +166,7 @@ const paraCliente = (l: LinhaCliente): CustomerOutput => ({
   notes: l.notes,
   walletLimitCents: numero(l.wallet_limit_cents),
   walletBalanceCents: numero(l.wallet_balance_cents),
+  address: paraEndereco(l),
   createdAt: l.created_at.toISOString(),
 })
 
@@ -137,14 +179,39 @@ export function createCustomerRepository(sql: Sql): CustomerRepository {
         (tx) => tx<LinhaCliente[]>`
           INSERT INTO customers
             (company_id, name, document, phone, email, notes, wallet_limit_cents,
+             zip_code, street, number, complement, district, city, state,
              created_by, created_at)
           VALUES (${c.companyId}, ${c.name}, ${c.document ?? null}, ${c.phone ?? null},
                   ${c.email ?? null}, ${c.notes ?? null}, ${c.walletLimitCents ?? 0},
+                  ${c.address?.zipCode ?? null}, ${c.address?.street ?? null},
+                  ${c.address?.number ?? null}, ${c.address?.complement ?? null},
+                  ${c.address?.district ?? null}, ${c.address?.city ?? null},
+                  ${c.address?.state ?? null},
                   ${c.createdBy}, ${c.createdAt})
           RETURNING *
         `,
       )
       return paraCliente(linha!)
+    },
+
+    /**
+     * Um cliente — RF-011.
+     *
+     * Sem historico de compra: quem abre a ficha ja tem a lista atras, e o
+     * detalhe pede as OUTRAS coisas (endereco, fiado, observacao). Repetir a
+     * agregacao aqui custaria uma varredura de vendas para mostrar um numero
+     * que a tela anterior ja mostrou.
+     */
+    findById: async (companyId, customerId) => {
+      const [linha] = await withTenant(
+        sql,
+        companyId,
+        (tx) => tx<LinhaCliente[]>`SELECT * FROM customers WHERE id = ${customerId}`,
+      )
+      /* De outra empresa e o mesmo que inexistente: a RLS ja escondeu a linha,
+         e devolver `undefined` e o certo — um erro diferente de "nao existe"
+         confirmaria que o cliente existe em alguma outra loja. */
+      return linha === undefined ? undefined : paraCliente(linha)
     },
 
     /**

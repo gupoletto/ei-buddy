@@ -100,19 +100,40 @@ export type ResultadoSalvarCliente =
   | { ok: false; duplicados: CandidatoCliente[] }
 
 /**
+ * Monta o endereco para a api — ou nada, quando o formulario veio em branco.
+ *
+ * Campo vazio vira AUSENTE e nao `''`: o contrato valida CEP e UF por formato,
+ * e uma string vazia seria recusada como "CEP invalido" por quem simplesmente
+ * nao quis preencher. E `address` inteiro ausente e o que diz "nao informou",
+ * em vez de sete campos vazios que parecem um endereco apagado.
+ */
+function enderecoParaApi(dados: DadosCliente): Record<string, string> | undefined {
+  const campos = {
+    zipCode: dados.cep.replace(/\D/g, ''),
+    street: dados.logradouro.trim(),
+    number: dados.numero.trim(),
+    complement: dados.complemento.trim(),
+    district: dados.bairro.trim(),
+    city: dados.cidade.trim(),
+    state: dados.uf.trim().toUpperCase(),
+  }
+
+  const preenchidos = Object.entries(campos).filter(([, v]) => v !== '')
+
+  return preenchidos.length === 0 ? undefined : Object.fromEntries(preenchidos)
+}
+
+/**
  * Cadastra o cliente — RF-009, RF-010.
  *
- * **O endereco NAO e enviado, e isso e uma lacuna conhecida.** O formulario
- * coleta CEP, logradouro, numero, bairro, cidade e UF; a api nao tem onde
- * guardar — nao existe tabela de endereco de cliente no schema. Mandar os
- * campos faria o `.strict()` do contrato recusar a requisicao inteira, entao
- * eles ficam de fora e o resto e salvo.
- *
- * Registrado no PR da NR-072: a tabela existe na proposta do PR #24, que nao
- * foi mesclada. Enquanto nao houver, o endereco digitado se perde ao salvar.
+ * O endereco vai junto desde a migration 0019. Antes dela nao havia coluna
+ * para guardar: o formulario coletava CEP, logradouro, numero, bairro, cidade
+ * e UF, e os sete campos eram descartados no caminho — o lojista digitava o
+ * endereco e ele sumia sem nenhum aviso.
  */
 export async function salvarCliente(dados: DadosCliente): Promise<ResultadoSalvarCliente> {
   const permitirDuplicado = dados.id === undefined ? '' : '?duplicado=permitir'
+  const address = enderecoParaApi(dados)
 
   let resposta: Response
   try {
@@ -123,8 +144,9 @@ export async function salvarCliente(dados: DadosCliente): Promise<ResultadoSalva
       body: JSON.stringify({
         name: dados.nome,
         ...(dados.documento ? { document: dados.documento } : {}),
-        ...(dados.celular ? { phone: `${dados.ddd}${dados.celular}`.replace(/D/g, '') } : {}),
+        ...(dados.celular ? { phone: `${dados.ddd}${dados.celular}`.replace(/\D/g, '') } : {}),
         ...(dados.email ? { email: dados.email } : {}),
+        ...(address === undefined ? {} : { address }),
       }),
     })
   } catch {
@@ -174,6 +196,118 @@ export type ContatoCliente = {
   data: string
   tipo: 'ligacao' | 'whatsapp' | 'visita' | 'observacao'
   descricao: string
+}
+
+/* -------------------------------------------------------------------------- */
+/* A ficha — RF-011                                                           */
+/* -------------------------------------------------------------------------- */
+
+export type EnderecoDoCliente = {
+  cep: string | null
+  logradouro: string | null
+  numero: string | null
+  complemento: string | null
+  bairro: string | null
+  cidade: string | null
+  uf: string | null
+}
+
+/**
+ * O cliente da ficha.
+ *
+ * Tudo anulavel menos nome e id, ao contrario do `Cliente` do mock: a RF-009
+ * deixa cadastrar so com o nome, e um tipo que exige documento e endereco
+ * obrigaria a tela a inventar `''` para quem nao tem — e `''` desenha como se
+ * o campo estivesse la e vazio, quando na verdade nunca foi preenchido.
+ */
+export type ClienteDaFicha = {
+  id: string
+  nome: string
+  documento: string | null
+  /** Derivado do documento — 11 digitos e fisica, 14 e juridica. */
+  tipoPessoa: 'fisica' | 'juridica' | null
+  /** Derivado do telefone: os dois primeiros digitos. */
+  ddd: string | null
+  celular: string | null
+  telefone: string | null
+  email: string | null
+  observacao: string | null
+  limiteFiado: number
+  saldoFiado: number
+  endereco: EnderecoDoCliente
+}
+
+type FichaDaApi = {
+  id: string
+  name: string
+  document: string | null
+  phone: string | null
+  email: string | null
+  notes: string | null
+  walletLimitCents: number
+  walletBalanceCents: number
+  address: {
+    zipCode: string | null
+    street: string | null
+    number: string | null
+    complement: string | null
+    district: string | null
+    city: string | null
+    state: string | null
+  }
+}
+
+/**
+ * Tipo de pessoa e DDD sao DERIVADOS aqui, e nao colunas no banco.
+ *
+ * Guardar os dois criaria uma segunda fonte de verdade: bastaria alguem trocar
+ * o CPF por um CNPJ sem mexer no `tipo_pessoa` para a ficha passar a mentir. A
+ * regra e a mesma do backend (`tipoDePessoa` e `dddDe` em contracts), e vale
+ * repeti-la aqui porque o front precisa dela para desenhar antes de salvar.
+ */
+function tipoDePessoa(documento: string | null): 'fisica' | 'juridica' | null {
+  if (documento === null) return null
+  const d = documento.replace(/\D/g, '')
+  if (d.length === 11) return 'fisica'
+  if (d.length === 14) return 'juridica'
+  return null
+}
+
+export async function buscarCliente(id: string): Promise<Resultado<ClienteDaFicha>> {
+  const r = await pedir<FichaDaApi>(`/api/clientes/${encodeURIComponent(id)}`)
+
+  if (!r.ok) return r
+
+  const c = r.dados
+  const digitos = c.phone?.replace(/\D/g, '') ?? null
+
+  return {
+    ok: true,
+    dados: {
+      id: c.id,
+      nome: c.name,
+      documento: c.document,
+      tipoPessoa: tipoDePessoa(c.document),
+      /* Menos de dez digitos nao tem DDD: e um telefone antigo ou incompleto,
+         e cortar os dois primeiros ali inventaria um codigo de area. */
+      ddd: digitos !== null && digitos.length >= 10 ? digitos.slice(0, 2) : null,
+      celular: digitos !== null && digitos.length >= 10 ? digitos.slice(2) : digitos,
+      telefone: c.phone,
+      email: c.email,
+      observacao: c.notes,
+      limiteFiado: c.walletLimitCents / 100,
+      saldoFiado: c.walletBalanceCents / 100,
+      endereco: {
+        cep: c.address.zipCode,
+        logradouro: c.address.street,
+        numero: c.address.number,
+        complemento: c.address.complement,
+        bairro: c.address.district,
+        cidade: c.address.city,
+        uf: c.address.state,
+      },
+    },
+  }
 }
 
 /** SUBSTITUIR POR: GET /clientes/:id/compras */
@@ -364,7 +498,7 @@ export async function confirmarImportacaoClientes(
   const enviar: Record<string, unknown>[] = []
   const origem: number[] = []
 
-  const digitos = (v: string | undefined) => (v ?? '').replace(/D/g, '')
+  const digitos = (v: string | undefined) => (v ?? '').replace(/\D/g, '')
 
   registros.forEach((r, index) => {
     const nome = (r.nome ?? '').trim()

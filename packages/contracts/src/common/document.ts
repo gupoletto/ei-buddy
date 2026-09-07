@@ -69,3 +69,116 @@ export const documentSchema = z
   .refine((d) => (d.length === 11 ? isValidCpf(d) : d.length === 14 ? isValidCnpj(d) : false), {
     message: 'Documento invalido. Informe um CPF ou CNPJ.',
   })
+
+/* -------------------------------------------------------------------------- */
+/* Endereco — NR-072, RF-003, RF-011                                          */
+/* -------------------------------------------------------------------------- */
+
+export const UFS = [
+  'AC',
+  'AL',
+  'AP',
+  'AM',
+  'BA',
+  'CE',
+  'DF',
+  'ES',
+  'GO',
+  'MA',
+  'MT',
+  'MS',
+  'MG',
+  'PA',
+  'PB',
+  'PR',
+  'PE',
+  'PI',
+  'RJ',
+  'RN',
+  'RS',
+  'RO',
+  'RR',
+  'SC',
+  'SP',
+  'SE',
+  'TO',
+] as const
+
+export const ufSchema = z.enum(UFS, { error: 'UF invalida.' })
+
+export type UF = z.infer<typeof ufSchema>
+
+/**
+ * O endereco, com tudo opcional.
+ *
+ * A RF-009 pede "apenas nome e telefone" para o cliente, e exigir CEP travaria
+ * o balcao. Para a empresa o endereco chega pela busca de CNPJ e pode faltar.
+ *
+ * `number` e TEXTO: existe "s/n", "120-A" e "KM 42".
+ */
+export const addressSchema = z
+  .object({
+    zipCode: z
+      .string()
+      .trim()
+      .regex(/^\d{8}$/, 'CEP invalido. Use 8 digitos.')
+      .optional(),
+    street: z.string().trim().max(160).optional(),
+    number: z.string().trim().max(20).optional(),
+    complement: z.string().trim().max(80).optional(),
+    district: z.string().trim().max(80).optional(),
+    city: z.string().trim().max(80).optional(),
+    state: ufSchema.optional(),
+  })
+  .strict()
+
+export type Address = z.infer<typeof addressSchema>
+
+/** O mesmo endereco na saida, com nulo no lugar de ausente. */
+export const addressOutputSchema = z.object({
+  zipCode: z.string().nullable(),
+  street: z.string().nullable(),
+  number: z.string().nullable(),
+  complement: z.string().nullable(),
+  district: z.string().nullable(),
+  city: z.string().nullable(),
+  state: z.string().nullable(),
+})
+
+export type AddressOutput = z.infer<typeof addressOutputSchema>
+
+/**
+ * Pessoa fisica ou juridica, DEDUZIDO do documento.
+ *
+ * Nao ha coluna para isto, de proposito: onze digitos e CPF, catorze e CNPJ, e
+ * guardar seria criar uma segunda fonte para a mesma verdade. No dia em que as
+ * duas divergissem ninguem saberia qual vale — e um cadastro com CNPJ marcado
+ * como pessoa fisica emite nota errada.
+ *
+ * `null` quando nao ha documento: o cliente de balcao (RF-009) nao tem, e
+ * chutar "fisica" seria inventar.
+ */
+export function tipoDePessoa(documento: string | null): 'fisica' | 'juridica' | null {
+  if (documento === null) return null
+
+  const digitos = documento.replace(/\D/g, '')
+  if (digitos.length === 11) return 'fisica'
+  if (digitos.length === 14) return 'juridica'
+  return null
+}
+
+/**
+ * O DDD, dos dois primeiros digitos do telefone.
+ *
+ * Tambem nao tem coluna: `phone` guarda o numero inteiro. Duas colunas criariam
+ * o estado invalido "DDD de Sao Paulo com celular de Manaus", que nenhuma
+ * validacao pega depois de gravado.
+ */
+export function dddDe(telefone: string | null): string | null {
+  if (telefone === null) return null
+
+  const digitos = telefone.replace(/\D/g, '')
+  /* Menos de dez digitos nao e telefone brasileiro completo: devolver os dois
+     primeiros de um numero pela metade daria um DDD inventado. */
+  return digitos.length >= 10 ? digitos.slice(0, 2) : null
+}
