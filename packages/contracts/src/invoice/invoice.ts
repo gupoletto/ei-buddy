@@ -65,7 +65,7 @@ export const accessKeySchema = z
 
 /** Estado fiscal da venda, explicito — RF-054. */
 export const invoiceStatusSchema = z.enum(['authorized', 'contingency', 'rejected', 'cancelled'], {
-  errorMap: () => ({ message: 'Estado fiscal invalido.' }),
+  error: 'Estado fiscal invalido.',
 })
 export type InvoiceStatus = z.infer<typeof invoiceStatusSchema>
 

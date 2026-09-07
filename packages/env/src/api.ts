@@ -14,7 +14,7 @@ import { parseEnv } from './parse.js'
  */
 export const apiEnvSchema = baseEnvSchema.extend({
   API_PORT: z.coerce
-    .number({ invalid_type_error: 'API_PORT precisa ser um numero.' })
+    .number({ error: 'API_PORT precisa ser um numero.' })
     .int('API_PORT precisa ser um numero inteiro.')
     .positive('API_PORT precisa ser maior que zero.')
     .max(65535, 'API_PORT precisa ser no maximo 65535.')

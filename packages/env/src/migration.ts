@@ -14,14 +14,20 @@ import { parseEnv } from './parse.js'
 export const migrationEnvSchema = z.object({
   DATABASE_MIGRATION_URL: z
     /*
-     * `required_error` e a parte que costuma faltar. Sem ele, variavel AUSENTE
-     * — que e o caso comum — cai na mensagem padrao do Zod ("Required"), e a
-     * orientacao escrita no `.min(1)` so aparece para string vazia, que quase
-     * nunca acontece. A mensagem tem de dizer o proximo passo (RNF-054)
-     * justamente no caso em que a pessoa nao configurou nada.
+     * A mensagem da variavel AUSENTE, que e a parte que costuma faltar.
+     *
+     * Sem ela, variavel ausente — o caso comum — cai na mensagem padrao do Zod
+     * ("Invalid input"), e a orientacao escrita no `.min(1)` so aparece para
+     * string vazia, que quase nunca acontece. A mensagem tem de dizer o proximo
+     * passo (RNF-054) justamente no caso em que a pessoa nao configurou nada.
+     *
+     * No Zod 3 isto era `required_error`, separado de `invalid_type_error`. O
+     * Zod 4 unificou os dois em `error`, e aqui a unificacao nao perde nada:
+     * valor de `process.env` e string ou ausente, entao "tipo errado" nao
+     * acontece.
      */
     .string({
-      required_error:
+      error:
         'DATABASE_MIGRATION_URL e obrigatoria para rodar migrations. ' +
         'Copie .env.example para .env ou rode `pnpm setup`.',
     })

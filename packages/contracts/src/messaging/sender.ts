@@ -75,7 +75,7 @@ export type SendTextRequest = z.infer<typeof sendTextRequestSchema>
 
 /** Tipos de midia que o MVP envia: comprovante, DANFE e foto de produto. */
 export const mediaKindSchema = z.enum(['image', 'document'], {
-  errorMap: () => ({ message: 'Tipo de midia invalido.' }),
+  error: 'Tipo de midia invalido.',
 })
 export type MediaKind = z.infer<typeof mediaKindSchema>
 

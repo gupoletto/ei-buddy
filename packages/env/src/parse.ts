@@ -9,7 +9,7 @@ import type { z } from 'zod'
  * vez: sem isso, cada boot revela uma variavel faltando por vez, e corrigir o
  * .env vira um ciclo de tentativa e erro.
  */
-export function parseEnv<S extends z.ZodTypeAny>(
+export function parseEnv<S extends z.ZodType>(
   schema: S,
   source: NodeJS.ProcessEnv,
   app: string,

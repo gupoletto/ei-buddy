@@ -14,13 +14,13 @@ import { z } from 'zod'
  * e arredondar depois so espalha o erro. A tela converte antes de enviar.
  */
 export const moneyCentsSchema = z
-  .number({ invalid_type_error: 'Informe um valor em centavos, sem virgula.' })
+  .number({ error: 'Informe um valor em centavos, sem virgula.' })
   .int('Valor monetario precisa ser inteiro em centavos.')
   .nonnegative('Valor nao pode ser negativo.')
 
 /** Aceita negativo — desconto e estorno existem. */
 export const signedMoneyCentsSchema = z
-  .number({ invalid_type_error: 'Informe um valor em centavos, sem virgula.' })
+  .number({ error: 'Informe um valor em centavos, sem virgula.' })
   .int('Valor monetario precisa ser inteiro em centavos.')
 
 /** Identificador opaco. Formato e problema do `db`, nao do contrato. */
@@ -66,13 +66,13 @@ export const barcodeSchema = z
 
 /** Unidade de medida — glossario `UnitOfMeasure`. */
 export const unitOfMeasureSchema = z.enum(['un', 'kg', 'g', 'l', 'ml', 'm', 'cm', 'cx', 'pct'], {
-  errorMap: () => ({ message: 'Unidade de medida invalida.' }),
+  error: 'Unidade de medida invalida.',
 })
 export type UnitOfMeasure = z.infer<typeof unitOfMeasureSchema>
 
 /** Papel de acesso — glossario `Role`. */
 export const roleSchema = z.enum(['owner', 'staff', 'accountant', 'platform_admin'], {
-  errorMap: () => ({ message: 'Papel de acesso invalido.' }),
+  error: 'Papel de acesso invalido.',
 })
 export type Role = z.infer<typeof roleSchema>
 

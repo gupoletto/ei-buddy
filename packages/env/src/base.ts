@@ -9,14 +9,12 @@ import { z } from 'zod'
  */
 
 export const nodeEnvSchema = z.enum(['development', 'production', 'test'], {
-  errorMap: () => ({
-    message: 'NODE_ENV precisa ser development, production ou test.',
-  }),
+  error: 'NODE_ENV precisa ser development, production ou test.',
 })
 
 export const logLevelSchema = z
   .enum(['debug', 'info', 'warn', 'error'], {
-    errorMap: () => ({ message: 'LOG_LEVEL precisa ser debug, info, warn ou error.' }),
+    error: 'LOG_LEVEL precisa ser debug, info, warn ou error.',
   })
   .default('info')
 

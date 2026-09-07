@@ -10,7 +10,7 @@ import type { z } from 'zod'
  * (RNF-054). Aqui ele vira `AppError` com a lista de campos que a tela usa
  * para destacar onde esta o problema.
  */
-export function validate<S extends z.ZodTypeAny>(schema: S, input: unknown): z.infer<S> {
+export function validate<S extends z.ZodType>(schema: S, input: unknown): z.infer<S> {
   const result = schema.safeParse(input)
   if (result.success) return result.data as z.infer<S>
 
