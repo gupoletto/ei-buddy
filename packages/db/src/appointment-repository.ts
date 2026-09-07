@@ -23,6 +23,8 @@ type Linha = {
   id: string
   title: string
   starts_at: Date
+  ends_at: Date | null
+  location: string | null
   customer_id: string | null
   notes: string | null
   reminder_minutes_before: number | null
@@ -41,6 +43,9 @@ const paraSaida = (l: Linha): AppointmentOutput => ({
   id: l.id,
   title: l.title,
   startsAt: l.starts_at.toISOString(),
+  /* Nulo continua nulo: "pontual" e um valor, e nao um campo faltando. */
+  endsAt: l.ends_at?.toISOString() ?? null,
+  location: l.location,
   customerId: l.customer_id,
   notes: l.notes,
   reminderMinutesBefore: l.reminder_minutes_before,
@@ -56,10 +61,11 @@ export function createAppointmentRepository(sql: Sql): AppointmentRepository {
         a.companyId,
         (tx) => tx<Linha[]>`
           INSERT INTO appointments
-            (company_id, title, starts_at, customer_id, notes,
+            (company_id, title, starts_at, ends_at, location, customer_id, notes,
              reminder_minutes_before, created_by, created_at)
           VALUES (
-            ${a.companyId}, ${a.title}, ${a.startsAt}, ${a.customerId ?? null},
+            ${a.companyId}, ${a.title}, ${a.startsAt}, ${a.endsAt ?? null},
+            ${a.location ?? null}, ${a.customerId ?? null},
             ${a.notes ?? null}, ${a.reminderMinutesBefore ?? null},
             ${a.createdBy}, ${a.createdAt}
           )

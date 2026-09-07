@@ -53,17 +53,26 @@ describe.skipIf(!DATABASE_URL)('schema de agenda — NR-035', () => {
     empresa: string,
     titulo: string,
     startsAt: string,
-    extra: { customerId?: string; lembrete?: number } = {},
+    extra: {
+      customerId?: string
+      lembrete?: number
+      endsAt?: string
+      local?: string
+    } = {},
   ): Promise<string> {
     const [linha] = await withTenant(
       sql,
       empresa,
       (tx) => tx<{ id: string }[]>`
-        INSERT INTO appointments (company_id, title, starts_at, customer_id, reminder_minutes_before)
+        INSERT INTO appointments
+          (company_id, title, starts_at, ends_at, location, customer_id,
+           reminder_minutes_before)
         VALUES (
           ${empresa},
           ${titulo},
           ${startsAt},
+          ${extra.endsAt ?? null},
+          ${extra.local ?? null},
           ${extra.customerId ?? null},
           ${extra.lembrete ?? null}
         )
@@ -89,6 +98,7 @@ describe.skipIf(!DATABASE_URL)('schema de agenda — NR-035', () => {
   beforeAll(async () => {
     const r = await migrate(MIGRATION_URL!)
     expect([...r.aplicadas, ...r.jaEstavam]).toContain('0006_agenda')
+    expect([...r.aplicadas, ...r.jaEstavam]).toContain('0020_fim_e_local_do_compromisso')
 
     admin = postgres(DATABASE_URL!, { max: 3, onnotice: () => {} })
     aplicacao = await conectarComoAplicacao(admin, DATABASE_URL!)
@@ -344,6 +354,62 @@ describe.skipIf(!DATABASE_URL)('schema de agenda — NR-035', () => {
 
       /* Zero seria "avise na hora", que e um pedido; nulo e a ausencia dele. */
       expect(linha?.reminder_minutes_before).toBeNull()
+    })
+
+    /* Migration 0020. Antes dela o formulario pedia hora de fim e local, e os
+       dois eram descartados por nao haver coluna. */
+    it('guarda a hora de fim e o local', async () => {
+      const id = await agendar(empresaA, 'Entrega', '2026-12-12T13:00:00Z', {
+        endsAt: '2026-12-12T14:30:00Z',
+        local: 'Rua Xavier da Silva, 88',
+      })
+
+      const [linha] = await withTenant(
+        sql,
+        empresaA,
+        (tx) => tx<{ ends_at: Date | null; location: string | null }[]>`
+          SELECT ends_at, location FROM appointments WHERE id = ${id}
+        `,
+      )
+
+      expect(linha?.ends_at?.toISOString()).toBe('2026-12-12T14:30:00.000Z')
+      expect(linha?.location).toBe('Rua Xavier da Silva, 88')
+    })
+
+    it('compromisso pontual fica com ends_at NULO — nao com uma duracao inventada', async () => {
+      const id = await agendar(empresaA, 'Pagar aluguel', '2026-12-13T13:00:00Z')
+
+      const [linha] = await withTenant(
+        sql,
+        empresaA,
+        (tx) => tx<{ ends_at: Date | null }[]>`
+          SELECT ends_at FROM appointments WHERE id = ${id}
+        `,
+      )
+
+      expect(linha?.ends_at).toBeNull()
+    })
+
+    it('recusa fim ANTES do inicio', async () => {
+      /* O CHECK e a ultima linha de defesa: `contracts` valida o que entra por
+         HTTP, e migration, script e worker escrevem por fora. */
+      await expect(
+        agendar(empresaA, 'Impossivel', '2026-12-14T13:00:00Z', {
+          endsAt: '2026-12-14T12:00:00Z',
+        }),
+      ).rejects.toThrow(/violates check constraint/i)
+    })
+
+    it('recusa fim IGUAL ao inicio — duracao zero e o compromisso pontual', async () => {
+      await expect(
+        agendar(empresaA, 'Zero', '2026-12-15T13:00:00Z', { endsAt: '2026-12-15T13:00:00Z' }),
+      ).rejects.toThrow(/violates check constraint/i)
+    })
+
+    it('recusa local longo demais', async () => {
+      await expect(
+        agendar(empresaA, 'Local enorme', '2026-12-16T13:00:00Z', { local: 'x'.repeat(201) }),
+      ).rejects.toThrow(/violates check constraint/i)
     })
   })
 

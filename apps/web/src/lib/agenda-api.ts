@@ -1,105 +1,122 @@
 /**
- * ============================================================================
- * PONTOS DE INTEGRACAO — AGENDA
- * ============================================================================
+ * A agenda — NR-036, RF-089 a RF-093.
  *
- *  | Funcao            | Endpoint esperado              | Disparo            |
- *  |-------------------|--------------------------------|--------------------|
- *  | listarEventos     | GET  /agenda/eventos?de=&ate=  | troca de mes       |
- *  | criarEvento       | POST /agenda/eventos           | novo compromisso   |
- *  | excluirEvento     | DELETE /agenda/eventos/:id     | excluir            |
+ * Era toda de exemplo: seis compromissos fixos de agosto de 2026, iguais para
+ * qualquer loja, e `criarEvento`/`excluirEvento` eram `delay()` seguidos de
+ * `{ ok: true }`. O lojista marcava, via "Compromisso criado", trocava de mes e
+ * voltava — e a agenda estava como antes.
  *
- * LEMBRETES: o campo `lembreteMinutos` ja existe no modelo porque a
- * comunicacao do produto e por WhatsApp — quando o worker de lembretes
- * entrar, ele le esse campo e nao ha migracao de dado.
+ * Agora fala com `/api/agenda`, que repassa para as rotas de verdade.
  */
 
-const delay = (ms: number) => new Promise((r) => setTimeout(r, ms))
-
-/** Data de referencia do app (mesma dos demais mocks). */
-export const HOJE = '2026-08-24'
+import { pedir, type Resultado } from './http'
 
 /* -------------------------------------------------------------------------- */
-/* Eventos                                                                    */
+/* Fuso: o banco guarda instante, a tela mostra dia e hora                     */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * O dia de hoje, no fuso de quem esta olhando.
+ *
+ * Era a constante `'2026-08-24'`. A agenda abria congelada naquele dia para
+ * sempre — "hoje" nunca era hoje, e "proximos compromissos" listava o passado.
+ *
+ * Nao usa `toISOString()`: ele converte para UTC, e as 21h de Sao Paulo viram
+ * o dia seguinte. Para um calendario, um dia de diferenca e um defeito que
+ * aparece so para quem abre a tela de noite.
+ */
+export function hoje(): string {
+  return diaLocal(new Date())
+}
+
+/**
+ * `AAAA-MM-DD` no fuso local, sem passar por UTC.
+ *
+ * Exportado para o teste exercitar ESTA funcao, e nao uma copia dela: o
+ * defeito que ela evita — as 21h de Sao Paulo virando o dia seguinte — some se
+ * o teste reimplementar a conversao do seu jeito.
+ */
+export function diaLocal(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
+}
+
+/** `HH:MM` no fuso local. */
+export function horaLocal(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${p(d.getHours())}:${p(d.getMinutes())}`
+}
+
+/**
+ * Dia e hora locais viram um INSTANTE.
+ *
+ * `new Date('2026-09-10T09:00')` — sem `Z` — e interpretado no fuso do
+ * navegador, que e exatamente o que o lojista quis dizer ao digitar 09:00.
+ * Montar a string com `Z` marcaria nove da manha em Londres.
+ */
+export function instante(dia: string, hora: string): string {
+  return new Date(`${dia}T${hora}:00`).toISOString()
+}
+
+/* -------------------------------------------------------------------------- */
+/* Compromissos                                                               */
 /* -------------------------------------------------------------------------- */
 
 export type Evento = {
   id: string
   titulo: string
   descricao: string
-  /** AAAA-MM-DD */
+  /** AAAA-MM-DD no fuso de quem olha. */
   data: string
   horaInicio: string
-  horaFim: string
+  /** Nulo = compromisso pontual. NAO e "esqueceram de preencher". */
+  horaFim: string | null
   local: string
   /** Minutos antes do compromisso para avisar no WhatsApp. */
   lembreteMinutos: number | null
 }
 
-/** SUBSTITUIR POR: GET /agenda/eventos?de=&ate= */
-export function listarEventos(): Evento[] {
-  return [
-    {
-      id: 'ev-1',
-      titulo: 'Pagar Torrefacao Aurora',
-      descricao: 'Pedido 4471 vence hoje.',
-      data: '2026-08-24',
-      horaInicio: '14:00',
-      horaFim: '14:30',
-      local: '',
-      lembreteMinutos: 30,
-    },
-    {
-      id: 'ev-2',
-      titulo: 'Entrega Padaria Sol',
-      descricao: 'Pedido 8891, levar nota.',
-      data: '2026-08-25',
-      horaInicio: '08:30',
-      horaFim: '09:30',
-      local: 'Rua Xavier da Silva, 88',
-      lembreteMinutos: 60,
-    },
-    {
-      id: 'ev-3',
-      titulo: 'Reuniao com contador',
-      descricao: 'Fechamento de agosto.',
-      data: '2026-08-26',
-      horaInicio: '16:00',
-      horaFim: '17:00',
-      local: 'Sala de reuniao',
-      lembreteMinutos: 15,
-    },
-    {
-      id: 'ev-4',
-      titulo: 'Aluguel do ponto',
-      descricao: 'Vencimento do custo fixo.',
-      data: '2026-08-27',
-      horaInicio: '10:00',
-      horaFim: '10:15',
-      local: '',
-      lembreteMinutos: null,
-    },
-    {
-      id: 'ev-5',
-      titulo: 'Almoco com fornecedor',
-      descricao: 'Importadora Oliva, linha de azeites.',
-      data: '2026-08-28',
-      horaInicio: '12:00',
-      horaFim: '13:30',
-      local: 'Restaurante Boa Mesa',
-      lembreteMinutos: 30,
-    },
-    {
-      id: 'ev-6',
-      titulo: 'Contagem de estoque',
-      descricao: 'Inventario mensal.',
-      data: '2026-08-31',
-      horaInicio: '18:00',
-      horaFim: '20:00',
-      local: 'Loja',
-      lembreteMinutos: 60,
-    },
-  ]
+type CompromissoDaApi = {
+  id: string
+  title: string
+  startsAt: string
+  endsAt: string | null
+  location: string | null
+  notes: string | null
+  reminderMinutesBefore: number | null
+}
+
+const paraEvento = (a: CompromissoDaApi): Evento => {
+  const inicio = new Date(a.startsAt)
+  const fim = a.endsAt === null ? null : new Date(a.endsAt)
+
+  return {
+    id: a.id,
+    titulo: a.title,
+    /* A observacao do contrato e a descricao da tela: sao o mesmo campo com
+       dois nomes, e nao dois campos. */
+    descricao: a.notes ?? '',
+    data: diaLocal(inicio),
+    horaInicio: horaLocal(inicio),
+    horaFim: fim === null ? null : horaLocal(fim),
+    local: a.location ?? '',
+    lembreteMinutos: a.reminderMinutesBefore,
+  }
+}
+
+/**
+ * Os compromissos de um intervalo — o mes que o calendario desenha.
+ *
+ * Uma chamada para o mes inteiro, e nao uma por dia: a grade tem quarenta e
+ * duas celulas, e busca-las uma a uma seriam quarenta e duas idas ao servidor
+ * para desenhar uma tela.
+ */
+export async function listarEventos(de: string, ate: string): Promise<Resultado<Evento[]>> {
+  const r = await pedir<{ appointments: CompromissoDaApi[] }>(
+    `/api/agenda?de=${encodeURIComponent(de)}&ate=${encodeURIComponent(ate)}`,
+  )
+
+  return r.ok ? { ok: true, dados: r.dados.appointments.map(paraEvento) } : r
 }
 
 export type DadosEvento = {
@@ -112,26 +129,47 @@ export type DadosEvento = {
   lembreteMinutos: number | null
 }
 
-/** SUBSTITUIR POR: POST /agenda/eventos */
-export async function criarEvento(
-  dados: DadosEvento,
-): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
-  await delay(800)
+/**
+ * Marca o compromisso — RF-089, RF-090, RF-091.
+ *
+ * Campo vazio nao viaja. O contrato e `.strict()` com minimos de tamanho, e
+ * mandar `location: ''` seria recusado como local invalido por quem
+ * simplesmente nao quis preencher.
+ */
+export async function criarEvento(dados: DadosEvento): Promise<Resultado<Evento>> {
+  const descricao = dados.descricao.trim()
+  const local = dados.local.trim()
 
-  if (!dados.titulo.trim()) return { ok: false, error: 'Informe o titulo.' }
-  if (!dados.data) return { ok: false, error: 'Escolha a data.' }
-  if (dados.horaFim <= dados.horaInicio) {
-    return { ok: false, error: 'O horario de fim precisa ser depois do inicio.' }
-  }
+  const r = await pedir<CompromissoDaApi>('/api/agenda', {
+    method: 'POST',
+    body: JSON.stringify({
+      title: dados.titulo.trim(),
+      startsAt: instante(dados.data, dados.horaInicio),
+      /* Fim vazio e legitimo: "pagar aluguel as 10h" nao dura nada. */
+      ...(dados.horaFim === '' ? {} : { endsAt: instante(dados.data, dados.horaFim) }),
+      ...(local === '' ? {} : { location: local }),
+      ...(descricao === '' ? {} : { notes: descricao }),
+      ...(dados.lembreteMinutos === null ? {} : { reminderMinutesBefore: dados.lembreteMinutos }),
+    }),
+  })
 
-  return { ok: true, id: `ev-${Date.now()}` }
+  return r.ok ? { ok: true, dados: paraEvento(r.dados) } : r
 }
 
-/** SUBSTITUIR POR: DELETE /agenda/eventos/:id */
-export async function excluirEvento(id: string): Promise<{ ok: true }> {
-  await delay(500)
-  void id
-  return { ok: true }
+/**
+ * CANCELA o compromisso — RF-092. Nao apaga.
+ *
+ * Chamava-se `excluirEvento`, e o nome mentia sobre o que o sistema faz: nada
+ * e apagado (RNF-040). O compromisso sai da agenda e continua respondendo por
+ * id, que e o que permite reconstruir depois o que foi desmarcado.
+ */
+export async function cancelarEvento(id: string, motivo?: string): Promise<Resultado<Evento>> {
+  const r = await pedir<CompromissoDaApi>(`/api/agenda/${encodeURIComponent(id)}/cancelar`, {
+    method: 'POST',
+    body: JSON.stringify(motivo === undefined || motivo.trim() === '' ? {} : { reason: motivo }),
+  })
+
+  return r.ok ? { ok: true, dados: paraEvento(r.dados) } : r
 }
 
 /** Opcoes de lembrete, em minutos antes do compromisso. */
@@ -174,11 +212,15 @@ export type DiaCalendario = {
 
 /**
  * Monta a grade do mes, completando com os dias vizinhos para as semanas
- * ficarem cheias. Datas sao tratadas como texto AAAA-MM-DD para nao
- * depender do fuso do navegador — em calendario, um dia de diferenca por
- * causa de UTC e um bug que aparece so para alguns usuarios.
+ * ficarem cheias.
+ *
+ * As datas sao construidas em UTC e viram texto AAAA-MM-DD. Aqui isso e
+ * seguro, e nao contradiz `diaLocal`: `Date.UTC(2026, 8, 10)` e um rotulo de
+ * calendario, nao um instante — nao ha hora para o fuso deslocar. O que nao
+ * pode passar por UTC e a conversao de um INSTANTE em dia, que e onde as 21h
+ * de Sao Paulo virariam o dia seguinte.
  */
-export function montarMes(ano: number, mes: number): DiaCalendario[] {
+export function montarMes(ano: number, mes: number, referencia = hoje()): DiaCalendario[] {
   const primeiro = new Date(Date.UTC(ano, mes, 1))
   const inicioSemana = primeiro.getUTCDay()
 
@@ -193,11 +235,22 @@ export function montarMes(ano: number, mes: number): DiaCalendario[] {
       data: iso,
       dia: d.getUTCDate(),
       doMes: d.getUTCMonth() === mes,
-      hoje: iso === HOJE,
+      hoje: iso === referencia,
     })
   }
 
   /* Corta a ultima semana se ela for toda do mes seguinte. */
   const ultimaSemana = dias.slice(35)
   return ultimaSemana.every((d) => !d.doMes) ? dias.slice(0, 35) : dias
+}
+
+/**
+ * As pontas do que o calendario pede ao servidor.
+ *
+ * A grade mostra as bordas das semanas vizinhas, entao o intervalo NAO e o mes
+ * civil: pedir so de 1 a 31 deixaria os dias de fora sem pontinho, e o lojista
+ * veria o dia 30 do mes passado vazio com um compromisso marcado nele.
+ */
+export function pontasDaGrade(grade: readonly DiaCalendario[]): { de: string; ate: string } {
+  return { de: grade[0]!.data, ate: grade[grade.length - 1]!.data }
 }

@@ -1,41 +1,81 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
+  cancelarEvento,
   criarEvento,
   DIAS_SEMANA,
-  excluirEvento,
-  HOJE,
+  hoje,
   LEMBRETES,
   listarEventos,
   montarMes,
   NOMES_MESES,
+  pontasDaGrade,
   type Evento,
 } from '@/lib/agenda-api'
 import { formatDate } from '@/lib/format'
-import { Badge, Card, EmptyState, PageHeader } from '@/components/ui/UI'
+import { Card, EmptyState, PageHeader } from '@/components/ui/UI'
 import { Button } from '@/components/ui/Button'
 import Toast from '@/components/ui/Toast'
 import { Spinner } from '@/components/auth/Fields'
 import ConfirmarDialog from '@/components/app/ConfirmarDialog'
-import { IconBell, IconCalendar, IconClose, IconPlus } from '@/components/Icons'
+import { IconClose, IconPlus } from '@/components/Icons'
 import styles from './agenda.module.css'
 
-/** Mes exibido inicialmente — o da data de referencia do app. */
-const [ANO_INICIAL, MES_INICIAL] = [Number(HOJE.slice(0, 4)), Number(HOJE.slice(5, 7)) - 1]
-
 export default function AgendaView() {
-  const [eventos, setEventos] = useState<Evento[]>(() => listarEventos())
-  const [ano, setAno] = useState(ANO_INICIAL)
-  const [mes, setMes] = useState(MES_INICIAL)
-  const [diaSelecionado, setDiaSelecionado] = useState(HOJE)
+  /*
+   * "Hoje" e calculado uma vez na montagem, e nao a cada render.
+   *
+   * Era a constante `'2026-08-24'`, e a agenda abria congelada naquele dia
+   * para sempre. Recalcular a cada render tambem nao serve: a data mudaria no
+   * meio de uma interacao para quem deixa a tela aberta na virada, e o dia
+   * selecionado pularia sozinho.
+   */
+  const [referencia] = useState(hoje)
+  const [ano, setAno] = useState(() => Number(referencia.slice(0, 4)))
+  const [mes, setMes] = useState(() => Number(referencia.slice(5, 7)) - 1)
+  const [diaSelecionado, setDiaSelecionado] = useState(referencia)
+
+  const [eventos, setEventos] = useState<Evento[]>([])
+  const [carregando, setCarregando] = useState(true)
+  const [erroCarga, setErroCarga] = useState<string | null>(null)
 
   const [criando, setCriando] = useState(false)
-  const [excluindo, setExcluindo] = useState<Evento | null>(null)
+  const [cancelando, setCancelando] = useState<Evento | null>(null)
   const [processando, setProcessando] = useState(false)
   const [toast, setToast] = useState<{ msg: string; tone: 'success' | 'error' } | null>(null)
 
-  const grade = useMemo(() => montarMes(ano, mes), [ano, mes])
+  const grade = useMemo(() => montarMes(ano, mes, referencia), [ano, mes, referencia])
+
+  /*
+   * O intervalo vem das PONTAS DA GRADE, e nao do mes civil.
+   *
+   * A grade mostra as bordas das semanas vizinhas; pedir so de 1 a 31 deixaria
+   * aqueles dias sem pontinho, e o dia 30 do mes passado apareceria vazio com
+   * um compromisso marcado nele.
+   */
+  const { de, ate } = useMemo(() => pontasDaGrade(grade), [grade])
+
+  const buscar = useCallback(async () => {
+    const r = await listarEventos(de, ate)
+    setCarregando(false)
+
+    if (!r.ok) {
+      setErroCarga(r.erro)
+      return
+    }
+
+    setErroCarga(null)
+    setEventos(r.dados)
+  }, [de, ate])
+
+  useEffect(() => {
+    /* `async` explicito: os `setState` vem todos depois do await, nunca
+       sincronos no corpo do efeito. */
+    void (async () => {
+      await buscar()
+    })()
+  }, [buscar])
 
   const porDia = useMemo(() => {
     const mapa = new Map<string, Evento[]>()
@@ -54,14 +94,14 @@ export default function AgendaView() {
   const proximos = useMemo(
     () =>
       eventos
-        .filter((e) => e.data >= HOJE)
+        .filter((e) => e.data >= referencia)
         .sort((a, b) => (a.data + a.horaInicio).localeCompare(b.data + b.horaInicio))
         .slice(0, 5),
-    [eventos],
+    [eventos, referencia],
   )
 
   const doDia = porDia.get(diaSelecionado) ?? []
-  const eventosHoje = porDia.get(HOJE) ?? []
+  const eventosHoje = porDia.get(referencia) ?? []
 
   function mudarMes(delta: number) {
     const d = new Date(Date.UTC(ano, mes + delta, 1))
@@ -69,14 +109,23 @@ export default function AgendaView() {
     setMes(d.getUTCMonth())
   }
 
-  async function confirmarExclusao() {
-    if (!excluindo) return
+  async function confirmarCancelamento() {
+    if (!cancelando) return
+
     setProcessando(true)
-    await excluirEvento(excluindo.id)
+    const r = await cancelarEvento(cancelando.id)
     setProcessando(false)
-    setEventos((atual) => atual.filter((e) => e.id !== excluindo.id))
-    setExcluindo(null)
-    setToast({ msg: 'Compromisso excluido.', tone: 'success' })
+
+    if (!r.ok) {
+      setToast({ msg: r.erro, tone: 'error' })
+      return
+    }
+
+    /* Some da lista porque o cancelado nao volta na agenda — mas continua
+       existindo no banco, e e por isso que o botao diz "cancelar". */
+    setEventos((atual) => atual.filter((e) => e.id !== cancelando.id))
+    setCancelando(null)
+    setToast({ msg: 'Compromisso cancelado.', tone: 'success' })
   }
 
   return (
@@ -91,6 +140,26 @@ export default function AgendaView() {
           </Button>
         }
       />
+
+      {erroCarga ? (
+        <Card>
+          <EmptyState
+            title="Nao foi possivel carregar a agenda"
+            description={erroCarga}
+            action={
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setCarregando(true)
+                  void buscar()
+                }}
+              >
+                Tentar de novo
+              </Button>
+            }
+          />
+        </Card>
+      ) : null}
 
       <div className={styles.grid}>
         {/* --- Calendario --- */}
@@ -157,7 +226,9 @@ export default function AgendaView() {
 
         {/* --- Dia selecionado --- */}
         <Card title={`Compromissos de ${formatDate(diaSelecionado)}`}>
-          {doDia.length === 0 ? (
+          {carregando ? (
+            <EmptyState title="Carregando" description="Buscando os compromissos do periodo." />
+          ) : doDia.length === 0 ? (
             <EmptyState
               title="Nada marcado"
               description="Nenhum compromisso neste dia."
@@ -174,7 +245,9 @@ export default function AgendaView() {
                 <li key={e.id} className={styles.evento}>
                   <span className={styles.eventoHora}>
                     {e.horaInicio}
-                    <span>{e.horaFim}</span>
+                    {/* Sem hora de fim e o caso normal — "pagar aluguel as 10h"
+                        nao dura nada. Melhor vazio que uma duracao inventada. */}
+                    {e.horaFim === null ? null : <span>{e.horaFim}</span>}
                   </span>
 
                   <span className={styles.eventoPrincipal}>
@@ -187,8 +260,8 @@ export default function AgendaView() {
                     <button
                       type="button"
                       className={styles.eventoExcluir}
-                      onClick={() => setExcluindo(e)}
-                      aria-label={`Excluir ${e.titulo}`}
+                      onClick={() => setCancelando(e)}
+                      aria-label={`Cancelar ${e.titulo}`}
                     >
                       <IconClose size={14} />
                     </button>
@@ -208,7 +281,12 @@ export default function AgendaView() {
           ) : null}
 
           {proximos.length === 0 ? (
-            <EmptyState title="Agenda livre" description="Nada marcado daqui pra frente." />
+            <EmptyState
+              title="Agenda livre"
+              /* "Neste periodo" e nao "daqui pra frente": a busca cobre o mes
+                 visivel, e prometer o futuro inteiro seria mentira. */
+              description="Nada marcado no periodo mostrado."
+            />
           ) : (
             <ul className={styles.proximos}>
               {proximos.map((e) => (
@@ -225,12 +303,12 @@ export default function AgendaView() {
                   >
                     <span className={styles.proximoData}>
                       <strong>{e.data.slice(8, 10)}</strong>
-                      <span>{NOMES_MESES[Number(e.data.slice(5, 7)) - 1].slice(0, 3)}</span>
+                      <span>{NOMES_MESES[Number(e.data.slice(5, 7)) - 1]!.slice(0, 3)}</span>
                     </span>
                     <span className={styles.proximoTexto}>
                       <strong>{e.titulo}</strong>
                       <span>
-                        {e.data === HOJE ? 'hoje' : formatDate(e.data)} · {e.horaInicio}
+                        {e.data === referencia ? 'hoje' : formatDate(e.data)} · {e.horaInicio}
                       </span>
                     </span>
                   </button>
@@ -245,34 +323,37 @@ export default function AgendaView() {
         <FormCompromisso
           dataInicial={diaSelecionado}
           onCriado={(novo) => {
+            /*
+             * Entra na lista com o que o SERVIDOR devolveu, e nao com o que foi
+             * digitado: o id e o instante gravado vem de la, e montar o
+             * compromisso aqui faria a tela discordar do banco ate o proximo
+             * carregamento.
+             */
             setEventos((atual) => [...atual, novo])
             setCriando(false)
-            setToast({
-              msg: 'Compromisso criado.',
-              tone: 'success',
-            })
+            setToast({ msg: 'Compromisso criado.', tone: 'success' })
           }}
           onCancelar={() => setCriando(false)}
         />
       ) : null}
 
-      {excluindo ? (
+      {cancelando ? (
         <ConfirmarDialog
-          titulo="Excluir compromisso"
-          descricao={'O compromisso sera removido da agenda.'}
+          titulo="Cancelar compromisso"
+          descricao="O compromisso sai da agenda. O registro dele continua guardado."
           tom="perigo"
-          rotuloConfirmar="Excluir"
+          rotuloConfirmar="Cancelar compromisso"
           processando={processando}
           detalhe={
             <div className={styles.excluirDetalhe}>
-              <strong>{excluindo.titulo}</strong>
+              <strong>{cancelando.titulo}</strong>
               <span>
-                {formatDate(excluindo.data)} · {excluindo.horaInicio}
+                {formatDate(cancelando.data)} · {cancelando.horaInicio}
               </span>
             </div>
           }
-          onConfirmar={confirmarExclusao}
-          onCancelar={() => setExcluindo(null)}
+          onConfirmar={confirmarCancelamento}
+          onCancelar={() => setCancelando(null)}
         />
       ) : null}
 
@@ -310,9 +391,27 @@ function FormCompromisso({
   async function salvar(event: React.FormEvent) {
     event.preventDefault()
     setErro(null)
-    setSalvando(true)
 
-    /* SUBSTITUIR POR: POST /agenda/eventos */
+    /*
+     * As conferencias obvias ficam aqui para o erro chegar sem ida a rede. As
+     * MESMAS regras existem no contrato e no banco — nao e duplicacao inutil:
+     * a importacao e o WhatsApp entram por outro caminho, e a ultima linha de
+     * defesa precisa estar onde o dado mora.
+     */
+    if (titulo.trim().length < 2) {
+      setErro('Informe o titulo do compromisso.')
+      return
+    }
+    if (data === '') {
+      setErro('Escolha a data.')
+      return
+    }
+    if (horaFim !== '' && horaFim <= horaInicio) {
+      setErro('O horario de fim precisa ser depois do inicio.')
+      return
+    }
+
+    setSalvando(true)
     const r = await criarEvento({
       titulo,
       descricao,
@@ -325,20 +424,11 @@ function FormCompromisso({
     setSalvando(false)
 
     if (!r.ok) {
-      setErro(r.error)
+      setErro(r.erro)
       return
     }
 
-    onCriado({
-      id: r.id,
-      titulo: titulo.trim(),
-      descricao: descricao.trim(),
-      data,
-      horaInicio,
-      horaFim,
-      local: local.trim(),
-      lembreteMinutos: lembrete,
-    })
+    onCriado(r.dados)
   }
 
   return (
@@ -394,7 +484,8 @@ function FormCompromisso({
             </label>
 
             <label className={styles.campo}>
-              <span>Fim</span>
+              {/* Vazio e uma resposta: o compromisso pontual nao tem fim. */}
+              <span>Fim (opcional)</span>
               <input
                 type="time"
                 className={styles.input}
@@ -447,7 +538,7 @@ function FormCompromisso({
 
           <div className={styles.dialogAcoes}>
             <Button variant="secondary" onClick={onCancelar} disabled={salvando}>
-              Cancelar
+              Fechar
             </Button>
             <Button type="submit" disabled={salvando}>
               {salvando ? (

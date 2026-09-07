@@ -18,6 +18,9 @@ export type NewAppointment = {
   readonly title: string
   /** Sempre UTC. O fuso e coisa de exibicao. */
   readonly startsAt: Date
+  /** Ausente = compromisso pontual, sem duracao. Nunca antes de `startsAt`. */
+  readonly endsAt?: Date | undefined
+  readonly location?: string | undefined
   readonly customerId?: string | undefined
   readonly notes?: string | undefined
   readonly reminderMinutesBefore?: number | undefined

@@ -26,6 +26,10 @@ export class InMemoryAppointmentRepository implements AppointmentRepository {
       companyId: appointment.companyId,
       title: appointment.title,
       startsAt: appointment.startsAt.toISOString(),
+      /* `undefined` na entrada vira `null` na saida: "compromisso pontual" e
+         um valor, e nao a ausencia de um campo. */
+      endsAt: appointment.endsAt?.toISOString() ?? null,
+      location: appointment.location ?? null,
       customerId: appointment.customerId ?? null,
       notes: appointment.notes ?? null,
       reminderMinutesBefore: appointment.reminderMinutesBefore ?? null,
