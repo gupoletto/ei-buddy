@@ -17,6 +17,7 @@ import { assertIdentifiable, getCustomer, registerCustomer } from './register-cu
 import {
   catalogSummary,
   findProductByBarcode,
+  getProduct,
   importProducts,
   generateInternalCode,
   listCatalog,
@@ -443,6 +444,58 @@ describe('registerProduct — RF-017, RF-018', () => {
   })
 })
 
+describe('getProduct — RF-017', () => {
+  const produtoValido = {
+    description: 'Cafe torrado 500g',
+    unitOfMeasure: 'un' as const,
+    salePriceCents: 1990,
+    costPriceCents: 1200,
+    stock: 0,
+    minStock: 0,
+  }
+
+  it('abre a ficha de produto SEM codigo de barras — granel, etiqueta amassada', async () => {
+    const products = new InMemoryProductRepository()
+    const criado = await registerProduct({ products }, contexto(), produtoValido)
+
+    /* O motivo de existir separado de `findProductByBarcode`: este produto nao
+       tem codigo nenhum, so o interno gerado, e a ficha tem de abrir. */
+    expect(criado.barcode).toBeNull()
+
+    const ficha = await getProduct({ products }, contexto(), criado.id)
+
+    expect(ficha.internalCode).toBe(criado.internalCode)
+  })
+
+  /* Ao contrario de `findProductByBarcode`, que devolve `undefined`: no PDV
+     "nao achei este codigo" leva ao cadastro; abrir a ficha de um id que nao
+     existe e link quebrado, e a tela precisa dizer isso. */
+  it('LANCA quando nao acha, em vez de devolver undefined', async () => {
+    const products = new InMemoryProductRepository()
+
+    const erro = await getProduct({ products }, contexto(), 'prod-inexistente').catch(
+      (e: unknown) => e,
+    )
+
+    expect(isAppError(erro) && erro.code).toBe('NOT_FOUND')
+  })
+
+  it('produto de outra empresa cai no mesmo NOT_FOUND, e nao em FORBIDDEN', async () => {
+    const products = new InMemoryProductRepository()
+    const criado = await registerProduct(
+      { products },
+      contexto({ companyId: 'emp-1' }),
+      produtoValido,
+    )
+
+    const erro = await getProduct({ products }, contexto({ companyId: 'emp-2' }), criado.id).catch(
+      (e: unknown) => e,
+    )
+
+    expect(isAppError(erro) && erro.code).toBe('NOT_FOUND')
+  })
+})
+
 describe('catalogo do backoffice — NR-072, US-008', () => {
   const base = {
     unitOfMeasure: 'un' as const,
@@ -644,6 +697,7 @@ describe('importacao de catalogo — NR-072, US-008', () => {
         return criado
       },
       findByBarcode: (c, b) => produtos.findByBarcode(c, b),
+      findById: (c, id) => produtos.findById(c, id),
       search: (c, k) => produtos.search(c, k),
       listCatalog: (c, k) => produtos.listCatalog(c, k),
       catalogSummary: (c) => produtos.catalogSummary(c),

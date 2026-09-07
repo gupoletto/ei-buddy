@@ -11,6 +11,7 @@ import {
   AppError,
   catalogSummary,
   getCustomer,
+  getProduct,
   importCustomers,
   importProducts,
   type ImportProductsDeps,
@@ -252,6 +253,27 @@ export function registerCadastroRoutes(app: FastifyInstance, deps: CadastroDeps)
          a segunda e cadastro feito, a primeira e cadastro a fazer. */
       throw AppError.notFound('Produto nao encontrado para este codigo de barras.')
     }
+
+    return reply.code(200).send(produto)
+  })
+
+  /**
+   * A ficha de um produto — RF-017.
+   *
+   * Pelo ID, e nao pelo codigo de barras: nem todo produto tem um. Granel,
+   * produto sem embalagem e etiqueta amassada usam o codigo interno, e a ficha
+   * precisa abrir para eles tambem.
+   *
+   * Declarada DEPOIS das rotas estaticas de `/produtos/*` de proposito. O
+   * roteador do Fastify casa segmento estatico antes de parametrico, entao a
+   * ordem nao muda o resultado — mas ler o arquivo de cima para baixo e ver o
+   * curinga por ultimo evita a duvida. Ha teste para isso.
+   */
+  app.get('/produtos/:id', async (request, reply) => {
+    const ctx = requireContext(request)
+    const { id } = request.params as { id: string }
+
+    const produto = await getProduct(deps, ctx, id)
 
     return reply.code(200).send(produto)
   })

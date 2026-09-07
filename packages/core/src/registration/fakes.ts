@@ -206,6 +206,13 @@ export class InMemoryProductRepository implements ProductRepository {
     return achado ? this.semTenant(achado) : undefined
   }
 
+  async findById(companyId: CompanyId, productId: string): Promise<ProductOutput | undefined> {
+    const achado = this.registros.get(productId)
+    /* Filtra por empresa de verdade: um falso que ignorasse isso faria o teste
+       de isolamento medir o vazio. */
+    return achado?.companyId === companyId ? this.semTenant(achado) : undefined
+  }
+
   /**
    * Busca por descricao ou codigo, sem depender de caixa.
    *

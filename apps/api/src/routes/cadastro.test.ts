@@ -207,6 +207,8 @@ function cadastroEmMemoria() {
        de isolamento medir o vazio. */
     findByBarcode: async (companyId, barcode) =>
       produtos.find((p) => p.companyId === companyId && p.barcode === barcode),
+    findById: async (companyId, productId) =>
+      produtos.find((p) => p.companyId === companyId && p.id === productId),
     countAll: async (companyId) => produtos.filter((p) => p.companyId === companyId).length,
   }
 
@@ -854,5 +856,85 @@ describe('importacao de catalogo — NR-072, US-008', () => {
     })
 
     expect(r.statusCode).toBe(400)
+  })
+})
+
+describe('a ficha do produto — RF-017', () => {
+  const CAFE = {
+    description: 'Cafe torrado 500g',
+    unitOfMeasure: 'un' as const,
+    salePriceCents: 1990,
+    costPriceCents: 1200,
+  }
+
+  it('devolve o produto pelo id, mesmo sem codigo de barras', async () => {
+    const c = await buildApp()
+    app = c.app
+    const criado = await app.inject({ method: 'POST', url: '/produtos', payload: CAFE })
+
+    /* O motivo de a rota existir ao lado da de codigo de barras: granel e
+       etiqueta amassada nao tem EAN, e a ficha tem de abrir para eles. */
+    expect(criado.json().barcode).toBeNull()
+
+    const r = await app.inject({ method: 'GET', url: `/produtos/${criado.json().id}` })
+
+    expect(r.statusCode).toBe(200)
+    expect(r.json().internalCode).toBe(criado.json().internalCode)
+  })
+
+  it('id desconhecido responde 404, e nao 200 com corpo vazio', async () => {
+    const c = await buildApp()
+    app = c.app
+
+    expect((await app.inject({ method: 'GET', url: '/produtos/prod-999' })).statusCode).toBe(404)
+  })
+
+  it('produto de outra empresa responde 404, e nao 403', async () => {
+    const c = await buildApp()
+    app = c.app
+    const criado = await app.inject({ method: 'POST', url: '/produtos', payload: CAFE })
+    await app.close()
+
+    /* O MESMO banco, outra loja: o produto existe, e some por isolamento e nao
+       por a tabela estar vazia. 403 confirmaria que aquele id existe. */
+    const outra = await buildApp({ ...PRINCIPAL, companyId: 'emp-outra' }, c.memoria)
+    app = outra.app
+
+    const r = await app.inject({ method: 'GET', url: `/produtos/${criado.json().id}` })
+
+    expect(r.statusCode).toBe(404)
+  })
+
+  /*
+   * `/produtos/:id` e um curinga sob `/produtos/`, e convive com quatro rotas
+   * estaticas irmas. Se ele casasse primeiro, "catalogo" viraria um id
+   * procurado e cada uma dessas telas receberia 404.
+   */
+  it.each([
+    ['/produtos/catalogo', 200],
+    ['/produtos/resumo', 200],
+  ])('%s continua sendo a rota estatica, e nao um id', async (url, esperado) => {
+    const c = await buildApp()
+    app = c.app
+
+    expect((await app.inject({ method: 'GET', url })).statusCode).toBe(esperado)
+  })
+
+  it('o codigo de barras continua tendo rota propria', async () => {
+    const c = await buildApp()
+    app = c.app
+    await app.inject({
+      method: 'POST',
+      url: '/produtos',
+      payload: { ...CAFE, barcode: '7891234567895' },
+    })
+
+    const r = await app.inject({
+      method: 'GET',
+      url: '/produtos/codigo-de-barras/7891234567895',
+    })
+
+    expect(r.statusCode).toBe(200)
+    expect(r.json().description).toBe('Cafe torrado 500g')
   })
 })

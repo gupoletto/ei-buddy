@@ -400,6 +400,20 @@ export function createProductRepository(sql: Sql): ProductRepository {
       return linha === undefined ? undefined : paraProduto(linha)
     },
 
+    findById: async (companyId, productId) => {
+      const [linha] = await withTenant(
+        sql,
+        companyId,
+        (tx) => tx<LinhaProduto[]>`
+          SELECT * FROM products
+          WHERE id = ${productId} AND deleted_at IS NULL
+        `,
+      )
+      /* `deleted_at IS NULL` como nas outras leituras: produto apagado nao
+         reaparece por um link antigo. A RLS ja cuida da outra loja. */
+      return linha === undefined ? undefined : paraProduto(linha)
+    },
+
     /**
      * O catalogo do balcao — RF-019.
      *

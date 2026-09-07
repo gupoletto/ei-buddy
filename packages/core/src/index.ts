@@ -123,6 +123,7 @@ export type {
 export {
   catalogSummary,
   findProductByBarcode,
+  getProduct,
   importProducts,
   generateInternalCode,
   listCatalog,

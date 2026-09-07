@@ -103,6 +103,32 @@ export async function findProductByBarcode(
 }
 
 /**
+ * A ficha de um produto — RF-017.
+ *
+ * LANCA quando nao acha, ao contrario de `findProductByBarcode`, e a diferenca
+ * e de situacao: no PDV "nao achei este codigo" e resposta normal e leva ao
+ * cadastro; abrir a ficha de um id que nao existe e um link quebrado, e a tela
+ * precisa dizer isso em vez de desenhar um produto em branco.
+ *
+ * Produto de outra loja cai no mesmo erro, de proposito: distinguir "nao
+ * existe" de "nao e seu" confirmaria, para quem varre ids, que aquele produto
+ * existe em alguma outra loja.
+ */
+export async function getProduct(
+  deps: RegisterProductDeps,
+  ctx: ExecutionContext,
+  productId: string,
+): Promise<ProductOutput> {
+  const produto = await deps.products.findById(ctx.companyId, productId)
+
+  if (produto === undefined) {
+    throw AppError.notFound('Produto nao encontrado.')
+  }
+
+  return produto
+}
+
+/**
  * O catalogo do balcao — RF-019.
  *
  * Leitura: nao passa por `assertCanWrite`. Quem vende precisa ver o que ha para
