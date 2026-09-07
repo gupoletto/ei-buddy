@@ -30,6 +30,7 @@ import {
   createInventoryQueries,
   createInventoryUnitOfWork,
   createReportRepository,
+  createSupportRepository,
   createCompanyRepository,
   createCustomerRepository,
   createFiscalCredentials,
@@ -55,6 +56,7 @@ import type { ConciliacaoDeps } from './routes/conciliacao.js'
 import type { SaleRouteDeps } from './routes/sales.js'
 import type { ContabilidadeDeps } from './routes/contabilidade.js'
 import type { EstoqueDeps } from './routes/estoque.js'
+import type { SuporteDeps } from './routes/suporte.js'
 import type { RelatoriosDeps } from './routes/relatorios.js'
 import type { ContasDeps } from './routes/contas.js'
 import { createInvoiceQueue } from './invoice-queue.js'
@@ -395,6 +397,23 @@ export function buildEstoqueDeps(): EstoqueDeps {
     uow: createInventoryUnitOfWork(sql),
     historico: createInventoryHistory(sql),
     audit: new InMemoryAuditTrail(),
+  }
+}
+
+/**
+ * Chamados de suporte — NR-080.
+ *
+ * `quemEscreve` le o nome de quem esta logado para a conversa dizer quem falou.
+ * O nome e COPIADO na mensagem, e nao referenciado: quem escreveu pode sair da
+ * empresa, e a conversa tem de continuar legivel.
+ */
+export function buildSuporteDeps(): SuporteDeps {
+  const sql = getClient(env.DATABASE_URL)
+  const users = createUserDirectory(sql)
+
+  return {
+    support: createSupportRepository(sql),
+    quemEscreve: async (ctx) => (await users.findById(ctx.userId))?.name ?? 'Lojista',
   }
 }
 

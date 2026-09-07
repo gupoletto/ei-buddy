@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react'
 import {
+  abrirDetalhe,
   CATEGORIAS,
-  marcarLido,
   responderChamado,
   ROTULO_STATUS,
   type Chamado,
@@ -59,11 +59,18 @@ export default function ChamadoDetalhe({
 
     let cancelado = false
     async function marcar() {
-      /* SUBSTITUIR POR: PATCH /suporte/chamados/:id */
-      await marcarLido(chamado.id)
+      /*
+       * `abrirDetalhe` marca lido E devolve a conversa na mesma ida.
+       *
+       * Duas chamadas fariam o badge piscar — ele apagaria depois que as
+       * mensagens ja tivessem aparecido. E a resposta ja traz as mensagens
+       * novas que chegaram desde que a lista foi carregada, que e justamente o
+       * que a pessoa veio ler.
+       */
+      const r = await abrirDetalhe(chamado.id)
       if (cancelado) return
       setJaMarcou(true)
-      onAtualizar({ ...chamado, naoLidas: 0 })
+      onAtualizar(r.ok ? r.dados : { ...chamado, naoLidas: 0 })
     }
     void marcar()
 
@@ -81,21 +88,23 @@ export default function ChamadoDetalhe({
     setErro(null)
     setEnviando(true)
 
-    /* SUBSTITUIR POR: POST /suporte/chamados/:id/mensagens */
     const r = await responderChamado(chamado.id, resposta, anexo)
     setEnviando(false)
 
     if (!r.ok) {
-      setErro(r.error)
+      setErro(r.erro)
       return
     }
 
-    onAtualizar({
-      ...chamado,
-      mensagens: [...chamado.mensagens, r.mensagem],
-      status: chamado.status === 'encerrado' ? 'aberto' : chamado.status,
-      atualizadoEm: r.mensagem.data,
-    })
+    /*
+     * O chamado INTEIRO vem da resposta, e nao remendado aqui.
+     *
+     * Antes a tela montava o novo estado a mao: acrescentava a mensagem, e
+     * adivinhava o status ("se estava encerrado, vira aberto"). Quem decide o
+     * status e o servidor — e ele reabre como `andamento`, nao `aberto`. Duas
+     * regras para a mesma coisa divergem no dia em que uma das duas mudar.
+     */
+    onAtualizar(r.dados)
     setResposta('')
     setAnexo(null)
   }

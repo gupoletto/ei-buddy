@@ -10,6 +10,7 @@ import {
   buildFiscalDeps,
   buildContasDeps,
   buildEstoqueDeps,
+  buildSuporteDeps,
   buildRelatoriosDeps,
   getRedis,
   buildSaleDeps,
@@ -32,6 +33,7 @@ import { registerContasRoutes } from './routes/contas.js'
 import { registerEmissaoRoutes, registerFiscalRoutes } from './routes/fiscal.js'
 import { registerEstoqueRoutes } from './routes/estoque.js'
 import { registerRelatoriosRoutes } from './routes/relatorios.js'
+import { registerSuporteRoutes } from './routes/suporte.js'
 import { registerSaleRoutes } from './routes/sales.js'
 
 // RNF-058: log estruturado (JSON) com requestId, companyId e userId.
@@ -96,6 +98,7 @@ async function registrarRotas(): Promise<void> {
   registerContabilidadeRoutes(app, buildContabilidadeDeps())
   registerRelatoriosRoutes(app, buildRelatoriosDeps())
   registerEstoqueRoutes(app, buildEstoqueDeps())
+  registerSuporteRoutes(app, buildSuporteDeps())
   registerEmissaoRoutes(app, buildEmissaoDeps())
 
   /*

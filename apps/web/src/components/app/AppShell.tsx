@@ -9,7 +9,6 @@ import { MODULOS_BLOQUEADOS } from '@/lib/access'
 import { carregarAvisos, type Aviso } from '@/lib/avisos-api'
 import { carregarPerfil, iniciaisDe, type Perfil } from '@/lib/perfil-api'
 import { sair as encerrarSessao } from '@/lib/session-client'
-import { listarChamados, totalNaoLidas } from '@/lib/suporte-api'
 import PaymentOverdueBanner from '../billing/PaymentOverdueBanner'
 import PaymentRequiredModal from '../billing/PaymentRequiredModal'
 import { useSubscription } from '../billing/SubscriptionProvider'
@@ -101,7 +100,15 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
   /* SUBSTITUIR POR: GET /suporte/chamados (ou contador dedicado) — hoje
      le do mock uma vez, no primeiro render. */
-  const [naoLidas] = useState(() => totalNaoLidas(listarChamados()))
+  /*
+   * O badge do Suporte sai da MESMA lista do sino.
+   *
+   * Antes ele vinha de `totalNaoLidas(listarChamados())` com dados de mentira,
+   * e agora sairia de uma segunda consulta — duas fontes para o mesmo numero
+   * divergem no dia em que uma delas atrasar, e o lojista veria "2" na
+   * navegacao e "3" no sino.
+   */
+  const naoLidas = avisos.find((a) => a.href === '/app/suporte')?.contagem ?? 0
 
   /* Financeiro comeca aberto quando a rota atual esta dentro dele. */
   const [financeiroAberto, setFinanceiroAberto] = useState(pathname.startsWith('/app/financeiro'))

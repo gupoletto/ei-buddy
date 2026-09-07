@@ -403,11 +403,21 @@ describe.skipIf(!DATABASE_URL)('schema de cadastros — NR-008', () => {
       ORDER BY c.relname, i.relname
     `
 
-    /* `company_users_por_usuario` e a excecao consciente: ela existe para
-       achar as lojas de UMA pessoa, consulta que nao tem empresa no contexto
-       ainda — e a tela de trocar de empresa. */
+    /*
+     * Duas excecoes conscientes, e as duas pelo mesmo motivo de fundo: sao
+     * consultas que NAO tem empresa no contexto.
+     *
+     * - `company_users_por_usuario` acha as lojas de UMA pessoa, para a tela de
+     *   trocar de empresa — antes de haver empresa escolhida.
+     * - `support_tickets_protocolo_unico` garante que o protocolo e unico na
+     *   PLATAFORMA. E o numero que o lojista fala ao telefone, e a equipe de
+     *   suporte precisa achar o chamado sem perguntar de qual loja e. Prefixar
+     *   com `company_id` deixaria dois chamados diferentes com o mesmo numero,
+     *   que e exatamente o que o protocolo existe para evitar.
+     */
     expect(fora.map((r) => `${r.tabela}.${r.indice}`)).toEqual([
       'company_users.company_users_por_usuario',
+      'support_tickets.support_tickets_protocolo_unico',
     ])
   })
 })
