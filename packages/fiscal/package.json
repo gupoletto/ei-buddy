@@ -19,7 +19,7 @@
     "@na-regua/money": "workspace:*"
   },
   "devDependencies": {
-    "typescript": "^5.7.2",
+    "typescript": "^6.0.3",
     "vitest": "^3.2.6"
   }
 }
