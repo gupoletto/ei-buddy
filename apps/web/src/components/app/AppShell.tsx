@@ -9,6 +9,7 @@ import { MODULOS_BLOQUEADOS } from '@/lib/access'
 import { carregarAvisos, type Aviso } from '@/lib/avisos-api'
 import { carregarPerfil, iniciaisDe, type Perfil } from '@/lib/perfil-api'
 import { sair as encerrarSessao } from '@/lib/session-client'
+import BuscaGlobal from './BuscaGlobal'
 import PaymentOverdueBanner from '../billing/PaymentOverdueBanner'
 import PaymentRequiredModal from '../billing/PaymentRequiredModal'
 import { useSubscription } from '../billing/SubscriptionProvider'
@@ -25,7 +26,6 @@ import {
   IconLogout,
   IconMenu,
   IconReceipt,
-  IconSearch,
   IconSettings,
   IconSparkles,
   IconUsers,
@@ -308,14 +308,9 @@ export default function AppShell({ children }: { children: ReactNode }) {
             {navOpen ? <IconClose size={20} /> : <IconMenu size={20} />}
           </button>
 
-          <label className={styles.search}>
-            <IconSearch size={18} />
-            <input
-              type="search"
-              placeholder="Buscar cliente, produto ou venda"
-              aria-label="Buscar"
-            />
-          </label>
+          {/* O campo era um <input> sem estado e sem handler: digitar nele nao
+              fazia nada. Ver BuscaGlobal. */}
+          <BuscaGlobal />
 
           <div className={styles.topActions}>
             {/*

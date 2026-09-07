@@ -67,7 +67,19 @@ export const settlementOutputSchema = z.object({
   notes: z.string().nullable(),
   /** Preenchido no estorno, apontando a baixa desfeita. */
   reversesId: idSchema.nullable(),
-  createdBy: idSchema,
+  /**
+   * Anulavel porque a COLUNA e anulavel: `created_by` e `ON DELETE SET NULL`
+   * em `settlements` e em `payable_settlements`.
+   *
+   * Toda baixa nasce com autor. O nulo aparece depois, quando a pessoa que deu
+   * a baixa sai da empresa e o cadastro dela e removido. Prometer nao-anulavel
+   * aqui obrigaria o repositorio a inventar um valor — e string vazia nao e id.
+   *
+   * (Difere da trilha de estoque, onde a coluna virou NOT NULL sem FK: la o
+   * gatilho de imutabilidade impedia o proprio SET NULL de acontecer, e aqui
+   * ele acontece.)
+   */
+  createdBy: idSchema.nullable(),
   createdAt: z.string(),
 })
 
