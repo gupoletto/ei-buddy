@@ -8,8 +8,6 @@
  *  | buscarEan             | GET  /catalogo/ean/:ean        | busca por EAN     |
  *  | buscarNcm             | GET  /fiscal/ncm?q=            | busca assistida   |
  *  | salvarProduto         | POST/PUT /produtos[/:id]       | submit do form    |
- *  | ajustarEstoque        | POST /produtos/:id/ajustes     | ajuste manual     |
- *  | movimentacoesEstoque  | GET  /produtos/:id/movimentos  | historico         |
  *  | confirmarImportacao   | POST /produtos/importar        | importar planilha |
  *  | importarXmlCompra     | POST /compras/xml              | importar XML      |
  *
@@ -342,116 +340,20 @@ export async function confirmarImportacaoProdutos(
   }
 }
 
-/* -------------------------------------------------------------------------- */
-/* Estoque                                                                    */
-/* -------------------------------------------------------------------------- */
-
-export type TipoMovimento = 'entrada' | 'saida' | 'ajuste'
-
-export type MovimentoEstoque = {
-  id: string
-  data: string
-  tipo: TipoMovimento
-  quantidade: number
-  /** Saldo depois do movimento. */
-  saldo: number
-  origem: string
-  motivo?: string
-}
-
-/** SUBSTITUIR POR: GET /produtos/:id/movimentos?de=&ate= */
-export function movimentacoesEstoque(produtoId: string): MovimentoEstoque[] {
-  const base: Record<string, MovimentoEstoque[]> = {
-    'prod-1': [
-      {
-        id: 'm1',
-        data: '2026-08-24',
-        tipo: 'saida',
-        quantidade: 2,
-        saldo: 4,
-        origem: 'Venda 1842',
-      },
-      {
-        id: 'm2',
-        data: '2026-08-22',
-        tipo: 'saida',
-        quantidade: 6,
-        saldo: 6,
-        origem: 'Venda 1830',
-      },
-      {
-        id: 'm3',
-        data: '2026-08-18',
-        tipo: 'ajuste',
-        quantidade: -2,
-        saldo: 12,
-        origem: 'Ajuste manual',
-        motivo: 'Avaria no transporte',
-      },
-      {
-        id: 'm4',
-        data: '2026-08-10',
-        tipo: 'entrada',
-        quantidade: 24,
-        saldo: 14,
-        origem: 'NF-e 4471 · Torrefacao Aurora',
-      },
-    ],
-    'prod-2': [
-      {
-        id: 'm5',
-        data: '2026-08-23',
-        tipo: 'saida',
-        quantidade: 3,
-        saldo: 2,
-        origem: 'Venda 1842',
-      },
-      {
-        id: 'm6',
-        data: '2026-08-05',
-        tipo: 'entrada',
-        quantidade: 12,
-        saldo: 5,
-        origem: 'NF-e 4465 · Engenho Doce',
-      },
-    ],
-    'prod-3': [
-      {
-        id: 'm7',
-        data: '2026-08-24',
-        tipo: 'saida',
-        quantidade: 12,
-        saldo: 6,
-        origem: 'Venda 1840',
-      },
-      {
-        id: 'm8',
-        data: '2026-08-15',
-        tipo: 'entrada',
-        quantidade: 36,
-        saldo: 18,
-        origem: 'NF-e 4468 · Campo Verde',
-      },
-    ],
-  }
-  return base[produtoId] ?? []
-}
-
-/** SUBSTITUIR POR: POST /produtos/:id/ajustes */
-export async function ajustarEstoque(
-  produtoId: string,
-  novaQuantidade: number,
-  motivo: string,
-): Promise<{ ok: true } | { ok: false; error: string }> {
-  await delay(700)
-  void produtoId
-  void novaQuantidade
-
-  if (!motivo.trim()) {
-    return { ok: false, error: 'Descreva o motivo do ajuste.' }
-  }
-  return { ok: true }
-}
+/* --------------------------------------------------------------------------
+ * Estoque
+ * --------------------------------------------------------------------------
+ *
+ * SAIU DAQUI. O saldo, a trilha e o ajuste vivem em `catalogo-api.ts`, contra
+ * as rotas de verdade (`GET/POST /produtos/:id/estoque` e
+ * `GET /produtos/:id/movimentos`).
+ *
+ * O que estava aqui era pior do que um mock parado: `ajustarEstoque` era um
+ * `delay(700)` seguido de `return { ok: true }`, e a tela respondia "Ajuste
+ * registrado no historico". O lojista corrigia a contagem, via a confirmacao,
+ * e o saldo continuava errado — ele acreditava por causa da mensagem.
+ * --------------------------------------------------------------------------
+ */
 
 /* -------------------------------------------------------------------------- */
 /* XML de nota de compra                                                      */

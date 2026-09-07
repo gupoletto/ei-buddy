@@ -1,4 +1,5 @@
 import type {
+  Address,
   CompanyOutput,
   CustomerListItem,
   CustomerOutput,
@@ -64,10 +65,20 @@ export type NewCustomer = {
   readonly walletLimitCents?: number | undefined
   readonly createdBy: UserId
   readonly createdAt: Date
+  /**
+   * O endereco, inteiro opcional — RF-009.
+   *
+   * Ate a migration 0019 nao havia onde guardar, e a tela descartava os sete
+   * campos que pedia.
+   */
+  readonly address?: Address | undefined
 }
 
 export type CustomerRepository = {
   create(customer: NewCustomer): Promise<CustomerOutput>
+
+  /** Um cliente. `undefined` quando nao existe OU e de outra empresa. */
+  findById(companyId: CompanyId, customerId: string): Promise<CustomerOutput | undefined>
 
   /**
    * Procura cliente parecido por telefone ou documento — RF-010.
@@ -132,6 +143,17 @@ export type ProductRepository = {
 
   /** Localiza pelo codigo de barras lido — RF-018. */
   findByBarcode(companyId: CompanyId, barcode: string): Promise<ProductOutput | undefined>
+
+  /**
+   * Um produto pelo id — RF-017.
+   *
+   * Separado de `findByBarcode` porque nem todo produto TEM codigo de barras:
+   * granel, produto sem embalagem e etiqueta amassada usam o codigo interno, e
+   * a ficha precisa abrir para eles tambem.
+   *
+   * `undefined` quando nao existe OU e de outra empresa.
+   */
+  findById(companyId: CompanyId, productId: string): Promise<ProductOutput | undefined>
 
   /**
    * Catalogo para o balcao — RF-019.

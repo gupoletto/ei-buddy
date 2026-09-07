@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { documentSchema } from '../common/document.js'
+import { addressOutputSchema, addressSchema, documentSchema } from '../common/document.js'
 import {
   emailSchema,
   idSchema,
@@ -27,6 +27,15 @@ export const createCustomerInputSchema = z
     notes: z.string().trim().max(500, 'Observacao muito longa.').optional(),
     /** Teto do fiado. Ausente = sem fiado liberado. */
     walletLimitCents: moneyCentsSchema.optional(),
+    /**
+     * O endereco, inteiro opcional — RF-009.
+     *
+     * Aninhado e nao achatado: os sete campos so fazem sentido juntos, e um
+     * `city` sem `state` e um endereco que ninguem acha. Agrupar tambem deixa a
+     * ausencia explicita — `address` ausente e "nao informou", em vez de sete
+     * campos vazios espalhados pelo corpo.
+     */
+    address: addressSchema.optional(),
   })
   .strict()
 
@@ -45,6 +54,16 @@ export const customerOutputSchema = z.object({
   walletLimitCents: z.number().int(),
   /** Saldo devedor. Positivo = o cliente deve para a loja. */
   walletBalanceCents: z.number().int(),
+  /**
+   * O endereco. Tudo anulavel — a RF-009 pede "apenas nome e telefone".
+   *
+   * Ate a migration 0019 nao havia onde guardar: a tela pedia sete campos, com
+   * busca automatica por CEP, e o dado era descartado.
+   *
+   * Tipo de pessoa e DDD NAO estao aqui de proposito. Sao derivados do
+   * documento e do telefone — ver `tipoDePessoa` e `dddDe` em `common/document`.
+   */
+  address: addressOutputSchema,
   createdAt: z.string(),
 })
 

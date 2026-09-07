@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { cnpjSchema } from '../common/document.js'
+import { addressOutputSchema, cnpjSchema } from '../common/document.js'
 import { emailSchema, idSchema, nameSchema, phoneSchema, roleSchema } from '../common/primitives.js'
 
 /**
@@ -39,6 +39,13 @@ export const companyOutputSchema = z.object({
   cnpj: z.string(),
   email: z.string(),
   phone: z.string(),
+  /**
+   * O endereco da loja — RF-003.
+   *
+   * Anulavel: ele chega pela busca de CNPJ e pode faltar. Exigir aqui travaria
+   * o cadastro de quem instala o sistema antes de ter a inscricao pronta.
+   */
+  address: addressOutputSchema,
   createdAt: z.string(),
 })
 

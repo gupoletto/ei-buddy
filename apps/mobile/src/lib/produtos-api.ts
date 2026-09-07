@@ -80,7 +80,7 @@ export type LeituraDeCodigo =
   | { readonly situacao: 'erro'; readonly mensagem: string }
 
 export async function buscarEan(ean: string): Promise<LeituraDeCodigo> {
-  const limpo = ean.replace(/D/g, '')
+  const limpo = ean.replace(/\D/g, '')
 
   /* Confere antes de ir a rede: EAN tem 8, 12, 13 ou 14 digitos, e leitura
      truncada e comum quando a etiqueta esta amassada. */
@@ -162,7 +162,7 @@ export async function salvarProduto(
     method: 'POST',
     body: {
       description: dados.descricao,
-      ...(dados.ean ? { barcode: dados.ean.replace(/D/g, '') } : {}),
+      ...(dados.ean ? { barcode: dados.ean.replace(/\D/g, '') } : {}),
       unitOfMeasure: 'un',
       /* A tela trabalha em reais; o contrato exige centavos inteiros
          (RNF-044). A conversao acontece AQUI, na borda. */

@@ -74,6 +74,7 @@ export async function registerCustomer(
     email: input.email,
     notes: input.notes,
     walletLimitCents: input.walletLimitCents,
+    address: input.address,
     createdBy: ctx.userId,
     createdAt: ctx.now,
   })
@@ -153,6 +154,32 @@ export async function importCustomers(
  * negocio — a mesma que o CRM usa para dizer "faz dois meses que ela nao vem".
  * Deixa-la no SQL espalharia a definicao por cada consulta que precisasse dela.
  */
+/**
+ * A ficha de um cliente — RF-011.
+ *
+ * Nao usa a lista com `pageSize: 1`: a lista e a resposta para "quem sao meus
+ * clientes", e traz o historico de compra de cada um. A ficha responde outra
+ * pergunta — "quem e esta pessoa" — e o que ela precisa (endereco, limite de
+ * fiado, observacao) nao depende de varrer vendas.
+ *
+ * Cliente de outra empresa vira `NOT_FOUND` e nao `FORBIDDEN`, de proposito: um
+ * erro diferente de "nao existe" confirmaria, para quem estivesse tentando ids,
+ * que aquele cliente existe em alguma outra loja.
+ */
+export async function getCustomer(
+  deps: { readonly customers: CustomerRepository },
+  ctx: ExecutionContext,
+  customerId: string,
+): Promise<CustomerOutput> {
+  const cliente = await deps.customers.findById(ctx.companyId, customerId)
+
+  if (cliente === undefined) {
+    throw AppError.notFound('Cliente nao encontrado.')
+  }
+
+  return cliente
+}
+
 export async function listCustomers(
   deps: { readonly customers: CustomerRepository },
   ctx: ExecutionContext,

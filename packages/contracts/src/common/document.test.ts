@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { dddDe, tipoDePessoa } from './document.js'
 import { cnpjSchema, cpfSchema, documentSchema, isValidCnpj, isValidCpf } from './document.js'
 
 describe('CPF', () => {
@@ -61,5 +62,48 @@ describe('documento do cliente decide pelo tamanho', () => {
     ['11222333000182', 'CNPJ com digito errado'],
   ])('recusa %s (%s)', (valor, _motivo) => {
     expect(documentSchema.safeParse(valor).success).toBe(false)
+  })
+})
+
+describe('tipo de pessoa, deduzido do documento — NR-072', () => {
+  it('onze digitos e pessoa fisica', () => {
+    expect(tipoDePessoa('529.982.247-25')).toBe('fisica')
+    expect(tipoDePessoa('52998224725')).toBe('fisica')
+  })
+
+  it('catorze digitos e pessoa juridica', () => {
+    expect(tipoDePessoa('11.222.333/0001-81')).toBe('juridica')
+    expect(tipoDePessoa('11222333000181')).toBe('juridica')
+  })
+
+  it('sem documento nao chuta', () => {
+    /* O cliente de balcao (RF-009) nao tem documento, e assumir "fisica" seria
+       inventar — um cadastro com tipo errado emite nota errada. */
+    expect(tipoDePessoa(null)).toBeNull()
+  })
+
+  it('documento com tamanho estranho tambem nao chuta', () => {
+    expect(tipoDePessoa('123')).toBeNull()
+    expect(tipoDePessoa('')).toBeNull()
+  })
+})
+
+describe('DDD, dos dois primeiros digitos — NR-072', () => {
+  it('tira o DDD do celular com pontuacao', () => {
+    expect(dddDe('(41) 99999-0000')).toBe('41')
+  })
+
+  it('tira o DDD do fixo', () => {
+    expect(dddDe('1133334444')).toBe('11')
+  })
+
+  it('numero incompleto nao vira DDD', () => {
+    /* Devolver os dois primeiros de um numero pela metade daria um DDD
+       inventado — e o lojista ligaria para a cidade errada. */
+    expect(dddDe('99999')).toBeNull()
+  })
+
+  it('sem telefone devolve nulo', () => {
+    expect(dddDe(null)).toBeNull()
   })
 })

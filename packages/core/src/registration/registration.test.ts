@@ -13,10 +13,11 @@ import type { ProductRepository } from '../ports/registration-repositories.js'
 import { InMemoryChartOfAccounts } from '../accounting/fakes.js'
 import { PLANO_DE_CONTAS_PADRAO } from '../accounting/default-chart.js'
 import { registerCompany } from './register-company.js'
-import { assertIdentifiable, registerCustomer } from './register-customer.js'
+import { assertIdentifiable, getCustomer, registerCustomer } from './register-customer.js'
 import {
   catalogSummary,
   findProductByBarcode,
+  getProduct,
   importProducts,
   generateInternalCode,
   listCatalog,
@@ -256,6 +257,55 @@ describe('registerCustomer — RF-009, RF-010', () => {
   })
 })
 
+describe('getCustomer — RF-011', () => {
+  it('devolve a ficha com o endereco que foi cadastrado', async () => {
+    const customers = new InMemoryCustomerRepository()
+    const r = await registerCustomer({ customers }, contexto(), {
+      name: 'Joao do Bar',
+      phone: '41999990000',
+      address: { zipCode: '80010000', city: 'Curitiba', state: 'PR' },
+    })
+    if (r.status !== 'created') throw new Error('esperava created')
+
+    const ficha = await getCustomer({ customers }, contexto(), r.customer.id)
+
+    expect(ficha.address.city).toBe('Curitiba')
+    expect(ficha.address.state).toBe('PR')
+    /* O que nao foi informado volta `null`, e nao ausente: a tela distingue
+       "nao tem numero" de "esqueci de mandar o campo". */
+    expect(ficha.address.number).toBeNull()
+  })
+
+  it('cliente de outra empresa responde NOT_FOUND, e nao FORBIDDEN', async () => {
+    const customers = new InMemoryCustomerRepository()
+    const r = await registerCustomer({ customers }, contexto({ companyId: 'emp-1' }), {
+      name: 'Joao do Bar',
+      phone: '41999990000',
+    })
+    if (r.status !== 'created') throw new Error('esperava created')
+
+    /* FORBIDDEN confirmaria que o id existe em alguma loja — quem varre ids
+       aprenderia o cadastro do vizinho sem nunca ler uma linha dele. */
+    const erro = await getCustomer(
+      { customers },
+      contexto({ companyId: 'emp-2' }),
+      r.customer.id,
+    ).catch((e: unknown) => e)
+
+    expect(isAppError(erro) && erro.code).toBe('NOT_FOUND')
+  })
+
+  it('id que nunca existiu responde NOT_FOUND', async () => {
+    const customers = new InMemoryCustomerRepository()
+
+    const erro = await getCustomer({ customers }, contexto(), 'cli-inexistente').catch(
+      (e: unknown) => e,
+    )
+
+    expect(isAppError(erro) && erro.code).toBe('NOT_FOUND')
+  })
+})
+
 describe('generateInternalCode — RF-019', () => {
   it.each([
     [0, 'PROD-0001'],
@@ -391,6 +441,58 @@ describe('registerProduct — RF-017, RF-018', () => {
 
     expect(naPropria?.description).toBe('Cafe torrado 500g')
     expect(naOutra).toBeUndefined()
+  })
+})
+
+describe('getProduct — RF-017', () => {
+  const produtoValido = {
+    description: 'Cafe torrado 500g',
+    unitOfMeasure: 'un' as const,
+    salePriceCents: 1990,
+    costPriceCents: 1200,
+    stock: 0,
+    minStock: 0,
+  }
+
+  it('abre a ficha de produto SEM codigo de barras — granel, etiqueta amassada', async () => {
+    const products = new InMemoryProductRepository()
+    const criado = await registerProduct({ products }, contexto(), produtoValido)
+
+    /* O motivo de existir separado de `findProductByBarcode`: este produto nao
+       tem codigo nenhum, so o interno gerado, e a ficha tem de abrir. */
+    expect(criado.barcode).toBeNull()
+
+    const ficha = await getProduct({ products }, contexto(), criado.id)
+
+    expect(ficha.internalCode).toBe(criado.internalCode)
+  })
+
+  /* Ao contrario de `findProductByBarcode`, que devolve `undefined`: no PDV
+     "nao achei este codigo" leva ao cadastro; abrir a ficha de um id que nao
+     existe e link quebrado, e a tela precisa dizer isso. */
+  it('LANCA quando nao acha, em vez de devolver undefined', async () => {
+    const products = new InMemoryProductRepository()
+
+    const erro = await getProduct({ products }, contexto(), 'prod-inexistente').catch(
+      (e: unknown) => e,
+    )
+
+    expect(isAppError(erro) && erro.code).toBe('NOT_FOUND')
+  })
+
+  it('produto de outra empresa cai no mesmo NOT_FOUND, e nao em FORBIDDEN', async () => {
+    const products = new InMemoryProductRepository()
+    const criado = await registerProduct(
+      { products },
+      contexto({ companyId: 'emp-1' }),
+      produtoValido,
+    )
+
+    const erro = await getProduct({ products }, contexto({ companyId: 'emp-2' }), criado.id).catch(
+      (e: unknown) => e,
+    )
+
+    expect(isAppError(erro) && erro.code).toBe('NOT_FOUND')
   })
 })
 
@@ -595,6 +697,7 @@ describe('importacao de catalogo — NR-072, US-008', () => {
         return criado
       },
       findByBarcode: (c, b) => produtos.findByBarcode(c, b),
+      findById: (c, id) => produtos.findById(c, id),
       search: (c, k) => produtos.search(c, k),
       listCatalog: (c, k) => produtos.listCatalog(c, k),
       catalogSummary: (c) => produtos.catalogSummary(c),

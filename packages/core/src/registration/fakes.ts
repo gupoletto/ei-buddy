@@ -37,6 +37,15 @@ export class InMemoryCompanyRepository implements CompanyRepository {
       cnpj: company.cnpj,
       email: company.email,
       phone: company.phone,
+      address: {
+        zipCode: null,
+        street: null,
+        number: null,
+        complement: null,
+        district: null,
+        city: null,
+        state: null,
+      },
       createdAt: company.createdAt.toISOString(),
     }
     this.registros.set(gravada.id, gravada)
@@ -68,10 +77,28 @@ export class InMemoryCustomerRepository implements CustomerRepository {
       /* Nao deve nada e zero, nao nulo: nulo obrigaria todo calculo de fiado
          a tratar ausencia. */
       walletBalanceCents: 0,
+      /* O endereco do que veio, campo a campo: `undefined` na entrada vira
+         `null` na saida, porque "nao informou" e um valor e nao um buraco. */
+      address: {
+        zipCode: customer.address?.zipCode ?? null,
+        street: customer.address?.street ?? null,
+        number: customer.address?.number ?? null,
+        complement: customer.address?.complement ?? null,
+        district: customer.address?.district ?? null,
+        city: customer.address?.city ?? null,
+        state: customer.address?.state ?? null,
+      },
       createdAt: customer.createdAt.toISOString(),
     }
     this.registros.set(gravado.id, gravado)
     return this.semTenant(gravado)
+  }
+
+  async findById(companyId: CompanyId, customerId: string): Promise<CustomerOutput | undefined> {
+    const achado = this.registros.get(customerId)
+    /* De outra empresa e o mesmo que inexistente — nunca um erro que confirme
+       que o cliente existe em algum lugar. */
+    return achado?.companyId === companyId ? this.semTenant(achado) : undefined
   }
 
   async findSimilar(
@@ -177,6 +204,13 @@ export class InMemoryProductRepository implements ProductRepository {
     )
     /* De outra empresa e o mesmo que inexistente. */
     return achado ? this.semTenant(achado) : undefined
+  }
+
+  async findById(companyId: CompanyId, productId: string): Promise<ProductOutput | undefined> {
+    const achado = this.registros.get(productId)
+    /* Filtra por empresa de verdade: um falso que ignorasse isso faria o teste
+       de isolamento medir o vazio. */
+    return achado?.companyId === companyId ? this.semTenant(achado) : undefined
   }
 
   /**
