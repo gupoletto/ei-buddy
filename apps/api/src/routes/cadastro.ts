@@ -1,6 +1,7 @@
 import {
   catalogInputSchema,
   createCompanyInputSchema,
+  customerListInputSchema,
   createCustomerInputSchema,
   createProductInputSchema,
   importCustomersInputSchema,
@@ -13,6 +14,7 @@ import {
   importProducts,
   type ImportProductsDeps,
   listCatalog,
+  listCustomers,
   registerCompany,
   type RegisterCompanyDeps,
   registerCustomer,
@@ -116,6 +118,22 @@ export function registerCadastroRoutes(app: FastifyInstance, deps: CadastroDeps)
       return reply.code(200).send(resultado)
     },
   )
+
+  /**
+   * A lista de clientes — RF-011, US-036.
+   *
+   * Traz o historico de compra junto: a tela mostra "ultima compra" em toda
+   * linha, e busca-lo por cliente daria vinte e cinco idas ao banco para uma
+   * pagina.
+   */
+  app.get('/clientes', async (request, reply) => {
+    const ctx = requireContext(request)
+
+    const input = validate(customerListInputSchema, request.query ?? {})
+    const pagina = await listCustomers(deps, ctx, input)
+
+    return reply.code(200).send(pagina)
+  })
 
   app.post('/produtos', { config: { rateLimit: LIMITE_DE_ESCRITA } }, async (request, reply) => {
     const ctx = requireContext(request)

@@ -67,6 +67,24 @@ function cadastroEmMemoria() {
       clientes.push(cl)
       return cl
     },
+    /* O falso nao guarda venda: o historico volta zerado, e isso e honesto —
+       quem testa a ROTA testa paginacao e filtro, nao a agregacao de compras,
+       que so o banco faz. */
+    list: async (companyId, criterio) => {
+      const termo = criterio.termo?.toLowerCase() ?? ''
+      const casam = clientes
+        .filter((c) => c.companyId === companyId)
+        .filter((c) => termo === '' || c.name.toLowerCase().includes(termo))
+        .sort((a, b) => a.name.localeCompare(b.name))
+
+      return {
+        total: casam.length,
+        clientes: casam
+          .slice(criterio.offset, criterio.offset + criterio.limite)
+          .map((c) => ({ ...c, lastSaleOn: null, salesCount: 0, totalSpentCents: 0 })),
+      }
+    },
+
     findSimilar: async (companyId, criteria) =>
       criteria.phone === undefined && criteria.document === undefined
         ? []

@@ -1,6 +1,7 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { listarClientes } from '@/lib/clientes-api'
 import {
   COLUNAS,
   criarCard,
@@ -11,7 +12,6 @@ import {
   type CardCrm,
   type ColunaId,
 } from '@/lib/crm-api'
-import { clientes } from '@/lib/mock-data'
 import { daysUntil, formatDate } from '@/lib/format'
 import { Badge, Card, EmptyState, PageHeader, Stat } from '@/components/ui/UI'
 import { Button } from '@/components/ui/Button'
@@ -407,11 +407,27 @@ function FormCard({
   const [data, setData] = useState('2026-08-24')
   const [responsavel, setResponsavel] = useState('')
 
-  const [listaClientes, setListaClientes] = useState(clientes.map((c) => c.nome))
+  /*
+   * Os nomes vem da api, e nao de `mock-data`.
+   *
+   * O campo e um autocompletar: comeca vazio e enche quando a lista chega. Um
+   * valor provisorio com nomes inventados seria pior que campo vazio — a pessoa
+   * escolheria "Maria Silva" achando que e cliente dela.
+   */
+  const [listaClientes, setListaClientes] = useState<string[]>([])
   const [listaResponsaveis, setListaResponsaveis] = useState(RESPONSAVEIS)
 
   const [erro, setErro] = useState<string | null>(null)
   const [salvando, setSalvando] = useState(false)
+
+  useEffect(() => {
+    /* `async` explicito: o `setState` vem depois do await, nunca sincrono no
+       corpo do efeito. */
+    void (async () => {
+      const r = await listarClientes({})
+      if (r.ok) setListaClientes(r.dados.clientes.map((c) => c.nome))
+    })()
+  }, [])
 
   async function salvar(event: React.FormEvent) {
     event.preventDefault()
@@ -440,7 +456,10 @@ function FormCard({
       descricao: descricao.trim(),
       tipo,
       coluna: 'afazer',
-      clienteId: clientes.find((c) => c.nome === cliente)?.id ?? null,
+      /* Nulo quando o nome digitado nao casa com nenhum cliente: o campo
+         aceita texto livre de proposito, para nao travar quem anota um contato
+         antes de cadastrar a pessoa. */
+      clienteId: null,
       clienteNome: cliente,
       data,
       responsaveis: responsavel ? [responsavel] : [],

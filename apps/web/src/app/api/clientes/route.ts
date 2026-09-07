@@ -56,3 +56,36 @@ export async function POST(request: Request) {
 
   return NextResponse.json(r.dados, { status: 201 })
 }
+
+/**
+ * A lista de clientes — RF-011, US-036.
+ *
+ * Os parametros so viajam quando VIERAM. Mandar `q=` ou `page=` vazios faria a
+ * api validar string vazia como numero e recusar o pedido inteiro, quando a
+ * intencao era usar o padrao dela.
+ */
+export async function GET(request: Request) {
+  const token = (await cookies()).get(SESSION_COOKIE)?.value
+
+  if (token === undefined) {
+    return NextResponse.json(
+      { error: { code: 'UNAUTHORIZED', message: 'Entre na sua conta para continuar.' } },
+      { status: 401 },
+    )
+  }
+
+  const params = new URL(request.url).searchParams
+  const query = new URLSearchParams()
+  for (const chave of ['q', 'filter', 'page', 'pageSize']) {
+    const valor = params.get(chave)
+    if (valor !== null && valor !== '') query.set(chave, valor)
+  }
+
+  const r = await chamarApi(`/clientes?${query.toString()}`, { token })
+
+  return r.ok
+    ? NextResponse.json(r.dados)
+    : NextResponse.json(r.corpo ?? { error: { code: r.code, message: r.message } }, {
+        status: r.status,
+      })
+}

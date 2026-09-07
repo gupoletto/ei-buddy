@@ -1,8 +1,11 @@
-import type {
-  CreateCustomerInput,
-  CustomerOutput,
-  ImportCustomersInput,
-  ImportCustomersOutput,
+import {
+  type CreateCustomerInput,
+  type CustomerListInput,
+  type CustomerListOutput,
+  type CustomerOutput,
+  DIAS_PARA_INATIVO,
+  type ImportCustomersInput,
+  type ImportCustomersOutput,
 } from '@na-regua/contracts'
 import { AppError, isAppError } from '../app-error.js'
 import { assertCanWrite } from '../authorization.js'
@@ -137,4 +140,32 @@ export async function importCustomers(
   }
 
   return { imported, rejected }
+}
+
+/**
+ * A lista de clientes — RF-011, US-036.
+ *
+ * Leitura: sem `assertCanWrite`. Quem vende precisa achar o cliente, e o
+ * `accountant` consulta cadastro para conferir nota.
+ *
+ * O que `core` decide aqui e o que "inativo" significa: a fronteira de dias vem
+ * de `contracts` (`DIAS_PARA_INATIVO`) e nao do repositorio, porque e regra de
+ * negocio — a mesma que o CRM usa para dizer "faz dois meses que ela nao vem".
+ * Deixa-la no SQL espalharia a definicao por cada consulta que precisasse dela.
+ */
+export async function listCustomers(
+  deps: { readonly customers: CustomerRepository },
+  ctx: ExecutionContext,
+  input: CustomerListInput,
+): Promise<CustomerListOutput> {
+  const { clientes, total } = await deps.customers.list(ctx.companyId, {
+    ...(input.q === undefined || input.q === '' ? {} : { termo: input.q }),
+    filtro: input.filter,
+    diasParaInativo: DIAS_PARA_INATIVO,
+    hoje: ctx.now,
+    offset: (input.page - 1) * input.pageSize,
+    limite: input.pageSize,
+  })
+
+  return { customers: [...clientes], total, page: input.page, pageSize: input.pageSize }
 }

@@ -1,11 +1,16 @@
 'use client'
 
 import Link from 'next/link'
-import { useMemo, useState } from 'react'
-import { clientes as todosClientes } from '@/lib/mock-data'
-import { confirmarImportacaoClientes, pendenciaTotal, temVencido } from '@/lib/clientes-api'
+import { useCallback, useEffect, useState } from 'react'
+import {
+  type ClienteDaLista,
+  confirmarImportacaoClientes,
+  type FiltroDeCliente,
+  listarClientes,
+  temVencido,
+} from '@/lib/clientes-api'
 import { isValidCNPJ, isValidCPF } from '@/lib/validation'
-import { daysUntil, formatDate, formatMoney } from '@/lib/format'
+import { formatDate, formatMoney } from '@/lib/format'
 import { Badge, Card, EmptyState, PageHeader, Stat } from '@/components/ui/UI'
 import { Button, ButtonLink } from '@/components/ui/Button'
 import { IconPlus, IconSearch, IconUpload } from '@/components/Icons'
@@ -50,8 +55,13 @@ const CAMPOS_PLANILHA = [
   },
 ]
 
-/** Sem comprar ha mais que isto = cliente inativo. */
-const INATIVO_APOS_DIAS = 60
+/*
+ * A fronteira do "inativo" saiu daqui.
+ *
+ * Ela mora em `contracts` (`DIAS_PARA_INATIVO`) e e aplicada por `core`, porque
+ * e regra de negocio: o CRM usa a MESMA para dizer "faz dois meses que ela nao
+ * vem". Duas copias divergem no dia em que uma das duas mudar.
+ */
 
 type Filtro = 'todos' | 'pendencia' | 'inativos'
 
@@ -60,36 +70,56 @@ export default function ClientesLista() {
   const [filtro, setFiltro] = useState<Filtro>('todos')
   const [importando, setImportando] = useState(false)
 
-  const listaFiltrada = useMemo(() => {
-    const termo = busca.trim().toLowerCase()
-    const somenteDigitos = termo.replace(/\D/g, '')
+  const [listaFiltrada, setListaFiltrada] = useState<ClienteDaLista[]>([])
+  const [total, setTotal] = useState(0)
+  const [carregando, setCarregando] = useState(true)
+  const [erroCarga, setErroCarga] = useState<string | null>(null)
 
-    return todosClientes.filter((c) => {
-      /* Busca por nome ou por documento — comparando so os digitos, para
-         achar tanto quem digitou com pontuacao quanto sem. */
-      if (termo) {
-        const porNome = c.nome.toLowerCase().includes(termo)
-        const porDoc =
-          somenteDigitos.length > 0 && c.documento.replace(/\D/g, '').includes(somenteDigitos)
-        if (!porNome && !porDoc) return false
-      }
-
-      if (filtro === 'pendencia') return pendenciaTotal(c.id) > 0
-
-      if (filtro === 'inativos') {
-        if (!c.ultimaCompra) return true
-        return Math.abs(daysUntil(c.ultimaCompra)) > INATIVO_APOS_DIAS
-      }
-
-      return true
+  /*
+   * A busca e o filtro sao do SERVIDOR, e nao de um filtro sobre a lista.
+   *
+   * Antes a tela carregava todo mundo de `mock-data` e filtrava no navegador.
+   * Numa base de tres mil clientes isso seriam tres mil linhas trafegadas para
+   * mostrar vinte e quatro — e piora conforme a loja cresce, que e o contrario
+   * do que deveria acontecer.
+   *
+   * "Inativo" tambem passa a ter uma definicao so, em `core`, em vez de uma
+   * conta repetida aqui e no CRM.
+   */
+  const buscar = useCallback(async (termo: string, qual: Filtro) => {
+    const r = await listarClientes({
+      termo,
+      filtro: (qual === 'pendencia' ? 'fiado' : qual) as FiltroDeCliente,
     })
-  }, [busca, filtro])
+    setCarregando(false)
 
-  const comPendencia = todosClientes.filter((c) => pendenciaTotal(c.id) > 0)
-  const totalPendente = comPendencia.reduce((acc, c) => acc + pendenciaTotal(c.id), 0)
-  const inativos = todosClientes.filter(
-    (c) => c.ultimaCompra && Math.abs(daysUntil(c.ultimaCompra)) > INATIVO_APOS_DIAS,
-  )
+    if (!r.ok) {
+      setErroCarga(r.erro)
+      return
+    }
+
+    setErroCarga(null)
+    setListaFiltrada(r.dados.clientes)
+    setTotal(r.dados.total)
+  }, [])
+
+  useEffect(() => {
+    /*
+     * Espera a digitacao parar antes de consultar.
+     *
+     * Sem isso, "Maria" dispara cinco buscas — e a resposta da terceira pode
+     * chegar depois da quinta, deixando a tela com o resultado de "Mar" e
+     * "Maria" escrito no campo.
+     */
+    const t = setTimeout(() => {
+      void buscar(busca, filtro)
+    }, 300)
+
+    return () => clearTimeout(t)
+  }, [busca, filtro, buscar])
+
+  const comPendencia = listaFiltrada.filter((c) => c.saldoFiado > 0)
+  const totalPendente = comPendencia.reduce((acc, c) => acc + c.saldoFiado, 0)
 
   return (
     <>
@@ -111,17 +141,22 @@ export default function ClientesLista() {
       />
 
       <div className="statRow">
-        <Stat label="Clientes cadastrados" value={String(todosClientes.length)} />
+        <Stat label="Clientes cadastrados" value={carregando ? '—' : String(total)} />
         <Stat
           label="Com pendencia"
           value={String(comPendencia.length)}
           hint={formatMoney(totalPendente)}
           tone={comPendencia.length ? 'warning' : 'neutral'}
         />
+        {/*
+          O numero de inativos sai do SERVIDOR, pelo filtro — nao de uma conta
+          sobre a pagina atual. Contar aqui daria "3 sem comprar" olhando para
+          os 24 clientes carregados, numa base de tres mil.
+        */}
         <Stat
           label="Sem comprar ha 60 dias"
-          value={String(inativos.length)}
-          hint="vale mandar um Whats"
+          value={filtro === 'inativos' && !carregando ? String(total) : '—'}
+          hint={filtro === 'inativos' ? 'vale mandar um Whats' : 'abra o filtro para ver'}
         />
       </div>
 
@@ -161,8 +196,30 @@ export default function ClientesLista() {
         </div>
 
         {/* --- Lista --- */}
-        {listaFiltrada.length === 0 ? (
-          todosClientes.length === 0 ? (
+        {carregando ? (
+          <EmptyState title="Carregando seus clientes" description="Um instante." />
+        ) : erroCarga !== null ? (
+          <EmptyState
+            title="Nao deu para carregar os clientes"
+            description={erroCarga}
+            action={
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setCarregando(true)
+                  setErroCarga(null)
+                  void buscar(busca, filtro)
+                }}
+              >
+                Tentar de novo
+              </Button>
+            }
+          />
+        ) : listaFiltrada.length === 0 ? (
+          /* Sem a base inteira em memoria, quem distingue "nenhum cadastro" de
+             "nenhum resultado" e a busca estar vazia — e a diferenca importa: a
+             primeira pede um cadastro, a segunda pede outra busca. */
+          busca === '' && filtro === 'todos' ? (
             <EmptyState
               title="Nenhum cliente cadastrado"
               description="Cadastre o primeiro cliente ou traga sua base de uma planilha. Leva menos de um minuto."
@@ -199,7 +256,9 @@ export default function ClientesLista() {
         ) : (
           <ul className={styles.lista}>
             {listaFiltrada.map((cliente) => {
-              const pendente = pendenciaTotal(cliente.id)
+              /* O saldo devedor vem do CLIENTE, que a api ja trouxe. Antes
+                 saia de `pendenciaTotal(id)`, que varria uma lista de mentira. */
+              const pendente = cliente.saldoFiado
               const vencido = temVencido(cliente.id)
 
               return (
@@ -211,12 +270,12 @@ export default function ClientesLista() {
 
                     <span className={styles.itemPrincipal}>
                       <strong>{cliente.nome}</strong>
-                      <span>{cliente.documento}</span>
+                      <span>{cliente.documento ?? 'sem documento'}</span>
                     </span>
 
-                    <span className={styles.itemContato}>
-                      ({cliente.ddd}) {cliente.celular}
-                    </span>
+                    {/* A api guarda o telefone inteiro num campo so — nao ha
+                        DDD separado em `customers`. */}
+                    <span className={styles.itemContato}>{cliente.celular ?? 'sem telefone'}</span>
 
                     <span className={styles.itemUltima}>
                       {cliente.ultimaCompra

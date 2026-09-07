@@ -16,7 +16,7 @@
  * como "consulta indisponivel" e o cadastro segue manual.
  */
 
-import { pedir } from './http'
+import { pedir, type Resultado } from './http'
 import type { LinhaRecusada, ResultadoDaImportacao } from './produtos-api'
 import type { Cliente } from './types'
 
@@ -414,5 +414,91 @@ export async function confirmarImportacaoClientes(
       ...recusadas,
       ...r.dados.rejected.map((rec) => ({ ...rec, index: origem[rec.index] ?? rec.index })),
     ],
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* A lista — RF-011, US-036                                                   */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Um cliente na lista, com o historico que a tela mostra.
+ *
+ * O historico vem JUNTO da api, numa consulta so: a tela mostra "ultima compra"
+ * em toda linha, e busca-lo por cliente daria vinte e cinco idas ao servidor
+ * para uma pagina.
+ */
+export type ClienteDaLista = {
+  id: string
+  nome: string
+  documento: string | null
+  celular: string | null
+  email: string | null
+  /** Saldo devedor do fiado, em reais. */
+  saldoFiado: number
+  /** Nulo = NUNCA comprou. Nao e o mesmo que "comprou ha muito tempo". */
+  ultimaCompra: string | null
+  totalCompras: number
+  valorTotal: number
+}
+
+export type FiltroDeCliente = 'todos' | 'inativos' | 'fiado'
+
+export type ListaDeClientes = {
+  clientes: ClienteDaLista[]
+  total: number
+  pagina: number
+  porPagina: number
+}
+
+type ClienteDaApi = {
+  id: string
+  name: string
+  document: string | null
+  phone: string | null
+  email: string | null
+  walletBalanceCents: number
+  lastSaleOn: string | null
+  salesCount: number
+  totalSpentCents: number
+}
+
+export async function listarClientes(opcoes: {
+  termo?: string
+  filtro?: FiltroDeCliente
+  pagina?: number
+}): Promise<Resultado<ListaDeClientes>> {
+  const query = new URLSearchParams()
+  if (opcoes.termo) query.set('q', opcoes.termo)
+  if (opcoes.filtro && opcoes.filtro !== 'todos') query.set('filter', opcoes.filtro)
+  if (opcoes.pagina && opcoes.pagina > 1) query.set('page', String(opcoes.pagina))
+
+  const r = await pedir<{
+    customers: ClienteDaApi[]
+    total: number
+    page: number
+    pageSize: number
+  }>(`/api/clientes?${query.toString()}`)
+
+  if (!r.ok) return r
+
+  return {
+    ok: true,
+    dados: {
+      clientes: r.dados.customers.map((c) => ({
+        id: c.id,
+        nome: c.name,
+        documento: c.document,
+        celular: c.phone,
+        email: c.email,
+        saldoFiado: c.walletBalanceCents / 100,
+        ultimaCompra: c.lastSaleOn,
+        totalCompras: c.salesCount,
+        valorTotal: c.totalSpentCents / 100,
+      })),
+      total: r.dados.total,
+      pagina: r.dados.page,
+      porPagina: r.dados.pageSize,
+    },
   }
 }

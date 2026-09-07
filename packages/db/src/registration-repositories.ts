@@ -147,6 +147,93 @@ export function createCustomerRepository(sql: Sql): CustomerRepository {
       return paraCliente(linha!)
     },
 
+    /**
+     * A lista da tela, com o historico de compra — RF-011, US-036.
+     *
+     * ## O historico vem por LATERAL, e nao por JOIN
+     *
+     * Um `JOIN sales` multiplicaria a linha do cliente por venda: quem comprou
+     * doze vezes viraria doze linhas, e o `LIMIT 24` cortaria no meio de um
+     * cliente. O `LATERAL` agrega ANTES de juntar, entao cada cliente e uma
+     * linha so. E evita o N+1: buscar por cliente daria vinte e cinco idas ao
+     * banco para uma pagina.
+     *
+     * ## O total sai da mesma varredura
+     *
+     * `count(*) OVER ()` conta as linhas que casaram com o `WHERE` antes do
+     * `LIMIT`. E o que faz a tela dizer "24 de 300"; sem ele, pagina cheia e
+     * indistinguivel de fim da lista.
+     *
+     * ## "Inativo" e regra de `core`, e chega pronta
+     *
+     * O numero de dias vem por parametro (`diasParaInativo`) e nao esta escrito
+     * aqui: e a mesma fronteira que o CRM usa para dizer "faz dois meses que ela
+     * nao vem", e deixa-la no SQL espalharia a definicao por cada consulta.
+     *
+     * Cliente que NUNCA comprou tambem entra em "inativos". Ele e o caso mais
+     * extremo do que o filtro procura — alguem que precisa de um contato — e
+     * deixa-lo de fora esconderia justamente quem mais precisa aparecer.
+     */
+    list: async (companyId, criterio) => {
+      const linhas = await withTenant(
+        sql,
+        companyId,
+        (tx) => tx<
+          (LinhaCliente & {
+            total_geral: string
+            last_sale_on: string | null
+            sales_count: string
+            total_spent_cents: string
+          })[]
+        >`
+          SELECT c.*,
+                 count(*) OVER ()                       AS total_geral,
+                 to_char(h.last_sale_at, 'YYYY-MM-DD') AS last_sale_on,
+                 COALESCE(h.sales_count, 0)             AS sales_count,
+                 COALESCE(h.total_spent_cents, 0)       AS total_spent_cents
+          FROM customers c
+          LEFT JOIN LATERAL (
+            /* O INSTANTE, e nao o texto: e por ele que o filtro de inativos
+               compara. Formatar aqui obrigaria a comparar string com data. */
+            SELECT max(s.created_at)                    AS last_sale_at,
+                   count(*)                             AS sales_count,
+                   COALESCE(sum(s.net_amount_cents), 0) AS total_spent_cents
+            FROM sales s
+            WHERE s.customer_id = c.id AND s.status <> 'cancelled'
+          ) h ON true
+          WHERE true
+          ${
+            criterio.termo === undefined
+              ? tx``
+              : tx`AND (c.name ILIKE ${'%' + criterio.termo + '%'}
+                     OR c.document ILIKE ${'%' + criterio.termo + '%'}
+                     OR c.phone ILIKE ${'%' + criterio.termo + '%'})`
+          }
+          ${
+            criterio.filtro === 'fiado'
+              ? tx`AND c.wallet_balance_cents > 0`
+              : criterio.filtro === 'inativos'
+                ? tx`AND (h.last_sale_at IS NULL
+                       OR h.last_sale_at < ${criterio.hoje}::timestamptz
+                          - make_interval(days => ${criterio.diasParaInativo}))`
+                : tx``
+          }
+          ORDER BY c.name, c.id
+          LIMIT ${criterio.limite} OFFSET ${criterio.offset}
+        `,
+      )
+
+      return {
+        total: numero(linhas[0]?.total_geral ?? 0),
+        clientes: linhas.map((l) => ({
+          ...paraCliente(l),
+          lastSaleOn: l.last_sale_on,
+          salesCount: numero(l.sales_count),
+          totalSpentCents: numero(l.total_spent_cents),
+        })),
+      }
+    },
+
     findSimilar: async (companyId, criteria) => {
       /*
        * Sem criterio nao ha semelhanca a procurar. Sair antes evita um
