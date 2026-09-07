@@ -11,6 +11,7 @@ import {
 } from './fakes.js'
 import { inviteUser } from './invite-user.js'
 import { DURACAO_DA_SESSAO_HORAS, login, selectCompany, type LoginMeta } from './login.js'
+import { loadProfile } from './profile.js'
 
 const AGORA = new Date('2026-09-03T12:00:00.000Z')
 
@@ -559,5 +560,61 @@ describe('convidar usuario — RF-005', () => {
     const r = await inviteUser(deps, { ...ctx, channel: 'api' }, convite)
 
     expect(r.created).toBe(true)
+  })
+})
+
+describe('perfil de quem esta logado — NR-013, RF-119', () => {
+  it('devolve o nome da pessoa e o da loja ativa', async () => {
+    const c = comUmaLoja()
+
+    const perfil = await loadProfile(c.deps, {
+      userId: c.usuario.id,
+      companyId: 'empresa-1',
+      role: 'owner',
+    })
+
+    /* Os dois nomes juntos: e o que a barra do topo mostra, e antes disto ela
+       mostrava "Marina Alves / Mercearia Sol Nascente" fixo no codigo. */
+    expect(perfil.userName).toBe('Ana')
+    expect(perfil.companyName).not.toBeNull()
+    expect(perfil.activeCompanyId).toBe('empresa-1')
+  })
+
+  it('sessao sem loja escolhida devolve nome sem loja, e nao erro', async () => {
+    const c = comUmaLoja()
+
+    const perfil = await loadProfile(c.deps, { userId: c.usuario.id, companyId: null })
+
+    /* Estado legitimo de quem tem acesso a mais de uma loja e ainda nao
+       escolheu (US-059). A tela mostra o nome e pede a escolha. */
+    expect(perfil.userName).toBe('Ana')
+    expect(perfil.companyName).toBeNull()
+    expect(perfil.role).toBeNull()
+  })
+
+  it('devolve todas as lojas, para o seletor', async () => {
+    const c = comUmaLoja()
+    c.users.adicionarVinculo({ companyId: 'empresa-2', userId: c.usuario.id, role: 'staff' })
+
+    const perfil = await loadProfile(c.deps, {
+      userId: c.usuario.id,
+      companyId: 'empresa-1',
+      role: 'owner',
+    })
+
+    expect(perfil.memberships).toHaveLength(2)
+  })
+
+  it('sessao apontando para usuario que sumiu e 401, e nao 404', async () => {
+    const c = cenario()
+
+    const erro = await pegaErro(() =>
+      loadProfile(c.deps, { userId: 'usr-que-nao-existe', companyId: null }),
+    )
+
+    /* O problema nao e "esse recurso nao existe", e sim "esta sessao nao vale
+       mais" — a tela precisa mandar para o login, e nao mostrar um erro que a
+       pessoa nao pode resolver. */
+    expect(isAppError(erro) && erro.code).toBe('UNAUTHORIZED')
   })
 })
