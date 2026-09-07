@@ -131,8 +131,21 @@ function enderecoParaApi(dados: DadosCliente): Record<string, string> | undefine
  * e UF, e os sete campos eram descartados no caminho — o lojista digitava o
  * endereco e ele sumia sem nenhum aviso.
  */
-export async function salvarCliente(dados: DadosCliente): Promise<ResultadoSalvarCliente> {
-  const permitirDuplicado = dados.id === undefined ? '' : '?duplicado=permitir'
+export async function salvarCliente(
+  dados: DadosCliente,
+  /**
+   * Segunda passada, depois de a pessoa ter visto os parecidos e decidido que
+   * e outra pessoa — RF-010.
+   *
+   * Parametro proprio, e nao um `id` sintetico. As duas telas que chamam isto
+   * mandavam `id: 'permitir-duplicado'` e `id: 'confirmado'` para ligar a
+   * mesma coisa, e `id` significa "edite este cliente": quem lesse a chamada
+   * entenderia o contrario do que ela faz. E o dia em que a edicao existir de
+   * verdade, os dois usos colidem.
+   */
+  opcoes: { permitirDuplicado?: boolean } = {},
+): Promise<ResultadoSalvarCliente> {
+  const permitirDuplicado = opcoes.permitirDuplicado === true ? '?duplicado=permitir' : ''
   const address = enderecoParaApi(dados)
 
   let resposta: Response

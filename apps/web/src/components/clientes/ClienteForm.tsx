@@ -230,15 +230,14 @@ export default function ClienteForm() {
   /**
    * Cadastra apesar do parecido — RF-010.
    *
-   * O `id` sintetico e o que faz `salvarCliente` mandar
-   * `?duplicado=permitir`: e a segunda passada, depois de a pessoa ter visto a
-   * lista e decidido. Sem ele, a api responderia 409 de novo e o dialogo
-   * reabriria em laco.
+   * A segunda passada, depois de a pessoa ter visto a lista e decidido. Sem
+   * `permitirDuplicado`, a api responderia 409 de novo e o dialogo reabriria
+   * em laco.
    */
   async function cadastrarMesmoAssim() {
     setDuplicados(null)
     setSalvando(true)
-    const r = await salvarCliente({ ...campos, tipoPessoa: tipo, id: 'permitir-duplicado' })
+    const r = await salvarCliente({ ...campos, tipoPessoa: tipo }, { permitirDuplicado: true })
     setSalvando(false)
 
     if (!r.ok) {

@@ -1628,3 +1628,57 @@
   color: var(--app-muted);
   word-break: break-all;
 }
+
+/* --- Clientes parecidos no cadastro rapido — RF-010 --- */
+
+/*
+ * Ocupa o lugar do formulario dentro do proprio dialogo, e nao uma segunda
+ * camada em cima dele: no balcao, empilhar dialogo sobre dialogo esconde onde
+ * clicar para voltar, e a fila nao espera.
+ */
+.duplicados {
+  display: grid;
+  gap: 14px;
+}
+
+.duplicados > p {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--app-muted);
+}
+
+.duplicados ul {
+  display: grid;
+  gap: 8px;
+}
+
+.duplicado {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  padding: 12px 14px;
+  text-align: left;
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius);
+  background: transparent;
+  cursor: pointer;
+  transition:
+    border-color var(--transition),
+    background-color var(--transition);
+}
+
+.duplicado:hover {
+  border-color: var(--app-accent);
+  background: var(--app-field-hover);
+}
+
+.duplicado strong {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--app-text);
+}
+
+.duplicado span {
+  font-size: 12.5px;
+  color: var(--app-muted);
+}

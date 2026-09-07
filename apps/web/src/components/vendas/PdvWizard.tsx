@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   criarVenda,
   totalCarrinho,
@@ -9,9 +9,14 @@ import {
   type ItemCarrinho,
   type Pagamento,
 } from '@/lib/vendas-api'
-import { clientes } from '@/lib/mock-data'
+import {
+  listarClientes,
+  salvarCliente,
+  type CandidatoCliente,
+  type ClienteDaLista,
+} from '@/lib/clientes-api'
 import { formatMoney } from '@/lib/format'
-import { maskCPF, maskCelular, validateCPF } from '@/lib/validation'
+import { maskCPF, maskPhone, validateCPF } from '@/lib/validation'
 import { Card, EmptyState, PageHeader } from '@/components/ui/UI'
 import { Button, ButtonLink } from '@/components/ui/Button'
 import Toast from '@/components/ui/Toast'
@@ -228,17 +233,47 @@ function EtapaCliente({
   const [busca, setBusca] = useState('')
   const [cadastrando, setCadastrando] = useState(false)
 
-  const encontrados = useMemo(() => {
-    const termo = busca.trim().toLowerCase()
-    if (!termo) return clientes.slice(0, 6)
+  const [encontrados, setEncontrados] = useState<ClienteDaLista[]>([])
+  const [carregando, setCarregando] = useState(true)
+  const [erro, setErro] = useState<string | null>(null)
 
-    const digitos = termo.replace(/\D/g, '')
-    return clientes.filter(
-      (c) =>
-        c.nome.toLowerCase().includes(termo) ||
-        (digitos.length > 0 && c.documento.replace(/\D/g, '').includes(digitos)),
-    )
-  }, [busca])
+  /*
+   * A busca e do SERVIDOR, e nao um filtro sobre uma lista carregada.
+   *
+   * Antes esta etapa lia `lib/mock-data`: o balcao procurava a Dona Marta que
+   * acabou de cadastrar e ela nao existia — apareciam sempre os mesmos cinco
+   * nomes de exemplo, de outra loja.
+   *
+   * Filtrar no navegador tambem nao serve: uma mercearia com tres mil clientes
+   * traria tres mil linhas para mostrar seis.
+   */
+  const buscar = useCallback(async (termo: string) => {
+    const r = await listarClientes({ termo })
+    setCarregando(false)
+
+    if (!r.ok) {
+      setErro(r.erro)
+      return
+    }
+
+    setErro(null)
+    /* Seis cabem na tela sem rolagem, e no balcao rolar com fila atras custa
+       mais que refinar a busca. */
+    setEncontrados(r.dados.clientes.slice(0, 6))
+  }, [])
+
+  useEffect(() => {
+    /*
+     * Espera a digitacao parar. Sem isso "Maria" dispara cinco buscas, e a
+     * resposta de "Mar" pode chegar depois da de "Maria" — a lista mostraria o
+     * resultado anterior sobre o campo com o termo atual.
+     */
+    const t = setTimeout(() => {
+      void buscar(busca)
+    }, 300)
+
+    return () => clearTimeout(t)
+  }, [busca, buscar])
 
   return (
     <>
@@ -255,7 +290,16 @@ function EtapaCliente({
           />
         </label>
 
-        {encontrados.length === 0 ? (
+        {carregando ? (
+          <EmptyState title="Carregando" description="Buscando os clientes da loja." />
+        ) : erro !== null ? (
+          <EmptyState
+            title="Nao foi possivel buscar"
+            /* O caminho de seguir sem identificar continua aberto: a venda nao
+               pode parar porque a busca de cliente falhou. */
+            description={`${erro} Voce ainda pode seguir sem identificar o cliente.`}
+          />
+        ) : encontrados.length === 0 ? (
           <EmptyState
             title="Nenhum cliente encontrado"
             description="Cadastre na hora ou siga sem identificar o cliente."
@@ -280,11 +324,11 @@ function EtapaCliente({
                   </span>
                   <span className={styles.clientePrincipal}>
                     <strong>{c.nome}</strong>
-                    <span>{c.documento}</span>
+                    {/* Cliente so com nome e legitimo (RF-009): o traco e
+                        honesto, e "000.000.000-00" nao seria. */}
+                    <span>{c.documento ?? 'sem documento'}</span>
                   </span>
-                  <span className={styles.clienteContato}>
-                    ({c.ddd}) {c.celular}
-                  </span>
+                  <span className={styles.clienteContato}>{c.celular ?? '—'}</span>
                 </button>
               </li>
             ))}
@@ -311,9 +355,13 @@ function EtapaCliente({
 
       {cadastrando ? (
         <CadastroRapido
-          onCriado={(nome) => {
+          onCriado={(criado) => {
             setCadastrando(false)
-            onSelecionar({ id: null, nome })
+            /* Com o ID de verdade: antes vinha `id: null` e a venda era
+               gravada como "sem cliente" logo depois de o operador cadastrar
+               a pessoa. O fiado e o historico dela ficavam sem dono. */
+            onSelecionar(criado)
+            void buscar(busca)
           }}
           onCancelar={() => setCadastrando(false)}
         />
@@ -330,7 +378,7 @@ function CadastroRapido({
   onCriado,
   onCancelar,
 }: {
-  onCriado: (nome: string) => void
+  onCriado: (cliente: ClienteVenda) => void
   onCancelar: () => void
 }) {
   const [nome, setNome] = useState('')
@@ -338,6 +386,63 @@ function CadastroRapido({
   const [celular, setCelular] = useState('')
   const [erro, setErro] = useState<string | null>(null)
   const [salvando, setSalvando] = useState(false)
+
+  /**
+   * Clientes parecidos, quando a api acha telefone ou documento repetido.
+   *
+   * Nao e erro, e pergunta — e no balcao ela tem resposta imediata, com a
+   * pessoa na frente. Recusar automaticamente travaria o cadastro de dois
+   * irmaos com o telefone de casa, que acontece.
+   */
+  const [duplicados, setDuplicados] = useState<CandidatoCliente[] | null>(null)
+
+  const digitos = (v: string) => v.replace(/\D/g, '')
+
+  /*
+   * O telefone vai INTEIRO no campo `celular`, e o `ddd` fica vazio.
+   *
+   * `salvarCliente` junta os dois (`${ddd}${celular}`) e limpa a pontuacao, e
+   * o resultado e o mesmo — separar aqui so para juntar la seria trabalho para
+   * criar o estado invalido "DDD de um lugar, numero de outro".
+   */
+  const dadosDoFormulario = () => {
+    return {
+      tipoPessoa: 'fisica' as const,
+      documento: digitos(documento),
+      nome: nome.trim(),
+      ddd: '',
+      celular: digitos(celular),
+      email: '',
+      cep: '',
+      logradouro: '',
+      numero: '',
+      complemento: '',
+      bairro: '',
+      cidade: '',
+      uf: '',
+    }
+  }
+
+  async function enviar(confirmandoDuplicado: boolean) {
+    setErro(null)
+    setSalvando(true)
+
+    const dados = dadosDoFormulario()
+    const r = await salvarCliente(dados, { permitirDuplicado: confirmandoDuplicado })
+    setSalvando(false)
+
+    if (r.ok) {
+      onCriado({ id: r.id, nome: dados.nome })
+      return
+    }
+
+    if ('duplicados' in r) {
+      setDuplicados(r.duplicados)
+      return
+    }
+
+    setErro(r.error)
+  }
 
   async function salvar(event: React.FormEvent) {
     event.preventDefault()
@@ -357,13 +462,15 @@ function CadastroRapido({
       }
     }
 
-    setErro(null)
-    setSalvando(true)
-    /* SUBSTITUIR POR: POST /clientes */
-    await new Promise((r) => setTimeout(r, 700))
-    setSalvando(false)
+    /* Mesma regra do `phoneSchema`: dez ou onze digitos. Conferir aqui evita
+       uma ida a rede para receber "telefone invalido" de volta. */
+    const so = digitos(celular)
+    if (so !== '' && so.length !== 10 && so.length !== 11) {
+      setErro('Telefone incompleto. Informe DDD e numero.')
+      return
+    }
 
-    onCriado(nome.trim())
+    await enviar(false)
   }
 
   return (
@@ -389,7 +496,50 @@ function CadastroRapido({
           Clientes.
         </p>
 
-        <form onSubmit={salvar} noValidate className={styles.formCampos}>
+        {duplicados !== null ? (
+          <div className={styles.duplicados} role="alert">
+            <p>
+              Ja existe cliente com este telefone ou documento. Escolha um deles ou cadastre mesmo
+              assim.
+            </p>
+            <ul>
+              {duplicados.map((d) => (
+                <li key={d.id}>
+                  <button
+                    type="button"
+                    className={styles.duplicado}
+                    onClick={() => onCriado({ id: d.id, nome: d.name })}
+                  >
+                    <strong>{d.name}</strong>
+                    <span>{d.phone ?? d.document ?? 'sem contato'}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <div className={styles.dialogAcoes}>
+              <Button variant="secondary" onClick={() => setDuplicados(null)} disabled={salvando}>
+                Voltar
+              </Button>
+              <Button onClick={() => void enviar(true)} disabled={salvando}>
+                {salvando ? (
+                  <>
+                    <Spinner size={15} />
+                    Salvando...
+                  </>
+                ) : (
+                  'E outra pessoa, cadastrar'
+                )}
+              </Button>
+            </div>
+          </div>
+        ) : null}
+
+        <form
+          onSubmit={salvar}
+          noValidate
+          className={styles.formCampos}
+          hidden={duplicados !== null}
+        >
           <label className={styles.campo}>
             <span>Nome</span>
             <input
@@ -412,12 +562,17 @@ function CadastroRapido({
           </label>
 
           <label className={styles.campo}>
-            <span>Celular (opcional)</span>
+            {/*
+              Com DDD. A mascara antiga cortava em nove digitos e o contrato
+              exige dez ou onze: com o mock isso nunca aparecia, e com a
+              chamada de verdade todo cadastro com celular seria recusado.
+            */}
+            <span>Celular com DDD (opcional)</span>
             <input
               className={styles.input}
               value={celular}
-              onChange={(e) => setCelular(maskCelular(e.target.value))}
-              placeholder="99876-5432"
+              onChange={(e) => setCelular(maskPhone(e.target.value))}
+              placeholder="(41) 99876-5432"
               inputMode="tel"
             />
           </label>
