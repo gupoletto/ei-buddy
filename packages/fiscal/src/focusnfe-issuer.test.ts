@@ -35,6 +35,10 @@ function focusDeMentira(
   configurar: {
     rejeitarCom?: { status_sefaz: string; mensagem_sefaz: string }
     contingencia?: boolean
+    /** A SEFAZ denegou: irregularidade cadastral, e o numero foi consumido. */
+    denegar?: boolean
+    /** O GET devolve uma nota ja cancelada. */
+    consultaCancelada?: boolean
     corpoIlegivel?: boolean
     semChave?: boolean
     cancelamentoSemProtocolo?: boolean
@@ -79,6 +83,14 @@ function focusDeMentira(
         return responder(422, { status: 'erro_autorizacao', ...configurar.rejeitarCom })
       }
 
+      if (configurar.denegar === true) {
+        return responder(200, {
+          status: 'denegado',
+          status_sefaz: '302',
+          mensagem_sefaz: 'Rejeicao: Irregularidade fiscal do destinatario.',
+        })
+      }
+
       const serie = Number(corpoEnviado?.serie ?? 1)
       /* Por SERIE, e nao por requisicao: cada nota da serie recebe o proximo
          numero, como o provedor faz quando nao se informa `numero`. */
@@ -99,6 +111,30 @@ function focusDeMentira(
         ...(configurar.contingencia === true
           ? { contingencia_offline: true, mensagem_sefaz: 'SEFAZ fora do ar' }
           : {}),
+      })
+    }
+
+    /* GET /nfce/{ref} — consulta. */
+    if (method === 'GET') {
+      const refConsultada = endereco.split('/').pop() ?? ''
+      if (configurar.consultaCancelada === true) {
+        return responder(200, {
+          status: 'cancelado',
+          numero_protocolo: 'PROT-CANCEL',
+          caminho_xml_cancelamento: '/arquivos/cancelamento.xml',
+        })
+      }
+      const nota = emitidas.get(refConsultada)
+      if (nota === undefined) {
+        return responder(404, { codigo: 'nao_encontrada', mensagem: 'Nota nao encontrada.' })
+      }
+      return responder(200, {
+        status: 'autorizado',
+        chave_nfe: nota.chave,
+        numero: nota.numero,
+        serie: nota.serie,
+        caminho_xml_nota_fiscal: `/arquivos/${nota.chave}.xml`,
+        caminho_danfe: `/danfe/${nota.chave}.html`,
       })
     }
 
@@ -290,5 +326,57 @@ describe('o que so o adapter Focus NFe faz', () => {
        referencia, e nao ha endpoint que traduza. */
     const cancelamento = c.focus.chamadas.find((ch) => ch.method === 'DELETE')
     expect(cancelamento?.url).toContain('/nfce/venda-88')
+  })
+})
+
+describe('os cinco status que a SEFAZ devolve — RF-047', () => {
+  it('denegada NAO e recusada: o numero foi consumido, e a mensagem diz isso', async () => {
+    const e = emissor({ denegar: true })
+
+    const r = await e.emissor.issue(pedidoValido())
+
+    expect(r.status).toBe('rejected')
+    if (r.status !== 'rejected') return
+
+    expect(r.rejection.code).toBe('302')
+    /*
+     * A diferenca que custa dinheiro: rejeicao comum deixa o numero livre e
+     * reenviar resolve; denegacao consome o numero e reenviar nunca vai passar.
+     * Mandar o lojista "tentar de novo" numa denegacao e mande-lo repetir uma
+     * operacao impossivel em vez de regularizar o cadastro.
+     */
+    expect(r.rejection.message).toContain('numero foi consumido')
+    expect(r.rejection.message).toContain('Regularize')
+  })
+
+  it('consulta de nota ja cancelada nao volta como rejeitada', async () => {
+    const e = emissor({ consultaCancelada: true })
+
+    const r = await e.emissor.consult?.({ companyId: 'empresa-1', saleId: 'venda-1' })
+
+    /*
+     * `undefined` e "esta venda nao tem nota valendo". Como `rejected`, a
+     * reconciliacao de contingencia (RF-053) TRAVARIA: o laco para na primeira
+     * nao autorizada, e uma cancelada ficaria ali para sempre, impedindo todas
+     * as posteriores de serem reconhecidas.
+     */
+    expect(r).toBeUndefined()
+  })
+
+  it('consulta devolve a nota autorizada quando ela existe', async () => {
+    const e = emissor()
+    await e.emissor.issue(pedidoValido())
+
+    const r = await e.emissor.consult?.({ companyId: 'empresa-1', saleId: pedidoValido().saleId })
+
+    expect(r?.status).toBe('authorized')
+  })
+
+  it('consulta de referencia desconhecida volta indefinida, e nao erro', async () => {
+    const e = emissor()
+
+    const r = await e.emissor.consult?.({ companyId: 'empresa-1', saleId: 'venda-que-nao-existe' })
+
+    expect(r).toBeUndefined()
   })
 })
