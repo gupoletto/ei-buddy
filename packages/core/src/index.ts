@@ -249,3 +249,14 @@ export type { MesFaturado, Ranking, ReportRepository } from './ports/report-repo
 /* Estoque em memoria — o falso da NR-023, usado por teste de rota e composicao
    de desenvolvimento, como os outros falsos deste pacote. */
 export { InMemoryInventory } from './inventory/fakes.js'
+
+/* Historico de vendas — NR-027, US-021. */
+export { getSale, listSales } from './sales/list-sales.js'
+export type { ListSalesDeps } from './sales/list-sales.js'
+export type {
+  FiltroDoHistorico,
+  ItemDoHistorico,
+  PagamentoDoHistorico,
+  SaleHistoryRepository,
+  VendaDoHistorico,
+} from './ports/sale-history.js'

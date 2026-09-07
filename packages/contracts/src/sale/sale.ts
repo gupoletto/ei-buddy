@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { idSchema, moneyCentsSchema, rateSchema } from '../common/primitives.js'
+import { dateSchema, idSchema, moneyCentsSchema, rateSchema } from '../common/primitives.js'
 
 /**
  * Venda — glossario `Sale`. Documento fechado; nunca `Order` no MVP.
@@ -96,3 +96,104 @@ export const saleOutputSchema = z.object({
 })
 
 export type SaleOutput = z.infer<typeof saleOutputSchema>
+
+/**
+ * Historico de vendas — NR-027, US-021.
+ *
+ * Periodo opcional, ao contrario do DRE e dos relatorios: la o periodo E a
+ * pergunta ("como fechou marco"), e um padrao escondido faria telas discordarem
+ * no dia 1. Aqui a pergunta e "o que eu vendi", e a resposta natural comeca
+ * pelas mais recentes — abrir a tela pedindo duas datas antes de mostrar
+ * qualquer coisa seria trabalho antes da resposta.
+ */
+export const PAGINA_PADRAO_DO_HISTORICO = 20
+export const PAGINA_MAXIMA_DO_HISTORICO = 100
+
+export const saleHistoryInputSchema = z
+  .object({
+    from: dateSchema.optional(),
+    to: dateSchema.optional(),
+    /** Numero da venda, nome do cliente ou descricao de item. */
+    q: z.string().trim().max(120).optional(),
+    page: z.coerce.number().int().min(1, 'A primeira pagina e a 1.').default(1),
+    pageSize: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(PAGINA_MAXIMA_DO_HISTORICO, `A pagina vai ate ${PAGINA_MAXIMA_DO_HISTORICO} vendas.`)
+      .default(PAGINA_PADRAO_DO_HISTORICO),
+  })
+  .strict()
+  .refine((p) => p.from === undefined || p.to === undefined || p.from <= p.to, {
+    message: 'O inicio do periodo nao pode ser depois do fim.',
+    path: ['from'],
+  })
+
+export type SaleHistoryInput = z.infer<typeof saleHistoryInputSchema>
+
+export const saleHistoryItemSchema = z.object({
+  description: z.string(),
+  quantity: z.number().int(),
+  unitPriceCents: z.number().int(),
+  totalCents: z.number().int(),
+})
+
+export const saleHistoryPaymentSchema = z.object({
+  method: paymentMethodSchema,
+  amountCents: z.number().int(),
+  installments: z.number().int().nullable(),
+})
+
+export const saleHistoryEntrySchema = z.object({
+  id: idSchema,
+  number: z.number().int(),
+  soldAt: z.string(),
+  customerId: idSchema.nullable(),
+  /** `null` na venda de balcao sem identificacao — RF-033. */
+  customerName: z.string().nullable(),
+  status: z.enum(['registered', 'cancelled', 'returned', 'partially_returned']),
+  grossAmountCents: z.number().int(),
+  discountCents: z.number().int(),
+  netAmountCents: z.number().int(),
+  taxAmountCents: z.number().int(),
+  cardFeeAmountCents: z.number().int(),
+  items: z.array(saleHistoryItemSchema),
+  payments: z.array(saleHistoryPaymentSchema),
+  invoiceNumber: z.number().int().nullable(),
+  invoiceAccessKey: z.string().nullable(),
+})
+
+export type SaleHistoryEntry = z.infer<typeof saleHistoryEntrySchema>
+
+/**
+ * Os numeros do topo da tela, sobre o FILTRO inteiro e nao sobre a pagina.
+ *
+ * Somados no navegador a partir das 20 vendas carregadas, dariam um
+ * faturamento vinte vezes menor que o real assim que o historico passasse de
+ * uma pagina — e um numero que parece certo e o pior tipo de errado.
+ *
+ * Venda cancelada fica fora de todos eles: ela nao aconteceu.
+ */
+export const saleHistorySummarySchema = z.object({
+  /** Quantas vendas nao canceladas casam com o filtro. */
+  salesCount: z.number().int(),
+  grossCents: z.number().int(),
+  netCents: z.number().int(),
+  cardFeeCents: z.number().int(),
+  /** `netCents` menos a tarifa de cartao — o que de fato entra. */
+  netAfterFeesCents: z.number().int(),
+  /** Nulo quando nao houve venda no filtro — nao zero. */
+  averageTicketCents: z.number().int().nullable(),
+})
+
+export type SaleHistorySummary = z.infer<typeof saleHistorySummarySchema>
+
+export const saleHistoryOutputSchema = z.object({
+  sales: z.array(saleHistoryEntrySchema),
+  total: z.number().int(),
+  page: z.number().int(),
+  pageSize: z.number().int(),
+  summary: saleHistorySummarySchema,
+})
+
+export type SaleHistoryOutput = z.infer<typeof saleHistoryOutputSchema>

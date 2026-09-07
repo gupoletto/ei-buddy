@@ -419,112 +419,211 @@ export type VendaHistorico = {
   status: 'concluida' | 'estornada'
 }
 
-/** SUBSTITUIR POR: GET /vendas */
-export function listarVendas(): VendaHistorico[] {
-  return [
-    {
-      id: 'ven-1',
-      numero: '1842',
-      data: '2026-08-24T14:32:00',
-      clienteNome: 'Joana Ribeiro',
-      itens: [
-        { descricao: 'Cafe torrado e moido 500g', quantidade: 2, precoUnitario: 21.9 },
-        { descricao: 'Filtro de papel n103', quantidade: 1, precoUnitario: 8.9 },
-        { descricao: 'Acucar mascavo 1kg', quantidade: 3, precoUnitario: 12.9 },
-      ],
-      subtotal: 91.4,
-      desconto: 4.5,
-      total: 86.9,
-      pagamentos: [{ forma: 'pix', valor: 86.9 }],
-      valorLiquido: 86.04,
-      imposto: 3.12,
-      nota: { tipo: 'nfce', numero: '4187' },
-      status: 'concluida',
+/**
+ * O historico de vendas — NR-027, US-021.
+ *
+ * Era `listarVendas()`, sincrona, devolvendo `lib/mock-data`: o lojista fechava
+ * uma venda e o historico continuava sendo o de outra pessoa. Agora vem de
+ * `GET /api/vendas/historico`, com filtro, periodo e paginacao no banco.
+ *
+ * O RESUMO vem junto e fala do filtro inteiro, nao da pagina. Somado no
+ * navegador a partir das vinte vendas carregadas, o faturamento sairia varias
+ * vezes menor assim que o historico passasse de uma pagina — e um numero que
+ * parece certo e o pior tipo de errado.
+ */
+export type ItemDaVenda = {
+  descricao: string
+  quantidade: number
+  precoUnitario: number
+  total: number
+}
+
+export type PagamentoDaVenda = {
+  forma: FormaPagamento
+  valor: number
+  parcelas: number | null
+}
+
+export type VendaDoHistorico = {
+  id: string
+  numero: number
+  data: string
+  clienteId: string | null
+  /** Nulo na venda de balcao sem identificacao — RF-033. */
+  clienteNome: string | null
+  status: 'registered' | 'cancelled' | 'returned' | 'partially_returned'
+  bruto: number
+  desconto: number
+  total: number
+  imposto: number
+  taxaCartao: number
+  itens: ItemDaVenda[]
+  pagamentos: PagamentoDaVenda[]
+  notaNumero: number | null
+  notaChave: string | null
+}
+
+export type ResumoDoHistorico = {
+  quantidade: number
+  faturamento: number
+  liquido: number
+  /** Nulo quando nao houve venda no filtro — nao zero. */
+  ticketMedio: number | null
+}
+
+export type PaginaDoHistorico = {
+  vendas: VendaDoHistorico[]
+  total: number
+  pagina: number
+  porPagina: number
+  resumo: ResumoDoHistorico
+}
+
+type VendaDaApi = {
+  id: string
+  number: number
+  soldAt: string
+  customerId: string | null
+  customerName: string | null
+  status: VendaDoHistorico['status']
+  grossAmountCents: number
+  discountCents: number
+  netAmountCents: number
+  taxAmountCents: number
+  cardFeeAmountCents: number
+  items: { description: string; quantity: number; unitPriceCents: number; totalCents: number }[]
+  payments: { method: FormaPagamento; amountCents: number; installments: number | null }[]
+  invoiceNumber: number | null
+  invoiceAccessKey: string | null
+}
+
+const reais = (centavos: number) => centavos / 100
+
+const vendaParaTela = (v: VendaDaApi): VendaDoHistorico => ({
+  id: v.id,
+  numero: v.number,
+  data: v.soldAt,
+  clienteId: v.customerId,
+  clienteNome: v.customerName,
+  status: v.status,
+  bruto: reais(v.grossAmountCents),
+  desconto: reais(v.discountCents),
+  total: reais(v.netAmountCents),
+  imposto: reais(v.taxAmountCents),
+  taxaCartao: reais(v.cardFeeAmountCents),
+  itens: v.items.map((i) => ({
+    descricao: i.description,
+    quantidade: i.quantity,
+    precoUnitario: reais(i.unitPriceCents),
+    total: reais(i.totalCents),
+  })),
+  pagamentos: v.payments.map((p) => ({
+    forma: p.method,
+    valor: reais(p.amountCents),
+    parcelas: p.installments,
+  })),
+  notaNumero: v.invoiceNumber,
+  notaChave: v.invoiceAccessKey,
+})
+
+export type FiltroDoHistorico = {
+  termo: string
+  /** AAAA-MM-DD, ou vazio para nao filtrar. */
+  de: string
+  ate: string
+  pagina: number
+  porPagina: number
+}
+
+export async function carregarHistorico(
+  filtro: FiltroDoHistorico,
+): Promise<{ ok: true; dados: PaginaDoHistorico } | { ok: false; error: string }> {
+  const query = new URLSearchParams({
+    page: String(filtro.pagina),
+    pageSize: String(filtro.porPagina),
+  })
+
+  const termo = filtro.termo.trim()
+  if (termo !== '') query.set('q', termo)
+  if (filtro.de !== '') query.set('from', filtro.de)
+  if (filtro.ate !== '') query.set('to', filtro.ate)
+
+  let resposta: Response
+  try {
+    resposta = await fetch(`/api/vendas/historico?${query.toString()}`, {
+      headers: { 'content-type': 'application/json' },
+      credentials: 'same-origin',
+    })
+  } catch {
+    return { ok: false, error: 'Sem conexao. Verifique sua internet.' }
+  }
+
+  const json = (await resposta.json().catch(() => ({}))) as {
+    sales?: VendaDaApi[]
+    total?: number
+    page?: number
+    pageSize?: number
+    summary?: {
+      salesCount: number
+      netCents: number
+      netAfterFeesCents: number
+      averageTicketCents: number | null
+    }
+    error?: { message?: string }
+  }
+
+  if (!resposta.ok || json.sales === undefined || json.summary === undefined) {
+    return { ok: false, error: json.error?.message ?? 'Nao foi possivel carregar o historico.' }
+  }
+
+  return {
+    ok: true,
+    dados: {
+      vendas: json.sales.map(vendaParaTela),
+      total: json.total ?? 0,
+      pagina: json.page ?? 1,
+      porPagina: json.pageSize ?? 20,
+      resumo: {
+        quantidade: json.summary.salesCount,
+        faturamento: reais(json.summary.netCents),
+        liquido: reais(json.summary.netAfterFeesCents),
+        ticketMedio:
+          json.summary.averageTicketCents === null ? null : reais(json.summary.averageTicketCents),
+      },
     },
-    {
-      id: 'ven-2',
-      numero: '1841',
-      data: '2026-08-24T13:58:00',
-      clienteNome: 'Venda sem cliente',
-      itens: [{ descricao: 'Azeite extra virgem 500ml', quantidade: 1, precoUnitario: 39.9 }],
-      subtotal: 39.9,
-      desconto: 0,
-      total: 39.9,
-      pagamentos: [{ forma: 'credito', valor: 39.9 }],
-      valorLiquido: 38.51,
-      imposto: 1.44,
-      nota: { tipo: 'nfce', numero: '4186' },
-      status: 'concluida',
-    },
-    {
-      id: 'ven-3',
-      numero: '1840',
-      data: '2026-08-24T11:20:00',
-      clienteNome: 'Marcos Dias',
-      itens: [
-        { descricao: 'Leite integral 1L', quantidade: 12, precoUnitario: 5.99 },
-        { descricao: 'Biscoito integral 200g', quantidade: 6, precoUnitario: 7.5 },
-      ],
-      subtotal: 116.88,
-      desconto: 0,
-      total: 116.88,
-      pagamentos: [{ forma: 'dinheiro', valor: 116.88 }],
-      valorLiquido: 116.88,
-      imposto: 4.21,
-      nota: { tipo: 'nfce', numero: '4185' },
-      status: 'concluida',
-    },
-    {
-      id: 'ven-4',
-      numero: '1839',
-      data: '2026-08-23T17:05:00',
-      clienteNome: 'Padaria Sol LTDA',
-      itens: [{ descricao: 'Cafe torrado e moido 500g', quantidade: 8, precoUnitario: 19.5 }],
-      subtotal: 156.0,
-      desconto: 0,
-      total: 156.0,
-      pagamentos: [{ forma: 'debito', valor: 156.0 }],
-      valorLiquido: 152.9,
-      imposto: 5.62,
-      nota: { tipo: 'nfce', numero: '4181' },
-      status: 'concluida',
-    },
-    {
-      id: 'ven-5',
-      numero: '1838',
-      data: '2026-08-23T09:44:00',
-      clienteNome: 'Restaurante Boa Mesa',
-      itens: [{ descricao: 'Azeite extra virgem 500ml', quantidade: 2, precoUnitario: 39.2 }],
-      subtotal: 78.4,
-      desconto: 0,
-      total: 78.4,
-      pagamentos: [{ forma: 'carteira', valor: 78.4 }],
-      valorLiquido: 0,
-      imposto: 0,
-      nota: null,
-      status: 'estornada',
-    },
-  ]
+  }
 }
 
 /**
- * SUBSTITUIR POR: POST /vendas/:id/estorno
+ * O estorno ainda NAO existe — RF-043.
  *
- * Precisa ser transacional — ver nota no topo do arquivo.
+ * Recusa em vez de fingir. Antes esta funcao esperava 1,2 s e devolvia
+ * `{ ok: true }` com uma contagem tirada de `lib/mock-data`: a tela dizia "3
+ * itens devolvidos ao estoque" e nada tinha sido devolvido, nem estornado, nem
+ * cancelado. Um estorno que parece ter acontecido e pior que um botao que
+ * recusa, porque o furo de inventario so aparece na contagem seguinte.
+ *
+ * O que falta nao e a rota: e o caso de uso, e ele tem de cobrir TRES coisas na
+ * mesma transacao — devolver o item ao estoque (movimento de `sale_cancelled`,
+ * que a trilha ja preve), estornar o titulo em contas a receber, e cancelar a
+ * nota fiscal ou emitir a de devolucao. Se uma falhar, nenhuma pode valer.
+ *
+ * As tres pecas ja existem em separado: a trilha de estoque ganhou
+ * implementacao no banco, o estorno de baixa esta em `core`
+ * (`reverseSettlement`) e o cancelamento de nota esta no emissor fiscal. Falta
+ * a transacao que as junta.
  */
 export async function estornarVenda(
   id: string,
 ): Promise<{ ok: true; itensDevolvidos: number } | { ok: false; error: string }> {
-  await delay(1200)
+  void id
 
-  const venda = listarVendas().find((v) => v.id === id)
-  if (!venda) return { ok: false, error: 'Venda nao encontrada.' }
-  if (venda.status === 'estornada') {
-    return { ok: false, error: 'Esta venda ja foi estornada.' }
+  return {
+    ok: false,
+    error:
+      'O estorno de venda ainda nao esta disponivel. Para corrigir agora, ajuste o estoque ' +
+      'pelo produto e cancele a nota pela tela da venda.',
   }
-
-  const itensDevolvidos = venda.itens.reduce((acc, i) => acc + i.quantidade, 0)
-  return { ok: true, itensDevolvidos }
 }
 
 /* -------------------------------------------------------------------------- */

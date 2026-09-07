@@ -26,7 +26,7 @@
  */
 
 import { clientes, contasPagar, produtos } from './mock-data'
-import { listarVendas } from './vendas-api'
+import { carregarHistorico } from './vendas-api'
 import { daysUntil, formatMoney } from './format'
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms))
@@ -182,9 +182,29 @@ export async function enviarMensagem(texto: string, contexto: Contexto): Promise
 
   /* --- Faturamento --- */
   if (t.includes('faturamento') || t.includes('quanto vendi')) {
-    const vendas = listarVendas().filter((v) => v.status === 'concluida')
-    const hoje = vendas.filter((v) => v.data.startsWith('2026-08-24'))
-    const totalHoje = hoje.reduce((a, v) => a + v.total, 0)
+    /*
+     * O numero e DE VERDADE, mesmo com o assistente ainda sendo um esboco.
+     *
+     * Antes saia de `listarVendas()`, que era `lib/mock-data` filtrado por uma
+     * data fixa de 2026: o lojista perguntava "quanto vendi hoje" e recebia o
+     * faturamento de outra pessoa, num dia que nao era hoje. O runtime do
+     * agente espera a DEC-007, mas a resposta desta pergunta nao — ela sai da
+     * mesma consulta que a tela de vendas usa, entao as duas concordam.
+     */
+    const agora = new Date()
+    const dois = (n: number) => String(n).padStart(2, '0')
+    const hojeIso = `${agora.getFullYear()}-${dois(agora.getMonth() + 1)}-${dois(agora.getDate())}`
+
+    const r = await carregarHistorico({
+      termo: '',
+      de: hojeIso,
+      ate: hojeIso,
+      pagina: 1,
+      porPagina: 1,
+    })
+
+    const totalHoje = r.ok ? r.dados.resumo.faturamento : 0
+    const hoje = { length: r.ok ? r.dados.resumo.quantidade : 0 }
 
     return {
       intencao: 'faturamento',
@@ -406,7 +426,22 @@ export async function enviarMensagem(texto: string, contexto: Contexto): Promise
     }
 
     const cliente = clientes.find((c) => c.id === ctx.clienteId)!
-    const compras = listarVendas().filter((v) => v.clienteNome === cliente.nome)
+    /*
+     * As compras deste cliente, do historico DE VERDADE.
+     *
+     * A busca do historico casa por nome do cliente, numero da venda ou
+     * descricao do item — aqui o nome basta. `porPagina` alto porque a lista
+     * abaixo mostra as ultimas, e paginar dentro de uma resposta de chat nao
+     * tem para onde ir.
+     */
+    const historico = await carregarHistorico({
+      termo: cliente.nome,
+      de: '',
+      ate: '',
+      pagina: 1,
+      porPagina: 20,
+    })
+    const compras = historico.ok ? historico.dados.vendas : []
 
     if (t.includes('devendo') || t.includes('deve')) {
       return {
