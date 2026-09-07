@@ -70,3 +70,6 @@ export { createSaleHistoryRepository } from './sale-history-repository.js'
 
 /* Chamados de suporte — NR-080, US-062. */
 export { createSupportRepository } from './support-repository.js'
+
+/* Baixa e estorno de titulo — NR-029, RF-063 a RF-067. */
+export { createSettlementUnitOfWork } from './settlement-repository.js'

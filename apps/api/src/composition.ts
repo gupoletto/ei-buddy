@@ -30,6 +30,7 @@ import {
   createInventoryQueries,
   createInventoryUnitOfWork,
   createReportRepository,
+  createSettlementUnitOfWork,
   createSupportRepository,
   createCompanyRepository,
   createCustomerRepository,
@@ -55,6 +56,7 @@ import type { CadastroDeps } from './routes/cadastro.js'
 import type { ConciliacaoDeps } from './routes/conciliacao.js'
 import type { SaleRouteDeps } from './routes/sales.js'
 import type { ContabilidadeDeps } from './routes/contabilidade.js'
+import type { BaixasDeps } from './routes/baixas.js'
 import type { EstoqueDeps } from './routes/estoque.js'
 import type { SuporteDeps } from './routes/suporte.js'
 import type { RelatoriosDeps } from './routes/relatorios.js'
@@ -414,6 +416,20 @@ export function buildSuporteDeps(): SuporteDeps {
   return {
     support: createSupportRepository(sql),
     quemEscreve: async (ctx) => (await users.findById(ctx.userId))?.name ?? 'Lojista',
+  }
+}
+
+/**
+ * Baixa e estorno de titulo — NR-029.
+ *
+ * A trilha e obrigatoria: quem deu a baixa e de quanto e exatamente o que se
+ * pergunta quando o caixa nao fecha (US-061). Enquanto `db` nao expuser
+ * repositorio de auditoria, ela e de memoria — mesma pendencia das outras.
+ */
+export function buildBaixasDeps(): BaixasDeps {
+  return {
+    uow: createSettlementUnitOfWork(getClient(env.DATABASE_URL)),
+    audit: new InMemoryAuditTrail(),
   }
 }
 
