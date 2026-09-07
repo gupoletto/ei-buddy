@@ -38,3 +38,68 @@ export function ultimosMeses(meses: number, agora: Date = new Date()): { de: str
     ate: `${ano}-${dois(mes + 1)}-${dois(ultimo)}`,
   }
 }
+
+/**
+ * O dia de hoje em AAAA-MM-DD, pelos campos LOCAIS.
+ *
+ * Nunca `toISOString()`: no fuso do Brasil, o dia 1 as 00h ainda e o dia 30 em
+ * UTC, e "vendido hoje" mostraria o movimento de ontem ate as 21h.
+ */
+export function hojeLocal(agora: Date = new Date()): string {
+  const dois = (n: number) => String(n).padStart(2, '0')
+  return `${agora.getFullYear()}-${dois(agora.getMonth() + 1)}-${dois(agora.getDate())}`
+}
+
+const DIAS = [
+  'Domingo',
+  'Segunda-feira',
+  'Terca-feira',
+  'Quarta-feira',
+  'Quinta-feira',
+  'Sexta-feira',
+  'Sabado',
+] as const
+
+const MESES = [
+  'janeiro',
+  'fevereiro',
+  'marco',
+  'abril',
+  'maio',
+  'junho',
+  'julho',
+  'agosto',
+  'setembro',
+  'outubro',
+  'novembro',
+  'dezembro',
+] as const
+
+/**
+ * "Bom dia" so quando for de manha.
+ *
+ * A tela dizia "Bom dia" as onze da noite. E um detalhe pequeno e e exatamente
+ * o tipo de coisa que faz o app parecer um molde: quem abre o caixa as 20h
+ * percebe na hora que ninguem pensou nele.
+ */
+export function saudacaoDaHora(agora: Date = new Date()): string {
+  const h = agora.getHours()
+  if (h < 12) return 'Bom dia'
+  if (h < 18) return 'Boa tarde'
+  return 'Boa noite'
+}
+
+/** "Segunda-feira, 24 de agosto" — do relogio, e nao do codigo. */
+export function dataPorExtenso(agora: Date = new Date()): string {
+  return `${DIAS[agora.getDay()]}, ${agora.getDate()} de ${MESES[agora.getMonth()]}`
+}
+
+/**
+ * So o primeiro nome no cabecalho.
+ *
+ * "Bom dia, Maria" cabe e soa como alguem falando; "Bom dia, Maria Aparecida da
+ * Silva Santos" quebra em duas linhas e soa como cadastro.
+ */
+export function primeiroNome(nome: string): string {
+  return nome.trim().split(/\s+/)[0] ?? nome
+}

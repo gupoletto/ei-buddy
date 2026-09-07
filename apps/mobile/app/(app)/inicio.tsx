@@ -1,88 +1,183 @@
-import { useMemo } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { useCallback, useEffect, useState } from 'react'
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { contasPagar, contasReceber, produtos } from '@/lib/mock-data'
-import { listarVendas } from '@/lib/vendas-api'
-import { nivelEstoque } from '@/lib/produtos-api'
-import { describeDueDate, daysUntil, formatMoney } from '@/lib/format'
+import { describeDueDate, formatMoney } from '@/lib/format'
+import {
+  carregarContasAPagar,
+  carregarParaRepor,
+  carregarResumoDoDia,
+  carregarSaudacao,
+  carregarVendasRecentes,
+  type ContaAPagar,
+  type ProdutoParaRepor,
+  type ResumoDoDia,
+  type Saudacao,
+  type VendaRecente,
+} from '@/lib/inicio-api'
 import Cabecalho from '@/components/Cabecalho'
 import Sanfona from '@/components/ui/Sanfona'
 import { Etiqueta } from '@/components/ui/Cartao'
 import { cores, espaco, fonte, peso, raio } from '@/theme/tokens'
 
-/** Data de referencia do app. */
-const HOJE = '2026-08-24'
-
 /**
- * Tela principal.
+ * Tela principal — NR-013.
  *
- * No web isto e um painel de "mesas" lado a lado. No celular vira uma
- * pilha de sanfonas: os numeros do dia ficam sempre a vista no topo, e
- * cada assunto abre so quando interessa.
+ * ## O que esta tela era
+ *
+ * Tinha `const HOJE = '2026-08-24'` escrito no codigo, abria com "Bom dia,
+ * Marina" as onze da noite e somava `lib/mock-data`. Ou seja: data congelada,
+ * nome de uma pessoa inventada, saudacao que ignorava a hora, e numeros de uma
+ * loja que nao existe. Quem instalasse e vendesse veria exatamente os mesmos
+ * valores.
+ *
+ * ## O desenho
+ *
+ * No web isto e um painel de mesas lado a lado. No celular vira uma pilha: os
+ * numeros do dia sempre a vista no topo, e cada assunto abre so quando
+ * interessa.
+ *
+ * Enquanto carrega, os numeros ficam como ESQUELETO e nao como zero. Zero e uma
+ * resposta — "voce nao vendeu nada hoje" — e mostra-la antes de saber faria o
+ * lojista abrir o app de manha e levar um susto que nao era verdade.
+ *
+ * E cada bloco cai sozinho. Sao leituras independentes; se a de contas a pagar
+ * falhar, nao ha motivo para esconder o faturamento. Numa rede de balcao isso e
+ * o caso comum, e tela que some inteira por causa de um bloco e tela que
+ * ninguem confia.
  */
+
+const emReais = (centavos: number) => centavos / 100
+
+type Estado = {
+  saudacao: Saudacao | null
+  resumo: ResumoDoDia | null
+  contas: readonly ContaAPagar[] | null
+  totalAPagarCents: number
+  vencidas: number
+  repor: readonly ProdutoParaRepor[] | null
+  vendas: readonly VendaRecente[] | null
+}
+
+const VAZIO: Estado = {
+  saudacao: null,
+  resumo: null,
+  contas: null,
+  totalAPagarCents: 0,
+  vencidas: 0,
+  repor: null,
+  vendas: null,
+}
+
 export default function Inicio() {
   const router = useRouter()
 
-  const dados = useMemo(() => {
-    const vendas = listarVendas().filter((v) => v.status === 'concluida')
-    const hoje = vendas.filter((v) => v.data.startsWith(HOJE))
-    const faturamento = hoje.reduce((a, v) => a + v.total, 0)
+  const [estado, setEstado] = useState<Estado>(VAZIO)
+  const [carregando, setCarregando] = useState(true)
+  const [atualizando, setAtualizando] = useState(false)
 
-    const aPagar = contasPagar.filter((c) => c.status !== 'pago')
-    const vencidas = aPagar.filter((c) => daysUntil(c.vencimento) < 0)
-    const totalPagar = aPagar.reduce((a, c) => a + (c.valor - c.valorPago), 0)
+  const buscar = useCallback(async () => {
+    /* Tudo em paralelo: sao cinco perguntas independentes, e encadea-las
+       multiplicaria a espera numa rede de celular por nada. */
+    const [saudacao, resumo, aPagar, repor, vendas] = await Promise.all([
+      carregarSaudacao(),
+      carregarResumoDoDia(),
+      carregarContasAPagar(),
+      carregarParaRepor(),
+      carregarVendasRecentes(),
+    ])
 
-    const aReceber = contasReceber.filter((c) => c.status !== 'pago')
-    const totalReceber = aReceber.reduce((a, c) => a + (c.valor - c.valorRecebido), 0)
-
-    const repor = produtos.filter((p) => nivelEstoque(p) !== 'normal')
-
-    return {
-      vendas,
-      hoje,
-      faturamento,
-      aPagar,
-      vencidas,
-      totalPagar,
-      aReceber,
-      totalReceber,
+    setEstado({
+      saudacao,
+      resumo,
+      contas: aPagar.contas,
+      totalAPagarCents: aPagar.totalCents,
+      vencidas: aPagar.vencidas,
       repor,
-    }
+      vendas,
+    })
+    setCarregando(false)
+    setAtualizando(false)
   }, [])
+
+  useEffect(() => {
+    void (async () => {
+      await buscar()
+    })()
+  }, [buscar])
+
+  const recarregar = () => {
+    setAtualizando(true)
+    void buscar()
+  }
+
+  const s = estado.saudacao
+  const r = estado.resumo
 
   return (
     <SafeAreaView style={estilos.tela} edges={['top']}>
-      <Cabecalho titulo="Bom dia, Marina" subtitulo="Segunda-feira, 24 de agosto" />
+      <Cabecalho
+        titulo={s === null ? 'Ola' : s.nome === null ? s.texto : `${s.texto}, ${s.nome}`}
+        subtitulo={s === null ? 'Carregando...' : s.data}
+      />
 
-      <ScrollView contentContainerStyle={estilos.conteudo}>
+      <ScrollView
+        contentContainerStyle={estilos.conteudo}
+        refreshControl={
+          <RefreshControl
+            refreshing={atualizando}
+            onRefresh={recarregar}
+            tintColor={cores.primaria}
+          />
+        }
+      >
         {/* Numeros do dia: sempre visiveis, sem precisar abrir nada. */}
         <View style={estilos.indicadores}>
           <Indicador
             rotulo="Vendido hoje"
-            valor={formatMoney(dados.faturamento)}
-            apoio={`${dados.hoje.length} vendas`}
+            valor={r?.faturamentoCents ?? null}
+            apoio={r?.vendasHoje === null ? undefined : `${r?.vendasHoje ?? 0} vendas`}
+            carregando={carregando}
             destaque
           />
           <Indicador
-            rotulo="A receber"
-            valor={formatMoney(dados.totalReceber)}
-            apoio={`${dados.aReceber.length} titulos`}
+            rotulo="A pagar"
+            valor={r?.aPagarCents ?? null}
+            apoio={
+              r === null || r.contasVencidas === null
+                ? undefined
+                : r.contasVencidas > 0
+                  ? `${r.contasVencidas} vencida(s)`
+                  : 'nada vencido'
+            }
+            alerta={(r?.contasVencidas ?? 0) > 0}
+            carregando={carregando}
           />
           <Indicador
-            rotulo="A pagar"
-            valor={formatMoney(dados.totalPagar)}
+            rotulo="Repor"
+            contagem={r?.produtosParaRepor ?? null}
             apoio={
-              dados.vencidas.length > 0 ? `${dados.vencidas.length} vencido(s)` : 'nada vencido'
+              r === null || r.produtosEsgotados === null
+                ? undefined
+                : r.produtosEsgotados > 0
+                  ? `${r.produtosEsgotados} esgotado(s)`
+                  : 'nada esgotado'
             }
-            alerta={dados.vencidas.length > 0}
+            alerta={(r?.produtosEsgotados ?? 0) > 0}
+            carregando={carregando}
           />
         </View>
 
+        {/*
+          O atalho principal, com area de toque generosa.
+          E o que a pessoa vem fazer: abrir o balcao e vender. Um botao de 40px
+          num aplicativo usado com uma mao so, em pe atras do caixa, erra.
+        */}
         <Pressable
-          style={estilos.atalho}
+          style={({ pressed }) => [estilos.atalho, pressed && estilos.atalhoPressionado]}
           onPress={() => router.push('/pdv')}
           accessibilityRole="button"
+          accessibilityLabel="Abrir o balcao para bipar produto e fechar venda"
         >
           <Text style={estilos.atalhoTexto}>Abrir o balcao</Text>
           <Text style={estilos.atalhoApoio}>Bipar produto e fechar venda</Text>
@@ -90,140 +185,276 @@ export default function Inicio() {
 
         <Sanfona
           titulo="Ultimas vendas"
-          resumo={`${dados.vendas.length} no historico`}
+          resumo={estado.vendas === null ? '—' : `${estado.vendas.length} recentes`}
           inicialAberta
         >
-          {dados.vendas.slice(0, 4).map((v) => (
-            <View key={v.id} style={estilos.linha}>
-              <Text style={estilos.linhaId}>#{v.numero}</Text>
-              <Text style={estilos.linhaTexto} numberOfLines={1}>
-                {v.clienteNome}
-              </Text>
-              <Text style={estilos.linhaValor}>{formatMoney(v.total)}</Text>
-            </View>
-          ))}
+          <Lista
+            itens={estado.vendas}
+            carregando={carregando}
+            vazio="Nenhuma venda ainda. A primeira aparece aqui."
+            erro="Nao deu para carregar as vendas."
+            chave={(v) => v.id}
+          >
+            {(v) => (
+              <View style={estilos.linha}>
+                <Text style={estilos.linhaId}>#{v.number}</Text>
+                <Text style={estilos.linhaTexto} numberOfLines={1}>
+                  {v.customerName ?? 'Venda de balcao'}
+                </Text>
+                <Text style={estilos.linhaValor}>{formatMoney(emReais(v.netAmountCents))}</Text>
+              </View>
+            )}
+          </Lista>
         </Sanfona>
 
         <Sanfona
           titulo="Contas a pagar"
-          resumo={formatMoney(dados.totalPagar)}
+          resumo={estado.contas === null ? '—' : formatMoney(emReais(estado.totalAPagarCents))}
           etiqueta={
-            dados.vencidas.length > 0 ? (
-              <Etiqueta tom="atencao">{dados.vencidas.length} vencido</Etiqueta>
+            estado.vencidas > 0 ? (
+              <Etiqueta tom="atencao">{estado.vencidas} vencida</Etiqueta>
             ) : undefined
           }
         >
-          {dados.aPagar.slice(0, 5).map((c) => (
-            <View key={c.id} style={estilos.linha}>
-              <View style={estilos.linhaInfo}>
-                <Text style={estilos.linhaTexto} numberOfLines={1}>
-                  {c.fornecedor}
+          <Lista
+            itens={estado.contas}
+            carregando={carregando}
+            vazio="Nenhuma conta em aberto."
+            erro="Nao deu para carregar as contas."
+            chave={(c) => c.id}
+            limite={5}
+          >
+            {(c) => (
+              <View style={estilos.linha}>
+                <View style={estilos.linhaInfo}>
+                  <Text style={estilos.linhaTexto} numberOfLines={1}>
+                    {c.supplier}
+                  </Text>
+                  <Text style={estilos.linhaApoio}>{describeDueDate(c.dueDate)}</Text>
+                </View>
+                <Text style={estilos.linhaValor}>
+                  {formatMoney(emReais(c.amountCents - c.settledAmountCents))}
                 </Text>
-                <Text style={estilos.linhaApoio}>{describeDueDate(c.vencimento)}</Text>
               </View>
-              <Text style={estilos.linhaValor}>{formatMoney(c.valor - c.valorPago)}</Text>
-            </View>
-          ))}
+            )}
+          </Lista>
         </Sanfona>
 
         <Sanfona
           titulo="Precisa repor"
-          resumo={`${dados.repor.length} produto(s)`}
+          resumo={estado.repor === null ? '—' : `${estado.repor.length} produto(s)`}
           etiqueta={
-            dados.repor.length > 0 ? <Etiqueta tom="atencao">estoque baixo</Etiqueta> : undefined
+            (estado.repor?.length ?? 0) > 0 ? (
+              <Etiqueta tom="atencao">estoque baixo</Etiqueta>
+            ) : undefined
           }
         >
-          {dados.repor.map((p) => (
-            <View key={p.id} style={estilos.linha}>
-              <View style={estilos.linhaInfo}>
-                <Text style={estilos.linhaTexto} numberOfLines={1}>
-                  {p.descricao}
-                </Text>
-                <Text style={estilos.linhaApoio}>minimo {p.estoqueMinimo} un</Text>
+          <Lista
+            itens={estado.repor}
+            carregando={carregando}
+            vazio="Nada abaixo do minimo. Estoque em ordem."
+            erro="Nao deu para carregar o estoque."
+            chave={(p) => p.id}
+          >
+            {(p) => (
+              <View style={estilos.linha}>
+                <View style={estilos.linhaInfo}>
+                  <Text style={estilos.linhaTexto} numberOfLines={1}>
+                    {p.description}
+                  </Text>
+                  <Text style={estilos.linhaApoio}>minimo {p.minStock} un</Text>
+                </View>
+                <Text style={[estilos.linhaValor, estilos.alerta]}>{p.stock} un</Text>
               </View>
-              <Text style={[estilos.linhaValor, estilos.alerta]}>{p.estoque} un</Text>
-            </View>
-          ))}
+            )}
+          </Lista>
         </Sanfona>
       </ScrollView>
     </SafeAreaView>
   )
 }
 
+/* ------------------------------------------------------------------ */
+
+/**
+ * Uma lista com os tres desfechos que ela pode ter.
+ *
+ * Carregando, vazia e quebrada sao coisas DIFERENTES, e a maioria dos apps
+ * mostra a mesma coisa nas tres — normalmente nada. "Nenhuma conta em aberto" e
+ * uma boa noticia; "nao deu para carregar" e um problema. Trocar uma pela outra
+ * faz o lojista tomar decisao com base numa lista que nao carregou.
+ */
+function Lista<T>({
+  itens,
+  carregando,
+  vazio,
+  erro,
+  chave,
+  limite,
+  children,
+}: {
+  itens: readonly T[] | null
+  carregando: boolean
+  vazio: string
+  erro: string
+  chave: (item: T) => string
+  limite?: number
+  children: (item: T) => React.ReactElement
+}) {
+  if (carregando) {
+    return (
+      <View>
+        {[0, 1, 2].map((i) => (
+          <View key={i} style={estilos.linha}>
+            <View style={estilos.esqueleto} />
+          </View>
+        ))}
+      </View>
+    )
+  }
+
+  if (itens === null) return <Text style={estilos.aviso}>{erro}</Text>
+  if (itens.length === 0) return <Text style={estilos.aviso}>{vazio}</Text>
+
+  const mostrar = limite === undefined ? itens : itens.slice(0, limite)
+
+  return (
+    <View>
+      {mostrar.map((item) => (
+        <View key={chave(item)}>{children(item)}</View>
+      ))}
+    </View>
+  )
+}
+
+/**
+ * Um numero do dia.
+ *
+ * Enquanto carrega mostra um esqueleto, e nao zero. Zero e uma resposta — "voce
+ * nao vendeu nada" — e mostra-la antes de saber daria um susto falso a quem
+ * abre o app de manha.
+ *
+ * Quando a leitura falha mostra um travessao. Nao inventar numero e mais util
+ * que inventar: o travessao diz "nao sei", e a pessoa recarrega.
+ */
 function Indicador({
   rotulo,
   valor,
+  contagem,
   apoio,
   destaque = false,
   alerta = false,
+  carregando = false,
 }: {
   rotulo: string
-  valor: string
-  apoio?: string
+  /** Em centavos. */
+  valor?: number | null
+  /** Numero puro, quando o indicador nao e dinheiro. */
+  contagem?: number | null
+  apoio?: string | undefined
   destaque?: boolean
   alerta?: boolean
+  carregando?: boolean
 }) {
+  const texto =
+    valor !== undefined
+      ? valor === null
+        ? '—'
+        : formatMoney(emReais(valor))
+      : contagem === null || contagem === undefined
+        ? '—'
+        : String(contagem)
+
   return (
     <View style={[estilos.indicador, destaque && estilos.indicadorDestaque]}>
       <Text style={estilos.indicadorRotulo}>{rotulo}</Text>
-      <Text
-        style={[
-          estilos.indicadorValor,
-          destaque && estilos.indicadorValorDestaque,
-          alerta && estilos.alerta,
-        ]}
-      >
-        {valor}
-      </Text>
-      {apoio ? <Text style={estilos.indicadorApoio}>{apoio}</Text> : null}
+
+      {carregando ? (
+        <View style={[estilos.esqueleto, estilos.esqueletoValor]} />
+      ) : (
+        <Text
+          style={[
+            estilos.indicadorValor,
+            destaque && estilos.indicadorValorDestaque,
+            alerta && estilos.alerta,
+          ]}
+          /* O numero encolhe em vez de quebrar linha: um faturamento de sete
+             digitos nao pode desalinhar o cartao ao lado. */
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.7}
+        >
+          {texto}
+        </Text>
+      )}
+
+      {apoio !== undefined && !carregando ? (
+        <Text style={estilos.indicadorApoio}>{apoio}</Text>
+      ) : null}
     </View>
   )
 }
 
 const estilos = StyleSheet.create({
   tela: { flex: 1, backgroundColor: cores.fundo },
-  conteudo: { padding: espaco.lg, gap: espaco.md, paddingBottom: espaco.xxl },
+  conteudo: { padding: espaco.md, gap: espaco.md, paddingBottom: espaco.xxl },
 
-  indicadores: { gap: espaco.sm },
+  indicadores: { flexDirection: 'row', gap: espaco.sm },
   indicador: {
-    padding: espaco.lg,
-    borderWidth: 1,
-    borderColor: cores.borda,
+    flex: 1,
+    minWidth: 0,
+    padding: espaco.md,
     borderRadius: raio.md,
     backgroundColor: cores.superficie,
-    gap: 2,
+    borderWidth: 1,
+    borderColor: cores.borda,
   },
-  indicadorDestaque: { borderColor: cores.acento },
+  indicadorDestaque: { borderColor: cores.primaria },
   indicadorRotulo: { fontSize: fonte.micro, color: cores.textoFraco },
-  indicadorValor: { fontSize: fonte.titulo, fontWeight: peso.pesado, color: cores.texto },
-  indicadorValorDestaque: { color: cores.acento, fontSize: 30 },
-  indicadorApoio: { fontSize: fonte.micro, color: cores.textoFraco },
-  alerta: { color: cores.atencao },
+  indicadorValor: {
+    fontSize: fonte.medio,
+    fontWeight: peso.forte,
+    color: cores.texto,
+    marginTop: espaco.xs,
+  },
+  indicadorValorDestaque: { fontSize: fonte.titulo, color: cores.primaria },
+  indicadorApoio: { fontSize: fonte.micro, color: cores.textoFraco, marginTop: espaco.xs },
+  alerta: { color: cores.erro },
 
   atalho: {
     padding: espaco.lg,
+    /* Area de toque generosa: e o que a pessoa vem fazer, e ela faz em pe,
+       com uma mao, atras do caixa. */
+    minHeight: 72,
+    justifyContent: 'center',
     borderRadius: raio.md,
-    backgroundColor: cores.acento,
-    gap: 2,
+    backgroundColor: cores.primaria,
   },
-  atalhoTexto: {
-    fontSize: fonte.medio,
-    fontWeight: peso.pesado,
-    color: cores.textoSobreAcento,
-  },
-  atalhoApoio: { fontSize: fonte.micro, color: cores.textoSobreAcento, opacity: 0.8 },
+  atalhoPressionado: { opacity: 0.85 },
+  atalhoTexto: { fontSize: fonte.medio, fontWeight: peso.forte, color: cores.textoSobreAcento },
+  atalhoApoio: { fontSize: fonte.pequeno, color: cores.textoSobreAcento, opacity: 0.85 },
 
   linha: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: espaco.md,
+    gap: espaco.sm,
     paddingVertical: espaco.sm,
     borderTopWidth: 1,
     borderTopColor: cores.borda,
   },
-  linhaInfo: { flex: 1, gap: 1 },
-  linhaId: { fontSize: fonte.micro, fontWeight: peso.forte, color: cores.acento },
-  linhaTexto: { flex: 1, fontSize: fonte.pequeno, color: cores.texto },
+  linhaId: { fontSize: fonte.micro, color: cores.textoFraco, minWidth: 34 },
+  linhaInfo: { flex: 1, minWidth: 0 },
+  linhaTexto: { flex: 1, minWidth: 0, fontSize: fonte.pequeno, color: cores.texto },
   linhaApoio: { fontSize: fonte.micro, color: cores.textoFraco },
-  linhaValor: { fontSize: fonte.pequeno, fontWeight: peso.forte, color: cores.texto },
+  linhaValor: { fontSize: fonte.pequeno, color: cores.texto },
+
+  esqueleto: {
+    height: 12,
+    flex: 1,
+    borderRadius: raio.sm,
+    backgroundColor: cores.borda,
+  },
+  esqueletoValor: { height: 22, marginTop: espaco.xs, flex: 0, width: '70%' },
+
+  aviso: { fontSize: fonte.pequeno, color: cores.textoFraco, paddingVertical: espaco.sm },
 })
