@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   abrirChamado,
   CATEGORIAS,
@@ -26,10 +26,33 @@ const TOM_STATUS: Record<string, 'neutral' | 'info' | 'warning' | 'success'> = {
 }
 
 export default function SuporteView() {
-  const [chamados, setChamados] = useState<Chamado[]>(() => listarChamados())
+  const [chamados, setChamados] = useState<Chamado[]>([])
+  const [carregando, setCarregando] = useState(true)
+  const [erroCarga, setErroCarga] = useState<string | null>(null)
   const [aberto, setAberto] = useState<Chamado | null>(null)
   const [criando, setCriando] = useState(false)
   const [toast, setToast] = useState<{ msg: string; tone: 'success' | 'error' } | null>(null)
+
+  const buscar = useCallback(async () => {
+    const r = await listarChamados()
+    setCarregando(false)
+
+    if (!r.ok) {
+      setErroCarga(r.erro)
+      return
+    }
+
+    setErroCarga(null)
+    setChamados(r.dados.chamados)
+  }, [])
+
+  useEffect(() => {
+    /* `async` explicito: os `setState` vem todos depois do await, nunca
+       sincronos no corpo do efeito. */
+    void (async () => {
+      await buscar()
+    })()
+  }, [buscar])
 
   const emAndamento = chamados.filter((c) => c.status !== 'encerrado')
   const comResposta = chamados.filter((c) => c.naoLidas > 0)
@@ -52,7 +75,7 @@ export default function SuporteView() {
         }
       />
 
-      {chamados.length > 0 ? (
+      {chamados.length > 0 && !carregando ? (
         <div className="statRow">
           <Stat label="Chamados abertos" value={String(emAndamento.length)} />
           <Stat
@@ -66,7 +89,32 @@ export default function SuporteView() {
       ) : null}
 
       <Card>
-        {chamados.length === 0 ? (
+        {/*
+          Carregando, vazio e quebrado sao TRES coisas diferentes.
+          "Nenhum chamado por aqui" e uma boa noticia; "nao deu para carregar" e
+          um problema. Mostrar o estado vazio enquanto a lista ainda vem faria o
+          lojista abrir um chamado repetido achando que o anterior sumiu.
+        */}
+        {carregando ? (
+          <EmptyState title="Carregando seus chamados" description="Um instante." />
+        ) : erroCarga !== null ? (
+          <EmptyState
+            title="Nao deu para carregar os chamados"
+            description={erroCarga}
+            action={
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setCarregando(true)
+                  setErroCarga(null)
+                  void buscar()
+                }}
+              >
+                Tentar de novo
+              </Button>
+            }
+          />
+        ) : chamados.length === 0 ? (
           <EmptyState
             title="Nenhum chamado por aqui"
             description="Se algo nao funcionou como esperado, abra um chamado. O time responde por aqui mesmo e voce acompanha tudo nesta tela."
@@ -155,16 +203,15 @@ function FormChamado({
     setErro(null)
     setSalvando(true)
 
-    /* SUBSTITUIR POR: POST /suporte/chamados */
     const r = await abrirChamado({ assunto, categoria, descricao, anexo })
     setSalvando(false)
 
     if (!r.ok) {
-      setErro(r.error)
+      setErro(r.erro)
       return
     }
 
-    onCriado(r.chamado)
+    onCriado(r.dados)
   }
 
   return (

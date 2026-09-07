@@ -67,3 +67,6 @@ export {
 
 /* Historico de vendas — NR-027, US-021. */
 export { createSaleHistoryRepository } from './sale-history-repository.js'
+
+/* Chamados de suporte — NR-080, US-062. */
+export { createSupportRepository } from './support-repository.js'

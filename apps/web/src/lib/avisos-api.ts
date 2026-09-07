@@ -16,10 +16,11 @@ import { pedir } from './http'
  * - produto abaixo do minimo, de `GET /produtos/resumo`;
  * - conta a pagar vencida, de `GET /contas-a-pagar`.
  *
- * Os chamados de suporte ficam de fora de proposito, apesar de a tela deles ja
- * mostrar "resposta nova": aquele numero vem de `lib/mock-data`, e alimentar o
- * sino com ele seria trocar um ponto sempre aceso por um ponto que mente com
- * mais convicção.
+ * - resposta nova em chamado de suporte, de `GET /suporte/chamados`.
+ *
+ * O suporte entrou agora que ele tem banco (NR-080). Antes o numero vinha de
+ * `lib/mock-data`, e alimentar o sino com ele seria trocar um ponto sempre
+ * aceso por um ponto que mente com mais conviccao.
  */
 
 export type Aviso = {
@@ -27,6 +28,15 @@ export type Aviso = {
   readonly texto: string
   readonly href: string
   readonly tom: 'atencao' | 'perigo'
+  /**
+   * Quantos itens o aviso representa.
+   *
+   * Existe para o badge da navegacao mostrar o NUMERO e nao a quantidade de
+   * avisos. Sem ele, "3 respostas do suporte" viraria um badge "1" — e o
+   * lojista veria numeros diferentes na navegacao e no sino, que e o defeito
+   * que ter uma fonte so deveria evitar.
+   */
+  readonly contagem: number
 }
 
 type ResumoDoCatalogo = {
@@ -36,8 +46,10 @@ type ResumoDoCatalogo = {
 
 type ContasAgrupadas = {
   temVencidas: boolean
-  grupos: { faixa: string; itens: unknown[] }[]
+  grupos: { faixa: string; payables: unknown[] }[]
 }
+
+type ChamadosDaApi = { unread: number }
 
 const plural = (n: number, um: string, muitos: string) => (n === 1 ? um : muitos)
 
@@ -49,9 +61,10 @@ const plural = (n: number, um: string, muitos: string) => (n === 1 ? um : muitos
  * vender. Quem falhou simplesmente nao aparece.
  */
 export async function carregarAvisos(): Promise<Aviso[]> {
-  const [catalogo, contas] = await Promise.all([
+  const [catalogo, contas, chamados] = await Promise.all([
     pedir<ResumoDoCatalogo>('/api/produtos/resumo'),
     pedir<ContasAgrupadas>('/api/contas-a-pagar'),
+    pedir<ChamadosDaApi>('/api/suporte/chamados'),
   ])
 
   const avisos: Aviso[] = []
@@ -62,6 +75,7 @@ export async function carregarAvisos(): Promise<Aviso[]> {
       texto: `${n} ${plural(n, 'produto esgotado', 'produtos esgotados')}`,
       href: '/app/produtos?estoque=esgotado',
       tom: 'perigo',
+      contagem: n,
     })
   }
 
@@ -77,16 +91,28 @@ export async function carregarAvisos(): Promise<Aviso[]> {
         texto: `${repor} ${plural(repor, 'produto para repor', 'produtos para repor')}`,
         href: '/app/produtos?estoque=baixo',
         tom: 'atencao',
+        contagem: repor,
       })
     }
   }
 
+  if (chamados.ok && chamados.dados.unread > 0) {
+    const n = chamados.dados.unread
+    avisos.push({
+      texto: `${n} ${plural(n, 'resposta do suporte', 'respostas do suporte')}`,
+      href: '/app/suporte',
+      tom: 'atencao',
+      contagem: n,
+    })
+  }
+
   if (contas.ok && contas.dados.temVencidas) {
-    const vencidas = contas.dados.grupos.find((g) => g.faixa === 'overdue')?.itens.length ?? 0
+    const vencidas = contas.dados.grupos.find((g) => g.faixa === 'overdue')?.payables.length ?? 0
     avisos.push({
       texto: `${vencidas} ${plural(vencidas, 'conta vencida', 'contas vencidas')}`,
       href: '/app/financeiro/contas-a-pagar',
       tom: 'perigo',
+      contagem: vencidas,
     })
   }
 
