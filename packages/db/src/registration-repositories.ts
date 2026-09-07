@@ -30,6 +30,9 @@ type LinhaEmpresa = {
   phone: string
   tax_regime: string
   is_active: boolean
+  state_registration: string | null
+  municipal_registration: string | null
+  business_segment: string | null
   zip_code: string | null
   street: string | null
   number: string | null
@@ -76,6 +79,9 @@ const paraEmpresa = (l: LinhaEmpresa): CompanyOutput => ({
   email: l.email,
   phone: l.phone,
   address: paraEndereco(l),
+  stateRegistration: l.state_registration,
+  municipalRegistration: l.municipal_registration,
+  businessSegment: l.business_segment,
   createdAt: l.created_at.toISOString(),
 })
 
@@ -98,9 +104,20 @@ export function createCompanyRepository(sql: Sql): CompanyRepository {
         sql,
         id,
         (tx) => tx<LinhaEmpresa[]>`
-          INSERT INTO companies (id, legal_name, trade_name, cnpj, email, phone, created_at)
+          INSERT INTO companies
+            (id, legal_name, trade_name, cnpj, email, phone,
+             state_registration, municipal_registration, business_segment,
+             zip_code, street, number, complement, district, city, state,
+             created_at)
           VALUES (${id}, ${c.legalName}, ${c.tradeName ?? null}, ${c.cnpj},
-                  ${c.email}, ${c.phone}, ${c.createdAt})
+                  ${c.email}, ${c.phone},
+                  ${c.stateRegistration ?? null}, ${c.municipalRegistration ?? null},
+                  ${c.businessSegment ?? null},
+                  ${c.address?.zipCode ?? null}, ${c.address?.street ?? null},
+                  ${c.address?.number ?? null}, ${c.address?.complement ?? null},
+                  ${c.address?.district ?? null}, ${c.address?.city ?? null},
+                  ${c.address?.state ?? null},
+                  ${c.createdAt})
           RETURNING *
         `,
       )
@@ -135,6 +152,79 @@ export function createCompanyRepository(sql: Sql): CompanyRepository {
         `
         return linha?.existe === true
       }),
+
+    /**
+     * A propria empresa — RF-003.
+     *
+     * Sem `WHERE id =`: a politica raiz de `companies` e
+     * `USING (id = current_company_id())`, entao a linha do proprio tenant e a
+     * UNICA visivel. Repetir o filtro daria a impressao de que ele e o que
+     * protege — e alguem, um dia, o removeria achando que e redundante.
+     */
+    findById: async (companyId) => {
+      const [linha] = await withTenant(
+        sql,
+        companyId,
+        (tx) => tx<LinhaEmpresa[]>`SELECT * FROM companies`,
+      )
+      return linha === undefined ? undefined : paraEmpresa(linha)
+    },
+
+    /**
+     * Atualiza o cadastro — RF-003.
+     *
+     * ## `COALESCE` e o que faz "campo ausente" significar "nao mexa"
+     *
+     * Cada coluna recebe `COALESCE(${valor}, coluna)`: veio um valor, grava;
+     * veio `null` (o `undefined` do TypeScript vira `null` no driver), fica o
+     * que estava. Um UPDATE que gravasse tudo faria a tela de endereco, ao
+     * salvar, limpar a inscricao estadual preenchida na aba fiscal.
+     *
+     * O preco disso e nao dar para APAGAR um campo por aqui — mandar
+     * "sem inscricao estadual" e indistinguivel de nao mandar nada. Nenhuma
+     * tela pede isso hoje, e quando pedir sera com um verbo proprio, e nao
+     * confundindo ausencia com apagamento.
+     *
+     * ## `updated_at` a mao
+     *
+     * A coluna tem `DEFAULT now()`, e default so vale no INSERT. Sem esta
+     * linha, a data de atualizacao ficaria congelada no dia do cadastro.
+     */
+    update: async (companyId, m) => {
+      const [linha] = await withTenant(
+        sql,
+        companyId,
+        (tx) => tx<LinhaEmpresa[]>`
+          UPDATE companies SET
+            legal_name             = COALESCE(${m.legalName ?? null}, legal_name),
+            trade_name             = COALESCE(${m.tradeName ?? null}, trade_name),
+            email                  = COALESCE(${m.email ?? null}, email),
+            phone                  = COALESCE(${m.phone ?? null}, phone),
+            state_registration     = COALESCE(${m.stateRegistration ?? null}, state_registration),
+            municipal_registration = COALESCE(${m.municipalRegistration ?? null},
+                                              municipal_registration),
+            business_segment       = COALESCE(${m.businessSegment ?? null}, business_segment),
+            zip_code               = COALESCE(${m.address?.zipCode ?? null}, zip_code),
+            street                 = COALESCE(${m.address?.street ?? null}, street),
+            number                 = COALESCE(${m.address?.number ?? null}, number),
+            complement             = COALESCE(${m.address?.complement ?? null}, complement),
+            district               = COALESCE(${m.address?.district ?? null}, district),
+            city                   = COALESCE(${m.address?.city ?? null}, city),
+            state                  = COALESCE(${m.address?.state ?? null}, state),
+            updated_at             = now()
+          RETURNING *
+        `,
+      )
+
+      if (linha === undefined) {
+        /* A RLS escondeu a linha, ou ela nao existe. Nos dois casos nao ha o
+           que atualizar, e devolver um objeto vazio faria a tela desenhar um
+           cadastro em branco como se tivesse salvado. */
+        throw new Error(`empresa ${companyId} nao encontrada`)
+      }
+
+      return paraEmpresa(linha)
+    },
   }
 }
 

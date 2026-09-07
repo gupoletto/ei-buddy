@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { createCustomerInputSchema } from '../customer/customer.js'
-import { createCompanyInputSchema, createUserInputSchema } from './company.js'
+import {
+  createCompanyInputSchema,
+  createUserInputSchema,
+  updateCompanyInputSchema,
+} from './company.js'
 
 const empresa = {
   legalName: 'Mercearia da Marina LTDA',
@@ -69,5 +73,72 @@ describe('cadastro de cliente', () => {
     [{ name: 'Joana R', companyId: 'outra' }, 'companyId no corpo'],
   ])('recusa %o (%s)', (entrada, _motivo) => {
     expect(createCustomerInputSchema.safeParse(entrada).success).toBe(false)
+  })
+})
+
+describe('os dados fiscais da empresa — RF-003, RF-046', () => {
+  it('os tres sao opcionais no cadastro', () => {
+    const r = createCompanyInputSchema.parse(empresa)
+
+    /* MEI nao tem inscricao estadual; loja que so vende produto nao tem
+       municipal. Exigi-los quebraria o cadastro de conta, que e a primeira
+       coisa que o lojista faz. */
+    expect(r.stateRegistration).toBeUndefined()
+    expect(r.businessSegment).toBeUndefined()
+  })
+
+  it('aceita "ISENTO" como inscricao estadual', () => {
+    /* Valor legitimo em varios estados. Um formato numerico fixo recusaria
+       empresa de verdade — e cada UF tem o seu. */
+    const r = createCompanyInputSchema.parse({ ...empresa, stateRegistration: '  ISENTO  ' })
+
+    expect(r.stateRegistration).toBe('ISENTO')
+  })
+
+  it('o ramo de atividade e TEXTO, e nao um codigo de sete digitos', () => {
+    /* A tela oferece segmentos em portugues corrente, que e o que o lojista
+       sabe responder. CNAE e do contador, e entra quando houver quem informe. */
+    const r = createCompanyInputSchema.parse({
+      ...empresa,
+      businessSegment: 'Mercearia e minimercado',
+    })
+
+    expect(r.businessSegment).toBe('Mercearia e minimercado')
+  })
+
+  it.each([
+    [{ stateRegistration: 'x' }, 'inscricao estadual curta demais'],
+    [{ municipalRegistration: 'x'.repeat(21) }, 'inscricao municipal longa demais'],
+    [{ businessSegment: 'x'.repeat(81) }, 'ramo longo demais'],
+  ])('recusa %o (%s)', (extra, _motivo) => {
+    expect(createCompanyInputSchema.safeParse({ ...empresa, ...extra }).success).toBe(false)
+  })
+})
+
+describe('atualizacao do cadastro da empresa — RF-003', () => {
+  it('aceita um campo so — as abas da tela mandam o que conhecem', () => {
+    expect(updateCompanyInputSchema.parse({ tradeName: 'Mercearia Sol' }).tradeName).toBe(
+      'Mercearia Sol',
+    )
+  })
+
+  /*
+   * O CNPJ nao entra. Trocar CNPJ nao e corrigir um cadastro, e apontar para
+   * outra empresa — as notas emitidas, os recebiveis e a trilha de auditoria
+   * continuariam apontando para a anterior.
+   */
+  it('recusa o CNPJ, em vez de ignora-lo em silencio', () => {
+    expect(updateCompanyInputSchema.safeParse({ cnpj: '11222333000181' }).success).toBe(false)
+  })
+
+  it('aceita o endereco parcial — mandar so o CEP e legitimo', () => {
+    const r = updateCompanyInputSchema.parse({ address: { zipCode: '80010000' } })
+
+    expect(r.address?.zipCode).toBe('80010000')
+    expect(r.address?.city).toBeUndefined()
+  })
+
+  it('recusa campo desconhecido — o schema e strict', () => {
+    expect(updateCompanyInputSchema.safeParse({ cor: 'azul' }).success).toBe(false)
   })
 })

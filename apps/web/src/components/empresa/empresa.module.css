@@ -238,3 +238,16 @@
   color: var(--app-muted);
   line-height: 1.5;
 }
+
+/* Aviso de falha ao carregar o cadastro — a tela abre vazia ate ele chegar. */
+.avisoCarga {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--app-danger);
+}
+
+.avisoCarga button {
+  color: var(--app-accent);
+  text-decoration: underline;
+  cursor: pointer;
+}

@@ -6,10 +6,12 @@ import {
   createProductInputSchema,
   importCustomersInputSchema,
   importProductsInputSchema,
+  updateCompanyInputSchema,
 } from '@na-regua/contracts'
 import {
   AppError,
   catalogSummary,
+  getCompany,
   getCustomer,
   getProduct,
   importCustomers,
@@ -17,8 +19,10 @@ import {
   type ImportProductsDeps,
   listCatalog,
   listCustomers,
+  type ManageCompanyDeps,
   registerCompany,
   type RegisterCompanyDeps,
+  updateCompany,
   registerCustomer,
   type RegisterCustomerDeps,
   registerProduct,
@@ -40,6 +44,7 @@ import { validate } from '../plugins/validate.js'
  */
 
 export type CadastroDeps = ImportProductsDeps &
+  ManageCompanyDeps &
   RegisterCompanyDeps &
   RegisterCustomerDeps &
   RegisterProductDeps
@@ -60,6 +65,37 @@ export function registerCadastroRoutes(app: FastifyInstance, deps: CadastroDeps)
     const empresa = await registerCompany(deps, ctx, input)
 
     return reply.code(201).send(empresa)
+  })
+
+  /**
+   * O cadastro da propria loja — RF-003.
+   *
+   * `/empresa` no singular, e nao `/empresas/:id`. A empresa e a do contexto,
+   * e sempre sera: um id no caminho seria um parametro que so pode ter um
+   * valor, e um convite a tentar outro.
+   */
+  app.get('/empresa', async (request, reply) => {
+    const ctx = requireContext(request)
+
+    return reply.code(200).send(await getCompany(deps, ctx))
+  })
+
+  /**
+   * Atualizar o cadastro — RF-003.
+   *
+   * `PUT` com corpo PARCIAL, e nao `PATCH`. A tela manda o formulario inteiro,
+   * que e a leitura natural de PUT; e o contrato e parcial porque o formulario
+   * de endereco e o de dados fiscais sao abas diferentes da mesma tela, e cada
+   * uma manda o que conhece. Campo ausente fica como esta — tratar ausente como
+   * "apague" faria salvar o endereco limpar a inscricao estadual.
+   *
+   * O CNPJ nao esta no contrato de entrada: trocar CNPJ e outra empresa.
+   */
+  app.put('/empresa', { config: { rateLimit: LIMITE_DE_ESCRITA } }, async (request, reply) => {
+    const ctx = requireContext(request)
+    const input = validate(updateCompanyInputSchema, request.body)
+
+    return reply.code(200).send(await updateCompany(deps, ctx, input))
   })
 
   /**

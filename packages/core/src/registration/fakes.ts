@@ -1,4 +1,5 @@
 import type {
+  Address,
   CompanyOutput,
   CustomerListItem,
   CustomerOutput,
@@ -6,6 +7,7 @@ import type {
 } from '@na-regua/contracts'
 import type { CompanyId } from '../context.js'
 import type {
+  CompanyChanges,
   CompanyRepository,
   CustomerRepository,
   NewCompany,
@@ -22,6 +24,23 @@ import type {
  * producao. O falso que so guarda e devolve nao protege de nada.
  */
 
+/**
+ * Endereco de entrada -> endereco de saida, campo a campo.
+ *
+ * `undefined` vira `null`, e endereco ausente vira os sete campos nulos: a
+ * tela distingue "nao informou" de "o campo nao existe", e um `undefined`
+ * solto faria a ficha desenhar buracos em vez de "Nao informado".
+ */
+const paraEnderecoDeSaida = (a: Address | undefined): CompanyOutput['address'] => ({
+  zipCode: a?.zipCode ?? null,
+  street: a?.street ?? null,
+  number: a?.number ?? null,
+  complement: a?.complement ?? null,
+  district: a?.district ?? null,
+  city: a?.city ?? null,
+  state: a?.state ?? null,
+})
+
 export class InMemoryCompanyRepository implements CompanyRepository {
   readonly registros = new Map<string, CompanyOutput>()
   private sequencia = 0
@@ -37,19 +56,56 @@ export class InMemoryCompanyRepository implements CompanyRepository {
       cnpj: company.cnpj,
       email: company.email,
       phone: company.phone,
-      address: {
-        zipCode: null,
-        street: null,
-        number: null,
-        complement: null,
-        district: null,
-        city: null,
-        state: null,
-      },
+      /* `undefined` na entrada vira `null` na saida: "nao informou" e um
+         valor, e nao um campo que sumiu. */
+      stateRegistration: company.stateRegistration ?? null,
+      municipalRegistration: company.municipalRegistration ?? null,
+      businessSegment: company.businessSegment ?? null,
+      address: paraEnderecoDeSaida(company.address),
       createdAt: company.createdAt.toISOString(),
     }
     this.registros.set(gravada.id, gravada)
     return gravada
+  }
+
+  async findById(companyId: CompanyId): Promise<CompanyOutput | undefined> {
+    return this.registros.get(companyId)
+  }
+
+  /**
+   * Campo ausente fica como esta.
+   *
+   * O falso aplica a regra DE VERDADE, e nao um `{ ...atual, ...mudancas }`
+   * cru: com o spread, um `address: undefined` explicito apagaria o endereco
+   * inteiro, e o caso de uso passaria no teste enquanto o repositorio de
+   * verdade — que so escreve o que veio — faria outra coisa.
+   */
+  async update(companyId: CompanyId, mudancas: CompanyChanges): Promise<CompanyOutput> {
+    const atual = this.registros.get(companyId)
+    if (atual === undefined) {
+      throw new Error(`empresa ${companyId} nao encontrada`)
+    }
+
+    const atualizada: CompanyOutput = {
+      ...atual,
+      ...(mudancas.legalName === undefined ? {} : { legalName: mudancas.legalName }),
+      ...(mudancas.tradeName === undefined ? {} : { tradeName: mudancas.tradeName }),
+      ...(mudancas.email === undefined ? {} : { email: mudancas.email }),
+      ...(mudancas.phone === undefined ? {} : { phone: mudancas.phone }),
+      ...(mudancas.stateRegistration === undefined
+        ? {}
+        : { stateRegistration: mudancas.stateRegistration }),
+      ...(mudancas.municipalRegistration === undefined
+        ? {}
+        : { municipalRegistration: mudancas.municipalRegistration }),
+      ...(mudancas.businessSegment === undefined
+        ? {}
+        : { businessSegment: mudancas.businessSegment }),
+      ...(mudancas.address === undefined ? {} : { address: paraEnderecoDeSaida(mudancas.address) }),
+    }
+
+    this.registros.set(companyId, atualizada)
+    return atualizada
   }
 
   async cnpjTaken(cnpj: string): Promise<boolean> {
