@@ -24,6 +24,23 @@ updates:
       - dependency-name: expo
       - dependency-name: react-native
       - dependency-name: 'expo-*'
+      # ESLint 10 ainda nao da para adotar, e nao e escolha nossa.
+      #
+      # O `eslint-config-next` puxa `eslint-plugin-react`, cuja ULTIMA versao
+      # publicada (7.37.5) declara `eslint: ... || ^9.7` — ela nao suporta o 10.
+      # Com o 10, a regra `react/display-name` quebra em tempo de execucao:
+      #
+      #   TypeError: Error while loading rule 'react/display-name':
+      #   contextOrFilename.getFilename is not a function
+      #
+      # E uma API que o ESLint 10 removeu. Nao ha versao do plugin para onde
+      # subir, entao o PR do dependabot so pode ficar vermelho (foi o #116).
+      #
+      # Ignorar o MAJOR e nao o pacote: patch e minor do 9 continuam entrando,
+      # que e onde vem correcao de seguranca. Quando o `eslint-config-next`
+      # publicar uma versao com o plugin compativel, apague estas linhas.
+      - dependency-name: eslint
+        update-types: [version-update:semver-major]
 
   - package-ecosystem: github-actions
     directory: /
