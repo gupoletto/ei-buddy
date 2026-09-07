@@ -32,6 +32,29 @@ const jobId = (companyId: string, saleId: string): string => `${companyId}-${sal
 export function createInvoiceQueue(connection: Redis): InvoiceQueue {
   const fila = new Queue(FILA_DE_EMISSAO, { connection })
 
+  /*
+   * O BullMQ DUPLICA a conexao, e a copia nasce sem ouvinte de `error`.
+   *
+   * O cliente que chega aqui ja tem o dele (ver `getRedis`), mas o `Queue`
+   * chama `.duplicate()` internamente e o clone comeca surdo. `EventEmitter` do
+   * Node LANCA ao emitir `error` sem ouvinte, entao subir a api com o Redis
+   * fora derrubava o processo aqui — depois de o cliente original ja ter
+   * avisado educadamente que o Redis estava fora.
+   *
+   * Enfileirar sem Redis vai falhar de qualquer jeito, e falhar e o certo: a
+   * nota nao saiu. O que nao pode e a api inteira cair junto — venda, cadastro
+   * e login nao dependem de fila nenhuma.
+   */
+  fila.on('error', (erro: Error) => {
+    console.warn(
+      JSON.stringify({
+        level: 40,
+        msg: 'fila de emissao indisponivel — a nota nao sera enfileirada; ver /health',
+        motivo: erro.message,
+      }),
+    )
+  })
+
   return {
     enqueue: async (request: IssueInvoiceRequest) => {
       await fila.add(FILA_DE_EMISSAO, request, {

@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { baseEnvSchema } from './base.js'
+import { baseEnvSchema, opcionalNaoVazia } from './base.js'
 import { parseEnv } from './parse.js'
 
 /**
@@ -48,7 +48,7 @@ export const workerEnvSchema = baseEnvSchema.extend({
    * aqui: validar nos dois lugares daria duas respostas para "esta chave
    * serve". Gere com `openssl rand -base64 32`.
    */
-  SECRETS_KEY: z.string().optional(),
+  SECRETS_KEY: opcionalNaoVazia,
 })
 
 export type WorkerEnv = z.infer<typeof workerEnvSchema>

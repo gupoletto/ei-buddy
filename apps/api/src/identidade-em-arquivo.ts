@@ -1,0 +1,148 @@
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
+import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto'
+import { dirname, join } from 'node:path'
+import type { Credential } from '@na-regua/contracts'
+import type { IdentityProvider, IdentityRegistrar, VerifiedIdentity } from '@na-regua/core'
+
+/**
+ * Credencial de DESENVOLVIMENTO que sobrevive a reinicio — NR-014, ADR-0002.
+ *
+ * ## O problema que isto resolve
+ *
+ * `FakeIdentityProvider` guarda as credenciais num `Map` da instancia, e
+ * `pnpm dev` roda a api com `tsx watch`. Consequencia: **cada arquivo salvo
+ * apagava todas as contas**. O lojista (ou quem esta desenvolvendo) cadastrava,
+ * salvava qualquer arquivo, e a partir dali:
+ *
+ * - o login recusava, porque a credencial evaporou; e
+ * - cadastrar de novo recusava com "este CNPJ ja tem cadastro", porque a
+ *   empresa e o usuario continuavam no Postgres.
+ *
+ * Ficava impossivel entrar, sem nenhuma mensagem que apontasse para a causa. O
+ * dado no banco era permanente e a credencial era volatil — e essa assimetria
+ * era o defeito.
+ *
+ * ## Por que aqui, e nao em `core`
+ *
+ * `core` nao toca em disco: ele declara portas e os adapters as implementam.
+ * Persistir e detalhe de infraestrutura, entao mora na raiz de composicao. O
+ * `FakeIdentityProvider` continua existindo e continua servindo aos testes, que
+ * querem justamente um mapa em memoria.
+ *
+ * ## Isto NAO e um provedor de identidade de verdade
+ *
+ * Continua sendo o modo `fake` da ADR-0002, e `assertAuthUsavelEmProducao`
+ * recusa subir com ele em producao. O que ele ganhou foi durabilidade no
+ * desenvolvimento, nao robustez.
+ *
+ * Ainda assim o segredo NAO vai em texto puro para o disco: guarda-se um
+ * `scrypt` com sal por credencial. Nao e exigencia de nada aqui — e que um
+ * arquivo de desenvolvimento acaba num backup, num zip mandado para alguem, e
+ * as pessoas reusam senha. Custa cinco linhas.
+ */
+
+/** Onde o arquivo mora. Fora de `src`, e ignorado pelo git. */
+const CAMINHO_PADRAO = join(process.cwd(), '.dev', 'identidades.json')
+
+const TAMANHO_DA_CHAVE = 32
+const TAMANHO_DO_SAL = 16
+
+type Registro = {
+  readonly identifier: string
+  readonly subject: string
+  readonly email: string | null
+  readonly phone: string | null
+  /** `sal:hash`, os dois em base64url. O segredo nao e guardado. */
+  readonly verificador: string
+}
+
+const derivar = (secret: string, sal: Buffer): Buffer => scryptSync(secret, sal, TAMANHO_DA_CHAVE)
+
+function criarVerificador(secret: string): string {
+  const sal = randomBytes(TAMANHO_DO_SAL)
+  return `${sal.toString('base64url')}:${derivar(secret, sal).toString('base64url')}`
+}
+
+function confere(secret: string, verificador: string): boolean {
+  const [salBase, hashBase] = verificador.split(':')
+  if (salBase === undefined || hashBase === undefined) return false
+
+  const esperado = Buffer.from(hashBase, 'base64url')
+  const obtido = derivar(secret, Buffer.from(salBase, 'base64url'))
+
+  /*
+   * `timingSafeEqual` exige o mesmo tamanho e lanca quando difere. Comparar o
+   * tamanho antes evita a excecao — e um verificador de tamanho errado so
+   * aparece com arquivo corrompido, que e "nao confere" e nao "quebrou".
+   */
+  return esperado.length === obtido.length && timingSafeEqual(esperado, obtido)
+}
+
+export class IdentidadeEmArquivo implements IdentityProvider, IdentityRegistrar {
+  private readonly registros = new Map<string, Registro>()
+
+  constructor(private readonly caminho: string = CAMINHO_PADRAO) {
+    this.carregar()
+  }
+
+  private carregar(): void {
+    if (!existsSync(this.caminho)) return
+
+    try {
+      const lidos = JSON.parse(readFileSync(this.caminho, 'utf8')) as Registro[]
+      for (const r of lidos) this.registros.set(r.identifier, r)
+    } catch {
+      /*
+       * Arquivo ilegivel comeca vazio, e nao derruba a api.
+       *
+       * O pior desfecho aqui e "as contas de desenvolvimento sumiram", que e
+       * exatamente o estado de antes desta classe existir. Derrubar o processo
+       * por causa de um JSON truncado seria trocar um inconveniente por
+       * indisponibilidade.
+       */
+    }
+  }
+
+  private gravar(): void {
+    mkdirSync(dirname(this.caminho), { recursive: true })
+
+    /*
+     * Escreve num temporario e renomeia: `rename` no mesmo volume e atomico,
+     * entao um encerramento no meio da escrita nao deixa um arquivo pela
+     * metade — que e o caso que faria TODAS as contas sumirem de uma vez.
+     */
+    const temporario = `${this.caminho}.tmp`
+    writeFileSync(temporario, JSON.stringify([...this.registros.values()], null, 2), 'utf8')
+    renameSync(temporario, this.caminho)
+  }
+
+  async verify(credential: Credential): Promise<VerifiedIdentity | undefined> {
+    const registro = this.registros.get(credential.identifier)
+    if (registro === undefined) return undefined
+    if (!confere(credential.secret, registro.verificador)) return undefined
+
+    return { subject: registro.subject, email: registro.email, phone: registro.phone }
+  }
+
+  async register(
+    credential: Credential,
+    dados: { email: string | null; phone: string | null },
+  ): Promise<{ subject: string } | undefined> {
+    /* Identificador ja usado e RESPOSTA, e nao erro — ver a porta em `core`. */
+    if (this.registros.has(credential.identifier)) return undefined
+
+    const subject = `fake:${credential.identifier}`
+
+    this.registros.set(credential.identifier, {
+      identifier: credential.identifier,
+      subject,
+      email: dados.email,
+      phone: dados.phone,
+      verificador: criarVerificador(credential.secret),
+    })
+
+    this.gravar()
+
+    return { subject }
+  }
+}

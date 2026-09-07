@@ -169,4 +169,20 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   })
 }
 
-void main()
+/**
+ * `main()` com `catch`, e nao `void main()`.
+ *
+ * Sem ele, qualquer falha na subida virava uma rejeicao nao tratada: o Node
+ * imprimia a excecao crua e encerrava, sem passar pelo logger e sem dizer o que
+ * o processo estava tentando fazer. Quem instalava via um `AggregateError
+ * ECONNREFUSED` de dez linhas e nenhuma pista de que faltava subir a infra.
+ *
+ * O log estruturado aqui e o que transforma "morreu" em "morreu por isto".
+ */
+main().catch((erro: unknown) => {
+  app.log.fatal(
+    { motivo: erro instanceof Error ? erro.message : String(erro) },
+    'a api nao conseguiu subir',
+  )
+  process.exit(1)
+})

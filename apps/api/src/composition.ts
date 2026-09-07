@@ -11,7 +11,6 @@
 import { randomUUID } from 'node:crypto'
 import {
   createDefaultSaleSettings,
-  FakeIdentityProvider,
   InMemoryAuditTrail,
   InMemoryLoginThrottle,
   InMemorySessionIssuer,
@@ -19,6 +18,7 @@ import {
 } from '@na-regua/core'
 import type { AgendaDeps } from './routes/agenda.js'
 import type { AuthRouteDeps } from './routes/auth.js'
+import { IdentidadeEmArquivo } from './identidade-em-arquivo.js'
 import { createReminderScheduler } from './reminder-scheduler.js'
 import {
   assertRlsEnforced,
@@ -77,11 +77,47 @@ export type RedisHealth = {
 let redis: Redis | undefined
 
 export function getRedis(url = env.REDIS_URL): Redis {
-  redis ??= new Redis(url, {
+  if (redis !== undefined) return redis
+
+  const cliente = new Redis(url, {
     maxRetriesPerRequest: 1,
     lazyConnect: true,
     retryStrategy: () => null,
   })
+
+  /*
+   * Um ouvinte de `error`, e a api para de morrer quando o Redis nao esta de pe.
+   *
+   * `EventEmitter` do Node LANCA quando emite `error` sem ninguem ouvindo — e
+   * ioredis emite `error` a cada falha de conexao. Sem esta linha, subir a api
+   * com o Redis fora derrubava o processo com um `AggregateError ECONNREFUSED`
+   * cru, sem passar por nenhum `try` do nosso codigo.
+   *
+   * Isso contradizia duas decisoes ja tomadas e escritas: o limitador declara
+   * `skipOnError: true` ("limite degradado e melhor que api fora do ar por
+   * causa do limitador"), e a checagem de isolamento deixa a api subir com o
+   * BANCO fora, porque indisponibilidade de infra nao e falha de seguranca.
+   * `skipOnError` cobre erro de COMANDO; o evento de conexao passava por baixo
+   * dele.
+   *
+   * O sintoma para quem instalava era desproporcional a causa: a api nao subia,
+   * o web nao criava conta nem entrava, e o erro falava de uma porta 6379 que
+   * nada tem a ver com login.
+   *
+   * `warn` e nao `error`: `/health` ja responde 503 com o detalhe, e um erro
+   * por tentativa de reconexao encheria o log sem acrescentar nada.
+   */
+  cliente.on('error', (erro: Error) => {
+    console.warn(
+      JSON.stringify({
+        level: 40,
+        msg: 'redis indisponivel — limite de requisicao cai para memoria; ver /health',
+        motivo: erro.message,
+      }),
+    )
+  })
+
+  redis = cliente
   return redis
 }
 
@@ -187,12 +223,21 @@ export function buildAuthDeps(): AuthRouteDeps {
   /*
    * A MESMA instancia serve de `provider` e de `registrar`.
    *
-   * O falso guarda as credenciais num mapa proprio: duas instancias seriam dois
-   * mapas, o cadastro escreveria num e o login leria do outro — e a pessoa
-   * cadastrava e nao entrava. E exatamente o defeito que este trecho existe
-   * para nao repetir.
+   * Duas instancias seriam dois armazenamentos: o cadastro escreveria num e o
+   * login leria do outro — e a pessoa cadastrava e nao entrava. E exatamente o
+   * defeito que este trecho existe para nao repetir.
+   *
+   * E ela persiste em disco, e nao em memoria. `pnpm dev` roda com `tsx
+   * watch`: com o mapa em memoria, CADA ARQUIVO SALVO apagava todas as contas,
+   * e a pessoa ficava presa — o login recusava porque a credencial evaporou, e
+   * cadastrar de novo recusava porque a empresa continuava no Postgres. O dado
+   * era permanente e a credencial era volatil, e a assimetria e que era o
+   * defeito.
+   *
+   * Continua sendo o modo `fake` da ADR-0002, e `assertAuthUsavelEmProducao`
+   * recusa subir com ele em producao.
    */
-  const identidade = new FakeIdentityProvider()
+  const identidade = new IdentidadeEmArquivo()
 
   return {
     provider: identidade,

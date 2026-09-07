@@ -82,10 +82,22 @@ export function createCompanyRepository(sql: Sql): CompanyRepository {
      * revelar dados da empresa existente". Devolver a linha vazaria razao
      * social para quem so digitou um numero.
      */
+    /**
+     * Este CNPJ ja tem cadastro? — RF-002.
+     *
+     * Pela funcao `auth_cnpj_taken` (migration 0017), e nao por um SELECT
+     * direto. O SELECT direto so funcionava em conexao que IGNORA a RLS: sem
+     * empresa no contexto — e no cadastro nao ha, por definicao — a consulta
+     * LANCA desde a 0004 (RF-121). Num papel comum, o cadastro morria na
+     * primeira linha e a tela mostrava "algo deu errado do nosso lado".
+     *
+     * A funcao devolve um booleano e nada mais, que e o que a RF-002 pede:
+     * recusar "sem revelar dados da empresa existente".
+     */
     cnpjTaken: async (cnpj) =>
       withPlatformScope(sql, async (tx) => {
         const [linha] = await tx<{ existe: boolean }[]>`
-          SELECT EXISTS (SELECT 1 FROM companies WHERE cnpj = ${cnpj}) AS existe
+          SELECT auth_cnpj_taken(${cnpj}) AS existe
         `
         return linha?.existe === true
       }),
