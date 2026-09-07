@@ -22,8 +22,8 @@
     "@na-regua/db": "workspace:*",
     "@na-regua/env": "workspace:*",
     "@na-regua/money": "workspace:*",
-    "bullmq": "^6.3.2",
-    "fastify": "^5.2.0",
+    "bullmq": "^6.3.4",
+    "fastify": "^5.12.3",
     "ioredis": "^6.0.0",
     "zod": "^3.24.1"
   },
