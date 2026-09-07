@@ -26,7 +26,7 @@ import { cardBrandSchema } from '../sale/sale.js'
 /** Estado de uma cobranca. `authorized` e o unico que libera baixa. */
 export const chargeStatusSchema = z.enum(
   ['pending', 'authorized', 'refunded', 'expired', 'cancelled', 'failed'],
-  { errorMap: () => ({ message: 'Estado de cobranca invalido.' }) },
+  { error: 'Estado de cobranca invalido.' },
 )
 export type ChargeStatus = z.infer<typeof chargeStatusSchema>
 

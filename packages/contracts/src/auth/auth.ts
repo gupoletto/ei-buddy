@@ -80,7 +80,7 @@ export type SelectCompanyInput = z.infer<typeof selectCompanyInputSchema>
  * papel e a RF-131, que e outra regra.
  */
 export const grantableRoleSchema = z.enum(['owner', 'staff', 'accountant'], {
-  errorMap: () => ({ message: 'Papel invalido. Use owner, staff ou accountant.' }),
+  error: 'Papel invalido. Use owner, staff ou accountant.',
 })
 
 export type GrantableRole = z.infer<typeof grantableRoleSchema>

@@ -11,13 +11,13 @@ import { dateSchema, idSchema, moneyCentsSchema, rateSchema } from '../common/pr
 
 /** Formas aceitas no fechamento — RF-034. */
 export const paymentMethodSchema = z.enum(['cash', 'pix', 'debit', 'credit', 'wallet'], {
-  errorMap: () => ({ message: 'Forma de pagamento invalida.' }),
+  error: 'Forma de pagamento invalida.',
 })
 export type PaymentMethod = z.infer<typeof paymentMethodSchema>
 
 export const cardBrandSchema = z.enum(
   ['visa', 'mastercard', 'elo', 'amex', 'hipercard', 'unknown'],
-  { errorMap: () => ({ message: 'Bandeira de cartao invalida.' }) },
+  { error: 'Bandeira de cartao invalida.' },
 )
 export type CardBrand = z.infer<typeof cardBrandSchema>
 
