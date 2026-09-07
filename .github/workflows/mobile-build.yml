@@ -17,7 +17,7 @@ jobs:
     name: Build EAS
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Bloqueado por DEC-001 e conta EAS
         run: |

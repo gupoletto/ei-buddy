@@ -52,7 +52,7 @@ jobs:
       NODE_ENV: test
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # turbo --affected precisa do historico para comparar com a base
           fetch-depth: 0
