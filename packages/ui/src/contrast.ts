@@ -10,8 +10,46 @@
 type Rgb = readonly [number, number, number]
 
 const HEX = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i
-const RGBA =
-  /^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*(?:,\s*([01]?(?:\.\d+)?)\s*)?\)$/i
+
+/**
+ * Le `rgb()` / `rgba()` sem expressao regular.
+ *
+ * A primeira versao usava um padrao unico com `\s*` entre cada campo e um
+ * grupo opcional no fim. O CodeQL reprovou: `js/polynomial-redos`, severidade
+ * alta — e com razao. Varios `\s*` ao redor de uma parte OPCIONAL sao
+ * ambiguos: numa entrada como `rgba(1,1,1` seguida de muitos espacos e sem
+ * `)`, o motor tenta todas as formas de distribuir os espacos entre os grupos
+ * antes de desistir.
+ *
+ * Recortar entre os parenteses e dividir na virgula visita cada caractere uma
+ * vez. E le melhor: cada regra do formato aparece como uma linha de codigo em
+ * vez de um trecho de padrao.
+ *
+ * Devolve `undefined` quando nao e uma cor funcional — quem chama decide o que
+ * fazer, e `flatten` trata isso como "ja e opaca".
+ */
+function lerRgbFuncional(cor: string): { rgb: Rgb; alpha: number } | undefined {
+  const abre = cor.indexOf('(')
+  if (abre < 0 || !cor.endsWith(')')) return undefined
+
+  const nome = cor.slice(0, abre).trim().toLowerCase()
+  if (nome !== 'rgb' && nome !== 'rgba') return undefined
+
+  const partes = cor
+    .slice(abre + 1, -1)
+    .split(',')
+    .map((p) => p.trim())
+
+  if (partes.length !== 3 && partes.length !== 4) return undefined
+
+  const canais = partes.slice(0, 3).map(Number)
+  if (canais.some((c) => !Number.isFinite(c) || c < 0 || c > 255)) return undefined
+
+  const alpha = partes.length === 4 ? Number(partes[3]) : 1
+  if (!Number.isFinite(alpha) || alpha < 0 || alpha > 1) return undefined
+
+  return { rgb: [canais[0]!, canais[1]!, canais[2]!] as const, alpha }
+}
 
 function toRgb(hex: string): Rgb {
   if (!HEX.test(hex)) {
@@ -52,14 +90,13 @@ const paraHex = (rgb: Rgb): string =>
  * funcao separada em vez de um remendo dentro de `toRgb`.
  */
 export function flatten(color: string, over: string): string {
-  const m = RGBA.exec(color.trim())
-  if (m === null) {
+  const lida = lerRgbFuncional(color.trim())
+  if (lida === undefined) {
     /* Ja e opaca: devolve como esta, para quem chama nao precisar decidir. */
     return color
   }
 
-  const alpha = m[4] === undefined ? 1 : Number(m[4])
-  const frente: Rgb = [Number(m[1]), Number(m[2]), Number(m[3])]
+  const { rgb: frente, alpha } = lida
   const atras = toRgb(over)
 
   return paraHex([
