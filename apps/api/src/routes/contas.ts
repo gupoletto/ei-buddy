@@ -6,6 +6,8 @@ import {
   type EndRecurrenceDeps,
   listPayables,
   type ListPayablesDeps,
+  listReceivables,
+  type ListReceivablesDeps,
 } from '@na-regua/core'
 import type { FastifyInstance } from 'fastify'
 import { requireContext } from '../plugins/execution-context.js'
@@ -13,15 +15,21 @@ import { LIMITE_DE_ESCRITA } from '../plugins/rate-limit.js'
 import { validate } from '../plugins/validate.js'
 
 /**
- * Contas a pagar — NR-074, RF-055 a RF-062.
+ * Contas a pagar e a receber — NR-074, RF-055 a RF-066.
  *
  * Como as outras rotas: le o contexto, valida a forma, chama o caso de uso e
  * traduz. Recorrencia, faixa de vencimento e o total por grupo ficam em `core`
  * e em `domain`.
+ *
+ * As duas listas convivem no mesmo arquivo porque respondem perguntas
+ * simetricas — "o que sai" e "o que entra" — e a tela e a mesma estrutura com a
+ * contraparte trocada. Separa-las faria a faixa de vencimento ser explicada
+ * duas vezes, e e assim que as duas passam a discordar.
  */
 
 export type ContasDeps = CreatePayableDeps &
-  EndRecurrenceDeps & { readonly queries: ListPayablesDeps }
+  EndRecurrenceDeps &
+  ListReceivablesDeps & { readonly queries: ListPayablesDeps }
 
 export function registerContasRoutes(app: FastifyInstance, deps: ContasDeps): void {
   /**
@@ -61,6 +69,27 @@ export function registerContasRoutes(app: FastifyInstance, deps: ContasDeps): vo
     const agrupadas = await listPayables(deps.queries, ctx)
 
     return reply.code(200).send(agrupadas)
+  })
+
+  /**
+   * O que a loja tem a receber — RF-064, RF-066.
+   *
+   * Mesma forma da lista a pagar, e de proposito: as duas telas sao a mesma
+   * estrutura com a contraparte trocada, e formas diferentes fariam o total
+   * significar uma coisa numa e outra na outra.
+   *
+   * So o que esta em aberto. Recebivel ja recebido nao pertence a "o que entra
+   * esta semana", e cancelado nao pertence a lugar nenhum.
+   *
+   * A rota faltava. A baixa de recebivel existe desde a NR-029
+   * (`POST /contas-a-receber/:id/baixas`), mas nao havia como LISTAR o que
+   * baixar — a tela do mobile e a do web mostravam recebiveis de exemplo, e o
+   * botao de baixa apontava para ids que nao existiam no banco.
+   */
+  app.get('/contas-a-receber', async (request, reply) => {
+    const ctx = requireContext(request)
+
+    return reply.code(200).send(await listReceivables(deps, ctx))
   })
 
   /**

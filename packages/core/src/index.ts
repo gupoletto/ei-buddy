@@ -93,6 +93,14 @@ export type {
   PayableTransaction,
   PayableUnitOfWork,
 } from './ports/payable-repository.js'
+export { listReceivables } from './receivables/list-receivables.js'
+export { InMemoryReceivables } from './receivables/fakes.js'
+export type {
+  GrupoDeRecebimento,
+  ListReceivablesDeps,
+  ReceivablesAgrupadas,
+} from './receivables/list-receivables.js'
+export type { ReceivableQueries } from './ports/receivable-repository.js'
 export { reverseSettlement } from './settlements/reverse-settlement.js'
 export { settlePayable, settleReceivable } from './settlements/settle.js'
 export type { SettleDeps } from './settlements/settle.js'
