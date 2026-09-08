@@ -3,14 +3,16 @@
  * PONTOS DE INTEGRACAO — TELA DE EMPRESA
  * ============================================================================
  *
- * Tudo aqui e SIMULADO. Cada funcao marca onde entra a chamada real.
+ * O cadastro (`carregarEmpresa`/`salvarEmpresa`) e de VERDADE desde a
+ * migration 0021. O que continua simulado esta marcado funcao a funcao.
  *
- *  | Funcao              | Endpoint esperado              | Disparo            |
+ *  | Funcao              | Endpoint                       | Disparo            |
  *  |---------------------|--------------------------------|--------------------|
- *  | buscarCep           | GET /enderecos/cep/:cep        | CEP completo (8)   |
- *  | buscarCnpj          | GET /empresas/cnpj/:cnpj       | botao "Buscar dados"|
- *  | enviarCertificado   | POST /empresa/certificado      | upload do .pfx     |
+ *  | carregarEmpresa     | GET  /empresa                  | abrir a tela       |
  *  | salvarEmpresa       | PUT  /empresa                  | submit do form     |
+ *  | buscarCep           | GET /enderecos/cep/:cep (mock) | CEP completo (8)   |
+ *  | buscarCnpj          | GET /empresas/cnpj/:cnpj (mock)| botao "Buscar dados"|
+ *  | enviarCertificado   | POST /empresa/certificado(mock)| upload do .pfx     |
  *
  * DECISAO: as consultas de CEP e CNPJ passam pelo NOSSO backend, e nao
  * direto do navegador para ViaCEP/ReceitaWS. Motivos:
@@ -23,6 +25,8 @@
  * tela vem da resposta do servidor, que e quem abre o certificado. O front
  * so mostra o resultado.
  */
+
+import { pedir, type Resultado } from './http'
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
@@ -271,13 +275,116 @@ export type DadosEmpresa = {
   conexoesHabilitadas: boolean
 }
 
-/** SUBSTITUIR POR: PUT /empresa */
-export async function salvarEmpresa(
-  dados: DadosEmpresa,
-): Promise<{ ok: true } | { ok: false; error: string }> {
-  await delay(900)
-  void dados
-  return { ok: true }
+type EmpresaDaApi = {
+  cnpj: string
+  legalName: string
+  tradeName: string
+  email: string
+  phone: string
+  stateRegistration: string | null
+  municipalRegistration: string | null
+  businessSegment: string | null
+  address: {
+    zipCode: string | null
+    street: string | null
+    number: string | null
+    complement: string | null
+    district: string | null
+    city: string | null
+    state: string | null
+  }
+}
+
+/** O que a tela mostra. Nulo da api vira `''`, que e o que um input aceita. */
+export type EmpresaCarregada = Omit<DadosEmpresa, 'conexoesHabilitadas'> & { email: string }
+
+/**
+ * O cadastro da loja — RF-003.
+ *
+ * Ate agora a tela abria com `lib/mock-data`: o CNPJ, o endereco e as
+ * inscricoes de uma mercearia de exemplo, iguais para toda loja. Quem salvasse
+ * sem reparar gravaria os dados de outra empresa por cima dos seus — e antes da
+ * 0021 nem gravava, porque `salvarEmpresa` era `await delay(900)`.
+ */
+export async function carregarEmpresa(): Promise<Resultado<EmpresaCarregada>> {
+  const r = await pedir<EmpresaDaApi>('/api/empresa')
+
+  if (!r.ok) return r
+
+  const e = r.dados
+  const digitos = e.phone.replace(/\D/g, '')
+
+  return {
+    ok: true,
+    dados: {
+      cnpj: e.cnpj,
+      razaoSocial: e.legalName,
+      nomeFantasia: e.tradeName,
+      email: e.email,
+      inscricaoEstadual: e.stateRegistration ?? '',
+      inscricaoMunicipal: e.municipalRegistration ?? '',
+      ramoAtividade: e.businessSegment ?? '',
+      cep: e.address.zipCode ?? '',
+      logradouro: e.address.street ?? '',
+      numero: e.address.number ?? '',
+      complemento: e.address.complement ?? '',
+      bairro: e.address.district ?? '',
+      cidade: e.address.city ?? '',
+      uf: e.address.state ?? '',
+      /* Menos de dez digitos nao tem DDD: e um numero antigo ou incompleto, e
+         cortar os dois primeiros ali inventaria um codigo de area. */
+      ddd: digitos.length >= 10 ? digitos.slice(0, 2) : '',
+      celular: digitos.length >= 10 ? digitos.slice(2) : digitos,
+    },
+  }
+}
+
+/**
+ * Grava o cadastro — RF-003.
+ *
+ * Campo vazio NAO viaja. O contrato tem minimos de tamanho, e mandar
+ * `stateRegistration: ''` seria recusado como inscricao invalida por quem
+ * simplesmente nao a tem — MEI, por exemplo. Ausente significa "nao mexa", e a
+ * api mantem o que estava.
+ *
+ * O CNPJ tambem nao vai: `updateCompanyInputSchema` o omite, e o `.strict()`
+ * recusaria a requisicao inteira. Trocar CNPJ e outra empresa.
+ */
+export async function salvarEmpresa(dados: DadosEmpresa): Promise<Resultado<EmpresaCarregada>> {
+  const seTiver = (chave: string, valor: string) =>
+    valor.trim() === '' ? {} : { [chave]: valor.trim() }
+
+  const endereco = {
+    ...seTiver('zipCode', dados.cep.replace(/\D/g, '')),
+    ...seTiver('street', dados.logradouro),
+    ...seTiver('number', dados.numero),
+    ...seTiver('complement', dados.complemento),
+    ...seTiver('district', dados.bairro),
+    ...seTiver('city', dados.cidade),
+    ...seTiver('state', dados.uf.toUpperCase()),
+  }
+
+  const telefone = `${dados.ddd}${dados.celular}`.replace(/\D/g, '')
+
+  const r = await pedir<EmpresaDaApi>('/api/empresa', {
+    method: 'PUT',
+    body: JSON.stringify({
+      ...seTiver('legalName', dados.razaoSocial),
+      ...seTiver('tradeName', dados.nomeFantasia),
+      ...(telefone === '' ? {} : { phone: telefone }),
+      ...seTiver('stateRegistration', dados.inscricaoEstadual),
+      ...seTiver('municipalRegistration', dados.inscricaoMunicipal),
+      ...seTiver('businessSegment', dados.ramoAtividade),
+      ...(Object.keys(endereco).length === 0 ? {} : { address: endereco }),
+    }),
+  })
+
+  if (!r.ok) return r
+
+  /* Devolve o que o SERVIDOR gravou, e nao o que foi digitado: o contrato
+     apara espacos e normaliza o telefone, e mostrar o digitado deixaria a tela
+     discordando do banco ate o proximo carregamento. */
+  return carregarEmpresa()
 }
 
 /** Segmentos oferecidos no seletor de ramo de atividade. */

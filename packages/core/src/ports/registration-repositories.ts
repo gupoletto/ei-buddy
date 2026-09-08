@@ -30,7 +30,34 @@ export type NewCompany = {
   readonly cnpj: string
   readonly email: string
   readonly phone: string
+  /** Os fiscais, todos opcionais — MEI nao tem estadual, e a RF-001 nao pede. */
+  readonly stateRegistration?: string | undefined
+  readonly municipalRegistration?: string | undefined
+  readonly businessSegment?: string | undefined
+  readonly address?: Address | undefined
   readonly createdAt: Date
+}
+
+/**
+ * O que pode mudar depois de cadastrada.
+ *
+ * O CNPJ NAO esta aqui: trocar CNPJ e outra empresa, nao a mesma com outro
+ * numero — as notas ja emitidas, os recebiveis e a trilha de auditoria
+ * continuariam apontando para a anterior.
+ *
+ * Cada campo e opcional e `undefined` significa "nao mexa". Guardar
+ * `undefined` como `null` apagaria a inscricao estadual de quem salvou a tela
+ * de endereco sem tocar na aba fiscal.
+ */
+export type CompanyChanges = {
+  readonly legalName?: string | undefined
+  readonly tradeName?: string | undefined
+  readonly email?: string | undefined
+  readonly phone?: string | undefined
+  readonly stateRegistration?: string | undefined
+  readonly municipalRegistration?: string | undefined
+  readonly businessSegment?: string | undefined
+  readonly address?: Address | undefined
 }
 
 export type CompanyRepository = {
@@ -53,6 +80,17 @@ export type CompanyRepository = {
    * numero.
    */
   cnpjTaken(cnpj: string): Promise<boolean>
+
+  /**
+   * A propria empresa — RF-003.
+   *
+   * `undefined` quando nao existe. Nao ha "de outra empresa" aqui: a politica
+   * raiz de `companies` so deixa ver a linha do proprio tenant.
+   */
+  findById(companyId: CompanyId): Promise<CompanyOutput | undefined>
+
+  /** Atualiza o cadastro e devolve o que ficou gravado — RF-003. */
+  update(companyId: CompanyId, mudancas: CompanyChanges): Promise<CompanyOutput>
 }
 
 export type NewCustomer = {

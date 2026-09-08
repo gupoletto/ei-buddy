@@ -49,6 +49,7 @@ export type {
 } from './ports/inventory-writers.js'
 export type { InvoiceIssuer } from './ports/invoice-issuer.js'
 export type {
+  CompanyChanges,
   CompanyRepository,
   CustomerRepository,
   NewCompany,
@@ -110,6 +111,8 @@ export type { RegisterSaleDeps, RegisterSaleResult, StockWarning } from './sales
 /* --- Cadastros — NR-021 --- */
 export { registerCompany } from './registration/register-company.js'
 export type { RegisterCompanyDeps } from './registration/register-company.js'
+export { getCompany, updateCompany } from './registration/manage-company.js'
+export type { ManageCompanyDeps } from './registration/manage-company.js'
 export {
   assertIdentifiable,
   importCustomers,

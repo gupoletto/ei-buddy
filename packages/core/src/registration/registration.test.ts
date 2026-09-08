@@ -13,6 +13,7 @@ import type { ProductRepository } from '../ports/registration-repositories.js'
 import { InMemoryChartOfAccounts } from '../accounting/fakes.js'
 import { PLANO_DE_CONTAS_PADRAO } from '../accounting/default-chart.js'
 import { registerCompany } from './register-company.js'
+import { getCompany, updateCompany } from './manage-company.js'
 import { assertIdentifiable, getCustomer, registerCustomer } from './register-customer.js'
 import {
   catalogSummary,
@@ -831,5 +832,98 @@ describe('importacao de catalogo — NR-072, US-008', () => {
         products: [linha('Cafe')],
       }),
     ).rejects.toThrow('banco fora do ar')
+  })
+})
+
+describe('o cadastro da propria loja — RF-003', () => {
+  /** Cadastra e devolve o contexto ja apontando para ela — como a sessao faz. */
+  async function comEmpresa(extra: Record<string, unknown> = {}) {
+    const companies = new InMemoryCompanyRepository()
+    const accounts = new InMemoryChartOfAccounts()
+
+    const empresa = await registerCompany({ companies, accounts }, contexto(), {
+      ...empresaValida,
+      ...extra,
+    })
+
+    return { companies, ctx: contexto({ companyId: empresa.id }), empresa }
+  }
+
+  it('devolve a empresa do contexto', async () => {
+    const c = await comEmpresa()
+
+    expect((await getCompany({ companies: c.companies }, c.ctx)).cnpj).toBe(empresaValida.cnpj)
+  })
+
+  it('empresa sem os fiscais volta com eles NULOS, e nao com erro', async () => {
+    const c = await comEmpresa()
+
+    const lida = await getCompany({ companies: c.companies }, c.ctx)
+
+    /* MEI nao tem inscricao estadual, e a RF-001 nao pede nenhum dos tres:
+       exigi-los quebraria o cadastro de conta. */
+    expect(lida.stateRegistration).toBeNull()
+    expect(lida.businessSegment).toBeNull()
+  })
+
+  it('empresa que sumiu responde NOT_FOUND, e nao um cadastro em branco', async () => {
+    const companies = new InMemoryCompanyRepository()
+
+    const erro = await getCompany({ companies }, contexto({ companyId: 'emp-fantasma' })).catch(
+      (e: unknown) => e,
+    )
+
+    /* Um objeto vazio aqui seria salvo por cima pela tela, que abre com o que
+       recebe e grava o que mostra. */
+    expect(isAppError(erro) && erro.code).toBe('NOT_FOUND')
+  })
+
+  it('atualiza o que veio', async () => {
+    const c = await comEmpresa()
+
+    const r = await updateCompany({ companies: c.companies }, c.ctx, {
+      tradeName: 'Mercearia Sol',
+      stateRegistration: 'ISENTO',
+    })
+
+    expect(r.tradeName).toBe('Mercearia Sol')
+    expect(r.stateRegistration).toBe('ISENTO')
+  })
+
+  /* O defeito que a regra evita: salvar a aba de endereco limparia a inscricao
+     estadual preenchida na aba fiscal. */
+  it('campo ausente NAO apaga o que ja estava', async () => {
+    const c = await comEmpresa()
+    await updateCompany({ companies: c.companies }, c.ctx, { stateRegistration: '9076288293' })
+
+    await updateCompany({ companies: c.companies }, c.ctx, {
+      address: { city: 'Curitiba', state: 'PR' },
+    })
+
+    const lida = await getCompany({ companies: c.companies }, c.ctx)
+    expect(lida.address.city).toBe('Curitiba')
+    expect(lida.stateRegistration).toBe('9076288293')
+  })
+
+  /* Um PUT que responde 200 sem ter mudado nada e indistinguivel de um que
+     funcionou, e quem depura um formulario que "nao salva" perde a tarde. */
+  it('corpo vazio e recusado, em vez de virar uma escrita sem efeito', async () => {
+    const c = await comEmpresa()
+
+    const erro = await updateCompany({ companies: c.companies }, c.ctx, {}).catch((e: unknown) => e)
+
+    expect(isAppError(erro) && erro.code).toBe('VALIDATION_FAILED')
+  })
+
+  it('accountant le, mas nao escreve', async () => {
+    const c = await comEmpresa()
+    const leitor = { ...c.ctx, role: 'accountant' as Role }
+
+    /* Fechar o mes exige CNPJ e inscricoes; mudar o cadastro nao. */
+    expect((await getCompany({ companies: c.companies }, leitor)).cnpj).toBe(empresaValida.cnpj)
+
+    await expect(
+      updateCompany({ companies: c.companies }, leitor, { tradeName: 'Outro' }),
+    ).rejects.toThrow(/somente de leitura/i)
   })
 })

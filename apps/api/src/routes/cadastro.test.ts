@@ -25,17 +25,6 @@ const PRINCIPAL: AuthenticatedPrincipal = {
   role: 'owner',
 }
 
-/** Endereco em branco — o que a loja que nunca preencheu o cadastro tem. */
-const SEM_ENDERECO = {
-  zipCode: null,
-  street: null,
-  number: null,
-  complement: null,
-  district: null,
-  city: null,
-  state: null,
-}
-
 function cadastroEmMemoria() {
   const empresas: CompanyOutput[] = []
   const clientes: (CustomerOutput & { companyId: string })[] = []
@@ -52,13 +41,70 @@ function cadastroEmMemoria() {
         cnpj: c.cnpj,
         email: c.email,
         phone: c.phone,
-        address: SEM_ENDERECO,
+        address: {
+          zipCode: c.address?.zipCode ?? null,
+          street: c.address?.street ?? null,
+          number: c.address?.number ?? null,
+          complement: c.address?.complement ?? null,
+          district: c.address?.district ?? null,
+          city: c.address?.city ?? null,
+          state: c.address?.state ?? null,
+        },
+        stateRegistration: c.stateRegistration ?? null,
+        municipalRegistration: c.municipalRegistration ?? null,
+        businessSegment: c.businessSegment ?? null,
         createdAt: c.createdAt.toISOString(),
       }
       empresas.push(e)
       return e
     },
     cnpjTaken: async (cnpj) => empresas.some((e) => e.cnpj === cnpj),
+
+    /* A empresa do contexto. O falso guarda uma lista porque o cadastro cria
+       varias no mesmo teste; em producao a RLS deixa ver so a propria. */
+    findById: async (companyId) => empresas.find((e) => e.id === companyId),
+
+    /*
+     * Campo ausente fica como esta — a mesma regra do `COALESCE` do SQL.
+     * Um `{ ...atual, ...mudancas }` cru apagaria com `undefined` explicito, e
+     * o teste ficaria verde enquanto o banco faria outra coisa.
+     */
+    update: async (companyId, m) => {
+      const i = empresas.findIndex((e) => e.id === companyId)
+      if (i < 0) throw new Error(`empresa ${companyId} nao encontrada`)
+
+      const atual = empresas[i]!
+      const atualizada: CompanyOutput = {
+        ...atual,
+        ...(m.legalName === undefined ? {} : { legalName: m.legalName }),
+        ...(m.tradeName === undefined ? {} : { tradeName: m.tradeName }),
+        ...(m.email === undefined ? {} : { email: m.email }),
+        ...(m.phone === undefined ? {} : { phone: m.phone }),
+        ...(m.stateRegistration === undefined ? {} : { stateRegistration: m.stateRegistration }),
+        ...(m.municipalRegistration === undefined
+          ? {}
+          : { municipalRegistration: m.municipalRegistration }),
+        ...(m.businessSegment === undefined ? {} : { businessSegment: m.businessSegment }),
+        ...(m.address === undefined
+          ? {}
+          : {
+              /* Campo a campo tambem DENTRO do endereco: mandar so o CEP nao
+                 pode limpar cidade e UF. */
+              address: {
+                zipCode: m.address.zipCode ?? atual.address.zipCode,
+                street: m.address.street ?? atual.address.street,
+                number: m.address.number ?? atual.address.number,
+                complement: m.address.complement ?? atual.address.complement,
+                district: m.address.district ?? atual.address.district,
+                city: m.address.city ?? atual.address.city,
+                state: m.address.state ?? atual.address.state,
+              },
+            }),
+      }
+
+      empresas[i] = atualizada
+      return atualizada
+    },
   }
 
   const customers: CustomerRepository = {
@@ -936,5 +982,158 @@ describe('a ficha do produto — RF-017', () => {
 
     expect(r.statusCode).toBe(200)
     expect(r.json().description).toBe('Cafe torrado 500g')
+  })
+})
+
+describe('o cadastro da propria loja — RF-003', () => {
+  /** Cria a empresa e devolve o app ja falando como ela. */
+  async function comEmpresa(extra: Record<string, unknown> = {}) {
+    const c = await buildApp()
+    app = c.app
+    const criada = await app.inject({
+      method: 'POST',
+      url: '/empresas',
+      payload: { ...EMPRESA, ...extra },
+    })
+    await app.close()
+
+    /* O MESMO banco, agora com o principal apontando para a empresa criada:
+       e o que a sessao faz depois do cadastro. */
+    const dentro = await buildApp({ ...PRINCIPAL, companyId: criada.json().id }, c.memoria)
+    app = dentro.app
+    return { ...dentro, empresa: criada.json() }
+  }
+
+  it('devolve o cadastro da empresa do contexto', async () => {
+    await comEmpresa()
+
+    const r = await app.inject({ method: 'GET', url: '/empresa' })
+
+    expect(r.statusCode).toBe(200)
+    expect(r.json().cnpj).toBe(EMPRESA.cnpj)
+  })
+
+  it('grava inscricoes e ramo — antes eram digitados e descartados', async () => {
+    await comEmpresa({
+      stateRegistration: '9076288293',
+      municipalRegistration: '112233',
+      businessSegment: 'Mercearia e minimercado',
+    })
+
+    const r = await app.inject({ method: 'GET', url: '/empresa' })
+
+    expect(r.json().stateRegistration).toBe('9076288293')
+    expect(r.json().municipalRegistration).toBe('112233')
+    expect(r.json().businessSegment).toBe('Mercearia e minimercado')
+  })
+
+  /* MEI nao tem inscricao estadual, e a RF-001 nao pede nenhum dos tres.
+     Exigi-los quebraria o cadastro de conta, que e a primeira coisa que o
+     lojista faz. */
+  it('empresa sem os fiscais volta com os tres NULOS, e nao com erro', async () => {
+    await comEmpresa()
+
+    const r = await app.inject({ method: 'GET', url: '/empresa' })
+
+    expect(r.json().stateRegistration).toBeNull()
+    expect(r.json().businessSegment).toBeNull()
+  })
+
+  it('atualiza o que veio e responde 200', async () => {
+    await comEmpresa()
+
+    const r = await app.inject({
+      method: 'PUT',
+      url: '/empresa',
+      payload: { tradeName: 'Mercearia Sol', stateRegistration: 'ISENTO' },
+    })
+
+    expect(r.statusCode).toBe(200)
+    expect(r.json().tradeName).toBe('Mercearia Sol')
+    /* "ISENTO" e valor legitimo em varios estados: um formato numerico fixo
+       recusaria empresa de verdade. */
+    expect(r.json().stateRegistration).toBe('ISENTO')
+  })
+
+  /*
+   * O defeito que este teste guarda: com um UPDATE que grava tudo, salvar a
+   * aba de endereco limparia a inscricao estadual preenchida na aba fiscal.
+   */
+  it('campo ausente NAO apaga o que ja estava', async () => {
+    await comEmpresa({ stateRegistration: '9076288293' })
+
+    await app.inject({
+      method: 'PUT',
+      url: '/empresa',
+      payload: { address: { city: 'Curitiba', state: 'PR' } },
+    })
+
+    const r = await app.inject({ method: 'GET', url: '/empresa' })
+
+    expect(r.json().address.city).toBe('Curitiba')
+    expect(r.json().stateRegistration).toBe('9076288293')
+  })
+
+  it('o CNPJ nao entra na atualizacao — trocar CNPJ e outra empresa', async () => {
+    await comEmpresa()
+
+    const r = await app.inject({
+      method: 'PUT',
+      url: '/empresa',
+      payload: { cnpj: '11222333000181' },
+    })
+
+    /* Recusado pelo `.strict()`, e nao ignorado em silencio: ignorar
+       responderia 200 para um pedido que nao foi atendido. */
+    expect(r.statusCode).toBe(400)
+  })
+
+  it('corpo vazio responde 400, e nao 200 sem ter mudado nada', async () => {
+    await comEmpresa()
+
+    const r = await app.inject({ method: 'PUT', url: '/empresa', payload: {} })
+
+    expect(r.statusCode).toBe(400)
+  })
+
+  it('accountant le, mas nao escreve', async () => {
+    const c = await comEmpresa()
+    await app.close()
+
+    const leitor = await buildApp(
+      { ...PRINCIPAL, companyId: c.empresa.id, role: 'accountant' },
+      c.memoria,
+    )
+    app = leitor.app
+
+    /* Fechar o mes exige CNPJ e inscricoes; mudar o cadastro nao. */
+    expect((await app.inject({ method: 'GET', url: '/empresa' })).statusCode).toBe(200)
+    expect(
+      (
+        await app.inject({
+          method: 'PUT',
+          url: '/empresa',
+          payload: { tradeName: 'Outro' },
+        })
+      ).statusCode,
+    ).toBe(403)
+  })
+
+  it('sem sessao responde 401', async () => {
+    const c = await buildApp(null)
+    app = c.app
+
+    expect((await app.inject({ method: 'GET', url: '/empresa' })).statusCode).toBe(401)
+  })
+
+  /* `/empresa` no singular convive com `/empresas` do cadastro: sao rotas
+     diferentes, e trocar uma pela outra criaria empresa ao tentar ler. */
+  it('nao confunde /empresa com /empresas', async () => {
+    const c = await buildApp()
+    app = c.app
+
+    const r = await app.inject({ method: 'POST', url: '/empresas', payload: EMPRESA })
+
+    expect(r.statusCode).toBe(201)
   })
 })

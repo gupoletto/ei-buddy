@@ -48,6 +48,10 @@ export async function registerCompany(
     cnpj: input.cnpj,
     email: input.email,
     phone: input.phone,
+    stateRegistration: input.stateRegistration,
+    municipalRegistration: input.municipalRegistration,
+    businessSegment: input.businessSegment,
+    address: input.address,
     createdAt: ctx.now,
   })
 

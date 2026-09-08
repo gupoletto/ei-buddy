@@ -1,15 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   buscarCep,
   buscarCnpj,
+  carregarEmpresa,
   RAMOS_ATIVIDADE,
   salvarEmpresa,
   UFS,
   type Certificado,
 } from '@/lib/empresa-api'
-import { empresa as empresaMock } from '@/lib/mock-data'
 import {
   maskCelular,
   maskCEP,
@@ -50,25 +50,62 @@ type Campos = {
 
 type Erros = Partial<Record<keyof Campos, FieldError>>
 
+/** O formulario em branco — o estado antes de a api responder. */
+const VAZIO: Campos = {
+  cnpj: '',
+  razaoSocial: '',
+  nomeFantasia: '',
+  inscricaoEstadual: '',
+  inscricaoMunicipal: '',
+  ramoAtividade: '',
+  cep: '',
+  logradouro: '',
+  numero: '',
+  complemento: '',
+  bairro: '',
+  cidade: '',
+  uf: '',
+  ddd: '',
+  celular: '',
+}
+
 export default function EmpresaForm() {
-  /* Estado inicial vindo do mock. SUBSTITUIR POR: GET /empresa */
-  const [campos, setCampos] = useState<Campos>({
-    cnpj: empresaMock.cnpj,
-    razaoSocial: empresaMock.razaoSocial,
-    nomeFantasia: empresaMock.nomeFantasia,
-    inscricaoEstadual: empresaMock.inscricaoEstadual,
-    inscricaoMunicipal: empresaMock.inscricaoMunicipal,
-    ramoAtividade: empresaMock.ramoAtividade,
-    cep: empresaMock.endereco.cep,
-    logradouro: empresaMock.endereco.logradouro,
-    numero: empresaMock.endereco.numero,
-    complemento: empresaMock.endereco.complemento ?? '',
-    bairro: empresaMock.endereco.bairro,
-    cidade: empresaMock.endereco.cidade,
-    uf: empresaMock.endereco.uf,
-    ddd: empresaMock.ddd,
-    celular: empresaMock.celular,
-  })
+  /*
+   * Comeca VAZIO, e nao com dados de exemplo.
+   *
+   * A tela abria com o CNPJ, o endereco e as inscricoes de uma mercearia de
+   * exemplo, iguais para toda loja. Quem salvasse sem reparar gravaria os
+   * dados de outra empresa por cima dos seus — e antes da 0021 nem gravava,
+   * porque `salvarEmpresa` era `await delay(900)`.
+   *
+   * Campo em branco enquanto carrega e honesto: diz que ainda nao se sabe.
+   */
+  const [campos, setCampos] = useState<Campos>(VAZIO)
+  const [carregando, setCarregando] = useState(true)
+  const [erroCarga, setErroCarga] = useState<string | null>(null)
+
+  const carregar = useCallback(async () => {
+    const r = await carregarEmpresa()
+    setCarregando(false)
+
+    if (!r.ok) {
+      setErroCarga(r.erro)
+      return
+    }
+
+    setErroCarga(null)
+    /* O CNPJ vem do servidor e nao se edita: trocar CNPJ e outra empresa, e o
+       contrato de atualizacao nem o aceita. */
+    setCampos({ ...r.dados })
+  }, [])
+
+  useEffect(() => {
+    /* `async` explicito: os `setState` vem todos depois do await, nunca
+       sincronos no corpo do efeito. */
+    void (async () => {
+      await carregar()
+    })()
+  }, [carregar])
 
   const [erros, setErros] = useState<Erros>({})
   const [conexoes, setConexoes] = useState(false)
@@ -185,6 +222,14 @@ export default function EmpresaForm() {
   async function salvar(event: React.FormEvent) {
     event.preventDefault()
 
+    /*
+     * Nao grava antes de ter carregado. O formulario comeca vazio, e um
+     * `PUT` com ele em branco seria recusado campo a campo — mas se um dia o
+     * contrato aceitar vazio, seria o cadastro apagado por um clique numa tela
+     * que ainda estava chegando.
+     */
+    if (carregando) return
+
     if (!validarTudo()) {
       setToast({ msg: 'Confira os campos destacados antes de salvar.', tone: 'error' })
       return
@@ -192,15 +237,19 @@ export default function EmpresaForm() {
 
     setSalvando(true)
 
-    /* SUBSTITUIR POR: PUT /empresa */
     const resultado = await salvarEmpresa({ ...campos, conexoesHabilitadas: conexoes })
     setSalvando(false)
 
-    setToast(
-      resultado.ok
-        ? { msg: 'Dados da empresa salvos.', tone: 'success' }
-        : { msg: resultado.error, tone: 'error' },
-    )
+    if (!resultado.ok) {
+      setToast({ msg: resultado.erro, tone: 'error' })
+      return
+    }
+
+    /* A tela passa a mostrar o que o SERVIDOR gravou. O contrato apara espacos
+       e normaliza o telefone; manter o digitado deixaria a tela discordando do
+       banco ate o proximo carregamento. */
+    setCampos({ ...resultado.dados })
+    setToast({ msg: 'Dados da empresa salvos.', tone: 'success' })
   }
 
   return (
@@ -209,7 +258,7 @@ export default function EmpresaForm() {
         title="Empresa"
         subtitle="Dados cadastrais, endereco e certificado digital"
         actions={
-          <Button onClick={salvar} disabled={salvando}>
+          <Button onClick={salvar} disabled={salvando || carregando}>
             {salvando ? (
               <>
                 <Spinner size={15} />
@@ -223,15 +272,39 @@ export default function EmpresaForm() {
       />
 
       <form onSubmit={salvar} noValidate className={styles.form}>
+        {erroCarga !== null ? (
+          <Card>
+            <p className={styles.avisoCarga} role="alert">
+              {erroCarga}{' '}
+              <button
+                type="button"
+                onClick={() => {
+                  setCarregando(true)
+                  void carregar()
+                }}
+              >
+                Tentar de novo
+              </button>
+            </p>
+          </Card>
+        ) : null}
+
         {/* ---------------- Identificacao ---------------- */}
         <Card title="Identificacao">
           <FormGrid>
+            {/*
+              O CNPJ e SOMENTE LEITURA. `updateCompanyInputSchema` o omite de
+              proposito — trocar CNPJ nao e corrigir um cadastro, e apontar
+              para outra empresa, e as notas emitidas, os recebiveis e a trilha
+              de auditoria continuariam apontando para a anterior. Um campo
+              editavel que a api recusa seria pior que um campo travado.
+            */}
             <Field label="CNPJ" span={5} hint={erros.cnpj ?? undefined}>
               <div className={styles.inline}>
                 <Input
-                  value={campos.cnpj}
-                  onChange={(e) => set('cnpj', maskCNPJ(e.target.value))}
-                  onBlur={() => setErros((er) => ({ ...er, cnpj: validateCNPJ(campos.cnpj) }))}
+                  value={maskCNPJ(campos.cnpj)}
+                  readOnly
+                  aria-readonly="true"
                   placeholder="00.000.000/0000-00"
                   inputMode="numeric"
                   aria-invalid={Boolean(erros.cnpj)}
