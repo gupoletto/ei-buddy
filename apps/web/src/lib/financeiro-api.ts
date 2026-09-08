@@ -11,7 +11,7 @@
  *  | gerarContasDeCustosFixos | POST /financeiro/custos-fixos/gerar | botao      |
  *  | exportar              | GET  /financeiro/titulos/export  | botao exportar  |
  *
- * BAIXA E ESTORNO SAIRAM DESTA LISTA — sao reais desde a NR-080, no fim do
+ * BAIXA E ESTORNO SAIRAM DESTA LISTA — sao reais desde a NR-081, no fim do
  * arquivo. O aviso que morava aqui dizia que a baixa nao podia ser um UPDATE
  * no titulo, e o servidor concorda: cada baixa e uma linha propria, e o estorno
  * e outra linha, negativa, apontando para a primeira. Nunca um DELETE.
@@ -285,7 +285,7 @@ export const lancarContaAPagar = (entrada: {
   pedir('/api/contas-a-pagar', { method: 'POST', body: JSON.stringify(entrada) })
 
 /* -------------------------------------------------------------------------- */
-/* Contas a receber contra a api — NR-080                                     */
+/* Contas a receber contra a api — NR-081                                     */
 /* -------------------------------------------------------------------------- */
 
 /**
@@ -329,7 +329,7 @@ export const carregarContasAReceber = (): Promise<ResultadoContas<ContasAReceber
   pedir<ContasAReceberAgrupadas>('/api/contas-a-receber')
 
 /* -------------------------------------------------------------------------- */
-/* Baixa e estorno contra a api — NR-080, RF-059, RF-066, RF-067              */
+/* Baixa e estorno contra a api — NR-081, RF-059, RF-066, RF-067              */
 /* -------------------------------------------------------------------------- */
 
 export type TipoDeTitulo = 'pagar' | 'receber'

@@ -11,7 +11,7 @@
  *  | gerarContasDeCustosFixos | POST /financeiro/custos-fixos/gerar | botao      |
  *  | exportar              | GET  /financeiro/titulos/export  | botao exportar  |
  *
- * BAIXA E ESTORNO SAIRAM desta lista de pendencias na NR-080: sao reais, contra
+ * BAIXA E ESTORNO SAIRAM desta lista de pendencias na NR-081: sao reais, contra
  * a api, no fim do arquivo.
  */
 
@@ -208,7 +208,7 @@ export function listarCustosFixos(): CustoFixo[] {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Baixa e estorno, de verdade — NR-080, RF-059, RF-066, RF-067               */
+/* Baixa e estorno, de verdade — NR-081, RF-059, RF-066, RF-067               */
 /* -------------------------------------------------------------------------- */
 
 /**

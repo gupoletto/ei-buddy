@@ -33,6 +33,7 @@ export default function Sanfona({
   resumo,
   etiqueta,
   inicialAberta = false,
+  onAbrir,
   children,
 }: {
   titulo: string
@@ -40,6 +41,19 @@ export default function Sanfona({
   resumo?: string
   etiqueta?: ReactNode
   inicialAberta?: boolean
+  /**
+   * Disparado quando a secao ABRE por toque — nunca ao fechar, nunca na
+   * montagem.
+   *
+   * Serve para carregar o conteudo so quando ele vai aparecer: no suporte, e a
+   * abertura que busca a conversa do chamado e a marca como lida. Chamar isto
+   * na montagem por causa de `inicialAberta` marcaria como lido um chamado que
+   * ninguem abriu, e nao ha como desmarcar.
+   *
+   * Nao e "onToggle" de proposito: quem precisa saber do fechamento nao existe
+   * ainda, e uma API que avisa dos dois convida a tratar fechar como recarregar.
+   */
+  onAbrir?: () => void
   children: ReactNode
 }) {
   const [aberta, setAberta] = useState(inicialAberta)
@@ -55,7 +69,13 @@ export default function Sanfona({
        junto em vez de saltarem para a nova posicao. */
     <Animated.View style={estilos.bloco} layout={LinearTransition.duration(DURACAO)}>
       <Pressable
-        onPress={() => setAberta((v) => !v)}
+        onPress={() => {
+          /* O `onAbrir` sai daqui, do toque, e nao de um efeito sobre `aberta`:
+             num efeito ele tambem dispararia na montagem quando
+             `inicialAberta` fosse verdadeiro. */
+          if (!aberta) onAbrir?.()
+          setAberta((v) => !v)
+        }}
         style={estilos.cabecalho}
         accessibilityRole="button"
         accessibilityState={{ expanded: aberta }}

@@ -62,7 +62,7 @@ function paraLinhaAPagar(c: ContaAPagar): Linha {
 }
 
 /**
- * O recebivel da api para a linha da tela — NR-080.
+ * O recebivel da api para a linha da tela — NR-081.
  *
  * Esta conversao nao existia: a tela de contas a receber era alimentada por
  * dado de exemplo, ao lado de uma tela de contas a pagar real.
@@ -127,7 +127,7 @@ export default function ContasView({ tipo }: { tipo: 'pagar' | 'receber' }) {
   const pagar = tipo === 'pagar'
 
   /*
-   * As DUAS listas vem da api — NR-080.
+   * As DUAS listas vem da api — NR-081.
    *
    * Contas a receber estava no mock: a rota `GET /contas-a-receber` existe
    * desde a NR-074 e o web nao a chamava. Ficavam duas telas irmas, uma com
@@ -561,7 +561,7 @@ export default function ContasView({ tipo }: { tipo: 'pagar' | 'receber' }) {
       ) : null}
 
       {/*
-        O estorno virou dialogo proprio (NR-080) e nao mais um "tem certeza?".
+        O estorno virou dialogo proprio (NR-081) e nao mais um "tem certeza?".
         Um titulo pode ter varias baixas e o servidor estorna UMA — a pergunta
         "estornar o titulo" nao tinha resposta. Ele carrega o historico, deixa
         escolher e cobra o motivo, que a trilha guarda.

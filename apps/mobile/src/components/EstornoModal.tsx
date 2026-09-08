@@ -31,7 +31,7 @@ const rotuloDaForma = (m: string | null) =>
  * cada um, e sem elas estornar seria palpite sobre qual lancamento desfazer.
  *
  * Agora a tela CARREGA o historico (`GET /contas-a-{pagar,receber}/:id/baixas`,
- * que passou a existir na NR-080) e a escolha fica com quem sabe.
+ * que passou a existir na NR-081) e a escolha fica com quem sabe.
  *
  * ## O historico inteiro aparece
  *
