@@ -110,10 +110,21 @@ export async function chamarApi<T>(
      * O log e do SERVIDOR do Next, entao a topologia interna nao vaza para o
      * navegador. A mensagem da tela continua generica em producao.
      */
-    console.error(
-      `[api-server] ${opcoes.method ?? 'GET'} ${API_URL}${caminho} falhou:`,
-      erro instanceof Error ? erro.message : erro,
-    )
+    /*
+     * O primeiro argumento e um literal CONSTANTE, e o resto vai estruturado.
+     *
+     * A primeira versao interpolava o caminho na primeira posicao, e o CodeQL
+     * reprovou: `js/tainted-format-string`. O Node trata o primeiro argumento
+     * do `console.error` como FORMAT STRING — `%s`, `%d`, `%j` sao
+     * substituidos. Um caminho contendo `%s` consumiria o argumento seguinte,
+     * embaralhando o log; e log embaralhado por quem escolhe a entrada e
+     * falsificacao de log.
+     */
+    console.error('[api-server] chamada a api falhou', {
+      method: opcoes.method ?? 'GET',
+      url: `${API_URL}${caminho}`,
+      causa: erro instanceof Error ? erro.message : erro,
+    })
 
     return {
       ok: false,

@@ -85,9 +85,30 @@ describe('api inalcancavel', () => {
 
     await chamarApi('/auth/login', { method: 'POST' })
 
-    expect(console.error).toHaveBeenCalledWith(
-      expect.stringContaining(`${API}/auth/login`),
-      'fetch failed',
-    )
+    expect(console.error).toHaveBeenCalledWith('[api-server] chamada a api falhou', {
+      method: 'POST',
+      url: `${API}/auth/login`,
+      causa: 'fetch failed',
+    })
+  })
+
+  /*
+   * O primeiro argumento do `console.error` e format string no Node: `%s`,
+   * `%d` e `%j` sao substituidos. Com o caminho interpolado ali — como estava
+   * na primeira versao — um caminho contendo `%s` consumiria o argumento
+   * seguinte e embaralharia o log. CodeQL reprovou isso como
+   * `js/tainted-format-string`, severidade alta.
+   *
+   * O teste afirma a forma que impede o problema: literal constante na
+   * primeira posicao, dados na segunda.
+   */
+  it('nao deixa o caminho virar format string do log', async () => {
+    const { chamarApi } = await comAmbiente('production')
+
+    await chamarApi('/auth/%s%s%s', { method: 'GET' })
+
+    const [formato, dados] = vi.mocked(console.error).mock.calls[0]!
+    expect(formato).toBe('[api-server] chamada a api falhou')
+    expect(dados).toMatchObject({ url: `${API}/auth/%s%s%s` })
   })
 })
