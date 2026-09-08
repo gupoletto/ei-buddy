@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import {
-  BAIXA_SO_NO_WEB,
-  ESTORNO_SO_NO_WEB,
+  baixarTitulo,
+  type DadosDaBaixa,
   listarContasPagar,
   listarContasReceber,
   situacaoDoTitulo,
@@ -12,6 +12,8 @@ import {
 } from '@/lib/financeiro-api'
 import { daysUntil, describeDueDate, formatDate, formatMoney } from '@/lib/format'
 import Cabecalho from '@/components/Cabecalho'
+import BaixaModal from '@/components/BaixaModal'
+import EstornoModal from '@/components/EstornoModal'
 import Sanfona from '@/components/ui/Sanfona'
 import { Etiqueta, Vazio } from '@/components/ui/Cartao'
 import { cores, espaco, fonte, peso, raio } from '@/theme/tokens'
@@ -72,6 +74,27 @@ export default function ContasView({ tipo }: { tipo: 'pagar' | 'receber' }) {
     })()
   }, [buscar])
 
+  /*
+   * Baixa e estorno acontecem AQUI agora — NR-080.
+   *
+   * O `aviso` e a resposta curta que a tela da depois: nao ha `Toast` no
+   * mobile, e um `Alert` de sucesso obriga a pessoa a tocar em "ok" para voltar
+   * a ver a lista que acabou de mudar. Uma faixa que aparece e sai sozinha
+   * mostra o resultado sem interromper.
+   */
+  const [baixando, setBaixando] = useState<Linha | null>(null)
+  const [estornando, setEstornando] = useState<Linha | null>(null)
+  const [processando, setProcessando] = useState(false)
+  const [erroDoDialogo, setErroDoDialogo] = useState<string | null>(null)
+  const [aviso, setAviso] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (aviso === null) return
+
+    const t = setTimeout(() => setAviso(null), 4000)
+    return () => clearTimeout(t)
+  }, [aviso])
+
   const grupos = useMemo(() => {
     const abertos = linhas.filter((l) => l.status !== 'pago')
     return {
@@ -81,30 +104,44 @@ export default function ContasView({ tipo }: { tipo: 'pagar' | 'receber' }) {
     }
   }, [linhas])
 
-  const soma = (lista: Linha[]) => lista.reduce((a, l) => a + (l.valor - l.baixado), 0)
+  const soma = (lista: Linha[]) => lista.reduce((a, l) => a + (l.valorCents - l.baixadoCents), 0)
 
-  /*
-   * A baixa e o estorno DIZEM que ainda nao acontecem aqui, em vez de fingir.
+  /**
+   * Confirma a baixa contra a api — RF-059, RF-066.
    *
-   * Antes o botao chamava um `delay(800)` e respondia "baixado": o lojista
-   * confirmava, a linha ficava verde, e o saldo continuava o mesmo no dia
-   * seguinte. Um botao que nao faz nada e ruim; um que diz ter feito e pior,
-   * porque a pessoa para de cobrar.
-   *
-   * O motivo esta em `financeiro-api`: as duas rotas exigem uma escolha — de
-   * qual conta saiu, ou como o dinheiro entrou — que um `Alert` nao tem onde
-   * oferecer.
+   * A lista RECARREGA em vez de ser remendada na memoria: quem decide o novo
+   * saldo e o novo status e `core`, com o titulo lido dentro da transacao. Se
+   * outra pessoa baixou o mesmo titulo enquanto esta folha estava aberta, um
+   * remendo local mostraria um saldo que nao existe — e no celular a tela fica
+   * aberta por muito mais tempo que no computador.
    */
-  function pedirBaixa(linha: Linha) {
-    Alert.alert(pagar ? 'Baixar pagamento' : 'Baixar recebimento', BAIXA_SO_NO_WEB, [
-      { text: 'Entendi' },
-    ])
-    void linha
-  }
+  async function confirmarBaixa(dados: DadosDaBaixa) {
+    if (baixando === null) return
 
-  function pedirEstorno(linha: Linha) {
-    Alert.alert('Estornar baixa', ESTORNO_SO_NO_WEB, [{ text: 'Entendi' }])
-    void linha
+    setProcessando(true)
+    setErroDoDialogo(null)
+
+    const r = await baixarTitulo(tipo, baixando.id, dados)
+    setProcessando(false)
+
+    if (!r.ok) {
+      /* O erro fica DENTRO da folha: valor acima do saldo e conta em branco sao
+         coisas que a pessoa corrige ali. Fechar a obrigaria a preencher tudo de
+         novo, com o teclado no caminho. */
+      setErroDoDialogo(r.message)
+      return
+    }
+
+    const quitou = baixando.baixadoCents + r.dados.amountCents >= baixando.valorCents
+
+    setBaixando(null)
+    setAviso(
+      quitou
+        ? `Titulo quitado: ${formatMoney(r.dados.amountCents / 100)}.`
+        : `Baixa parcial de ${formatMoney(r.dados.amountCents / 100)} registrada.`,
+    )
+
+    await buscar()
   }
 
   const totalAberto = soma([...grupos.vencidos, ...grupos.aVencer])
@@ -113,7 +150,7 @@ export default function ContasView({ tipo }: { tipo: 'pagar' | 'receber' }) {
     <SafeAreaView style={estilos.tela} edges={['top']}>
       <Cabecalho
         titulo={pagar ? 'Contas a pagar' : 'Contas a receber'}
-        subtitulo={`${formatMoney(totalAberto)} em aberto`}
+        subtitulo={`${formatMoney(totalAberto / 100)} em aberto`}
       />
 
       <ScrollView
@@ -148,7 +185,7 @@ export default function ContasView({ tipo }: { tipo: 'pagar' | 'receber' }) {
               titulo="Vencidos"
               resumo={
                 grupos.vencidos.length
-                  ? `${grupos.vencidos.length} · ${formatMoney(soma(grupos.vencidos))}`
+                  ? `${grupos.vencidos.length} · ${formatMoney(soma(grupos.vencidos) / 100)}`
                   : 'nada em atraso'
               }
               etiqueta={
@@ -166,8 +203,11 @@ export default function ContasView({ tipo }: { tipo: 'pagar' | 'receber' }) {
                   <LinhaTitulo
                     key={l.id}
                     linha={l}
-                    onBaixar={() => pedirBaixa(l)}
-                    onEstornar={() => pedirEstorno(l)}
+                    onBaixar={() => {
+                      setErroDoDialogo(null)
+                      setBaixando(l)
+                    }}
+                    onEstornar={() => setEstornando(l)}
                   />
                 ))
               )}
@@ -175,7 +215,7 @@ export default function ContasView({ tipo }: { tipo: 'pagar' | 'receber' }) {
 
             <Sanfona
               titulo="A vencer"
-              resumo={`${grupos.aVencer.length} · ${formatMoney(soma(grupos.aVencer))}`}
+              resumo={`${grupos.aVencer.length} · ${formatMoney(soma(grupos.aVencer) / 100)}`}
               inicialAberta={grupos.vencidos.length === 0}
             >
               {grupos.aVencer.length === 0 ? (
@@ -185,8 +225,11 @@ export default function ContasView({ tipo }: { tipo: 'pagar' | 'receber' }) {
                   <LinhaTitulo
                     key={l.id}
                     linha={l}
-                    onBaixar={() => pedirBaixa(l)}
-                    onEstornar={() => pedirEstorno(l)}
+                    onBaixar={() => {
+                      setErroDoDialogo(null)
+                      setBaixando(l)
+                    }}
+                    onEstornar={() => setEstornando(l)}
                   />
                 ))
               )}
@@ -203,8 +246,11 @@ export default function ContasView({ tipo }: { tipo: 'pagar' | 'receber' }) {
                   <LinhaTitulo
                     key={l.id}
                     linha={l}
-                    onBaixar={() => pedirBaixa(l)}
-                    onEstornar={() => pedirEstorno(l)}
+                    onBaixar={() => {
+                      setErroDoDialogo(null)
+                      setBaixando(l)
+                    }}
+                    onEstornar={() => setEstornando(l)}
                   />
                 ))
               )}
@@ -212,6 +258,45 @@ export default function ContasView({ tipo }: { tipo: 'pagar' | 'receber' }) {
           </>
         )}
       </ScrollView>
+
+      {/* A faixa de resposta. Sai sozinha em 4s — no balcao ninguem toca em
+          "ok" para poder voltar a olhar a lista. */}
+      {aviso !== null ? (
+        <View style={estilos.aviso} accessibilityLiveRegion="polite">
+          <Text style={estilos.avisoTexto}>{aviso}</Text>
+        </View>
+      ) : null}
+
+      {baixando !== null ? (
+        <BaixaModal
+          tipo={tipo}
+          contraparte={baixando.contraparte}
+          descricao={`${baixando.descricao} · vence ${formatDate(baixando.vencimento)}`}
+          saldoCents={baixando.valorCents - baixando.baixadoCents}
+          processando={processando}
+          erro={erroDoDialogo}
+          onConfirmar={confirmarBaixa}
+          onFechar={() => {
+            setBaixando(null)
+            setErroDoDialogo(null)
+          }}
+        />
+      ) : null}
+
+      {estornando !== null ? (
+        <EstornoModal
+          tipo={tipo}
+          tituloId={estornando.id}
+          contraparte={estornando.contraparte}
+          descricao={`${estornando.descricao} · vence ${formatDate(estornando.vencimento)}`}
+          onEstornado={(msg) => {
+            setEstornando(null)
+            setAviso(msg)
+            void buscar()
+          }}
+          onFechar={() => setEstornando(null)}
+        />
+      ) : null}
     </SafeAreaView>
   )
 }
@@ -225,7 +310,7 @@ function LinhaTitulo({
   onBaixar: () => void
   onEstornar: () => void
 }) {
-  const saldo = linha.valor - linha.baixado
+  const saldoCents = linha.valorCents - linha.baixadoCents
   const quitado = linha.status === 'pago'
   const situacao = situacaoDoTitulo(linha.status, linha.vencimento, daysUntil(linha.vencimento))
 
@@ -249,7 +334,9 @@ function LinhaTitulo({
             {linha.descricao}
           </Text>
         </View>
-        <Text style={estilos.tituloValor}>{formatMoney(quitado ? linha.valor : saldo)}</Text>
+        <Text style={estilos.tituloValor}>
+          {formatMoney((quitado ? linha.valorCents : saldoCents) / 100)}
+        </Text>
       </View>
 
       <View style={estilos.tituloRodape}>
@@ -261,12 +348,12 @@ function LinhaTitulo({
         </View>
 
         <Pressable
-          onPress={quitado || linha.baixado > 0 ? onEstornar : onBaixar}
+          onPress={quitado || linha.baixadoCents > 0 ? onEstornar : onBaixar}
           style={[estilos.acao, quitado && estilos.acaoSecundaria]}
           accessibilityRole="button"
         >
           <Text style={[estilos.acaoTexto, quitado && estilos.acaoTextoSecundario]}>
-            {quitado || linha.baixado > 0 ? 'Estornar' : 'Baixar'}
+            {quitado || linha.baixadoCents > 0 ? 'Estornar' : 'Baixar'}
           </Text>
         </Pressable>
       </View>
@@ -319,4 +406,17 @@ const estilos = StyleSheet.create({
     color: cores.textoSobreAcento,
   },
   acaoTextoSecundario: { color: cores.textoFraco },
+
+  aviso: {
+    position: 'absolute',
+    left: espaco.lg,
+    right: espaco.lg,
+    bottom: espaco.xl,
+    padding: espaco.md,
+    borderRadius: raio.md,
+    backgroundColor: cores.superficieAlta,
+    borderWidth: 1,
+    borderColor: cores.sucesso,
+  },
+  avisoTexto: { fontSize: fonte.pequeno, color: cores.texto },
 })

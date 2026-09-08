@@ -3,7 +3,14 @@ import {
   settlePayableInputSchema,
   settleReceivableInputSchema,
 } from '@na-regua/contracts'
-import { reverseSettlement, type SettleDeps, settlePayable, settleReceivable } from '@na-regua/core'
+import {
+  type ListSettlementsDeps,
+  listSettlements,
+  reverseSettlement,
+  type SettleDeps,
+  settlePayable,
+  settleReceivable,
+} from '@na-regua/core'
 import type { FastifyInstance } from 'fastify'
 import { requireContext } from '../plugins/execution-context.js'
 import { LIMITE_DE_ESCRITA } from '../plugins/rate-limit.js'
@@ -21,7 +28,7 @@ import { validate } from '../plugins/validate.js'
  * canal WhatsApp (NR-060) daria a mesma baixa sem ela.
  */
 
-export type BaixasDeps = SettleDeps
+export type BaixasDeps = SettleDeps & ListSettlementsDeps
 
 export function registerBaixasRoutes(app: FastifyInstance, deps: BaixasDeps): void {
   /**
@@ -72,6 +79,31 @@ export function registerBaixasRoutes(app: FastifyInstance, deps: BaixasDeps): vo
       return reply.code(201).send(await settleReceivable(deps, ctx, input))
     },
   )
+
+  /**
+   * O historico de baixas de um titulo — RF-067.
+   *
+   * Nao e enfeite: o estorno endereca a BAIXA, e sem esta rota a tela nao tinha
+   * de onde tirar o id. O botao de estornar existia e chamava um falso.
+   *
+   * Duas rotas e nao uma com `?tipo=`, porque baixa de pagar e de receber moram
+   * em tabelas diferentes e o id de um titulo a pagar nunca e o de um a receber.
+   * O caminho ja diz qual e — um parametro repetiria a informacao e abriria
+   * espaco para os dois discordarem.
+   */
+  app.get('/contas-a-pagar/:id/baixas', async (request) => {
+    const ctx = requireContext(request)
+    const { id } = request.params as { id: string }
+
+    return listSettlements(deps, ctx, { tipo: 'payable', tituloId: id })
+  })
+
+  app.get('/contas-a-receber/:id/baixas', async (request) => {
+    const ctx = requireContext(request)
+    const { id } = request.params as { id: string }
+
+    return listSettlements(deps, ctx, { tipo: 'receivable', tituloId: id })
+  })
 
   /**
    * Estorno — RF-067.

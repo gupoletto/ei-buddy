@@ -1,6 +1,7 @@
 import type { SettlementOutput } from '@na-regua/contracts'
 import type {
   NewSettlement,
+  SettlementQueries,
   SettlementTransaction,
   SettlementUnitOfWork,
   TituloSnapshot,
@@ -289,6 +290,57 @@ function escopo(tx: TransactionSql, companyId: string): SettlementTransaction {
          WHERE id = ${customerId}
       `
     },
+  }
+}
+
+/**
+ * As baixas de um titulo — RF-067.
+ *
+ * ## Por que nao entrou em `SettlementTransaction`
+ *
+ * Aquela porta e a da ESCRITA, e cada metodo dela roda dentro da transacao que
+ * o caso de uso abriu. Esta consulta e o passo ANTERIOR: a tela lista as baixas
+ * para a pessoa escolher qual estornar, e so entao o estorno abre a sua
+ * transacao. Enfia-la la obrigaria a abrir uma transacao de escrita para ler.
+ *
+ * `withTenant` mesmo assim: e ele quem define `app.company_id`, e sem isso o
+ * RLS recusa a leitura — nao devolve lista vazia, recusa. Por isso a consulta
+ * nao filtra `company_id` na clausula: a politica ja filtra, e repetir aqui
+ * daria a impressao de que ela e opcional.
+ *
+ * ## Da mais recente para a mais antiga
+ *
+ * A pergunta que traz alguem a esta lista e "a ultima baixa foi errada, como
+ * desfaço". A primeira linha e a resposta.
+ *
+ * `created_at` como desempate, e nao so a data da baixa: duas baixas no mesmo
+ * dia sao comuns (a parcial de manha e o resto a tarde), e a ordem entre elas
+ * so existe no carimbo de gravacao. Sem o desempate, a lista trocaria de ordem
+ * entre dois carregamentos iguais.
+ */
+export function createSettlementQueries(sql: Sql): SettlementQueries {
+  return {
+    listByTitulo: (companyId, tipo, tituloId) =>
+      withTenant(sql, companyId, async (tx) => {
+        const linhas =
+          tipo === 'payable'
+            ? await tx<LinhaBaixa[]>`
+                SELECT id, payable_id, amount_cents, bank_account, settled_on, notes,
+                       reverses_id, created_at, created_by
+                  FROM payable_settlements
+                 WHERE payable_id = ${tituloId}
+                 ORDER BY settled_on DESC, created_at DESC
+              `
+            : await tx<LinhaBaixa[]>`
+                SELECT id, receivable_id, amount_cents, method, settled_at, notes,
+                       reverses_id, created_at, created_by
+                  FROM settlements
+                 WHERE receivable_id = ${tituloId}
+                 ORDER BY settled_at DESC, created_at DESC
+              `
+
+        return linhas.map(paraBaixa)
+      }),
   }
 }
 

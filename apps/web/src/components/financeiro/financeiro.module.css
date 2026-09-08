@@ -493,6 +493,25 @@
   border-color: var(--app-accent);
 }
 
+/*
+ * Data e conta/forma lado a lado.
+ *
+ * Empilhados, o dialogo passava da dobra em telefone e o botao de confirmar
+ * ficava fora da tela — a pessoa preenchia tudo e achava que faltava alguma
+ * coisa. Abaixo de 520px eles voltam a empilhar, que a largura nao da para dois.
+ */
+.baixaLinha {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 520px) {
+  .baixaLinha {
+    grid-template-columns: 1fr;
+  }
+}
+
 .baixaRestante {
   font-size: 12.5px;
   color: var(--app-warn);
@@ -532,6 +551,103 @@
   font-size: 17px;
   font-weight: 700;
   color: var(--app-text);
+}
+
+/* --- Historico de baixas, dentro do dialogo de estorno --- */
+
+.estornoLista {
+  display: grid;
+  gap: 8px;
+  max-height: 260px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.estornoItem {
+  display: block;
+  padding: 11px 13px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-sm);
+  background: var(--app-field);
+  cursor: pointer;
+}
+
+.estornoItemAtivo {
+  border-color: var(--app-accent);
+}
+
+/* Ja estornada ou linha de estorno: aparece, mas nao e escolhivel. */
+.estornoItemInerte {
+  cursor: default;
+  opacity: 0.62;
+}
+
+.estornoItemTopo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.estornoItemValor {
+  font-family: var(--font-display);
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--app-text);
+}
+
+/* O estorno e uma linha NEGATIVA — o sinal e a informacao, nao um defeito. */
+.estornoItemNegativo {
+  color: var(--app-danger);
+}
+
+.estornoItemData {
+  font-size: 12.5px;
+  color: var(--app-muted);
+}
+
+.estornoItemDetalhe {
+  display: block;
+  margin-top: 3px;
+  font-size: 12.5px;
+  color: var(--app-muted);
+  line-height: 1.45;
+}
+
+.estornoItemRadio {
+  margin-right: 8px;
+  accent-color: var(--app-accent);
+}
+
+.estornoMotivo {
+  display: grid;
+  gap: 7px;
+}
+
+.estornoMotivo > span {
+  font-size: 13px;
+  color: var(--app-muted);
+}
+
+.estornoMotivoInput {
+  width: 100%;
+  min-height: 74px;
+  padding: 11px 14px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-sm);
+  background: var(--app-field);
+  color: var(--app-text);
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.estornoMotivoInput:focus {
+  outline: none;
+  border-color: var(--app-accent);
 }
 
 /* --- Formulario --- */
