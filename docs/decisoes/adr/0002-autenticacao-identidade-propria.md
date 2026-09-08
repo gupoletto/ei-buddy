@@ -127,6 +127,15 @@ Isso descarta as opções A e B. A escolha entre **C e D fica para quando a
 bloqueia código nenhum: as duas usam a mesma porta, e a diferença é qual
 implementação a composição injeta.
 
+> **Atualização (2026-09-08) — esta metade foi decidida antes da DEC-009.** A
+> [ADR-0003](0003-better-auth-como-prova-de-identidade.md) escolhe a opção D
+> (Better Auth). Dois motivos que esta ADR não podia prever: o provedor virou o
+> **único** item de desenvolvimento no caminho de produção depois que a NR-083
+> tirou sessão e desaceleração da memória, e a premissa de que a opção D exige
+> plataforma com processo próprio se mostrou mais fraca do que se supunha. O
+> resto desta ADR continua valendo palavra por palavra — inclusive a aposta na
+> porta, que é o que tornou a troca uma função de composição.
+
 **Recomendação registrada:** se a DEC-009 cair em plataforma onde rodamos nosso
 Postgres e nosso Node, opção D — sem custo por usuário ativo e sem terceiro no
 caminho do login. Se cair em plataforma serverless, opção C.

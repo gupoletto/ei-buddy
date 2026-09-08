@@ -11,7 +11,9 @@
 import { randomUUID } from 'node:crypto'
 import { createDefaultSaleSettings, InMemoryAuditTrail } from '@na-regua/core'
 import type { AgendaDeps } from './routes/agenda.js'
+import type { IdentityProvider, IdentityRegistrar } from '@na-regua/core'
 import type { AuthRouteDeps } from './routes/auth.js'
+import { IdentidadeBetterAuth } from './identidade-better-auth.js'
 import { IdentidadeEmArquivo } from './identidade-em-arquivo.js'
 import { createReminderScheduler } from './reminder-scheduler.js'
 import {
@@ -216,15 +218,8 @@ export function buildSaleDeps(): SaleRouteDeps {
 /**
  * Dependencias de sessao — NR-014, ADR-0002.
  *
- * O provedor de identidade, o emissor de sessao e a desaceleracao sao HOJE as
- * implementacoes de desenvolvimento. As tres vivem em memoria e por instancia:
- * reiniciar o processo derruba todas as sessoes, e duas instancias nao
- * compartilham nem sessao nem contador de tentativa.
- *
- * Por isso `assertAuthUsavelEmProducao` existe. A escolha entre provedor
- * gerenciado (opcao C) e biblioteca auto-hospedada (opcao D) espera a DEC-009,
- * e a ADR-0002 registra que essa espera nao bloqueia codigo: as duas satisfazem
- * a mesma porta, e trocar e trocar esta funcao.
+ * A sessao e a desaceleracao vivem no Postgres desde a NR-083. O provedor de
+ * identidade e escolhido por `AUTH_PROVIDER` — ver `criarIdentidade`.
  */
 export function buildAuthDeps(): AuthRouteDeps {
   const sql = getClient(env.DATABASE_URL)
@@ -235,18 +230,8 @@ export function buildAuthDeps(): AuthRouteDeps {
    * Duas instancias seriam dois armazenamentos: o cadastro escreveria num e o
    * login leria do outro — e a pessoa cadastrava e nao entrava. E exatamente o
    * defeito que este trecho existe para nao repetir.
-   *
-   * E ela persiste em disco, e nao em memoria. `pnpm dev` roda com `tsx
-   * watch`: com o mapa em memoria, CADA ARQUIVO SALVO apagava todas as contas,
-   * e a pessoa ficava presa — o login recusava porque a credencial evaporou, e
-   * cadastrar de novo recusava porque a empresa continuava no Postgres. O dado
-   * era permanente e a credencial era volatil, e a assimetria e que era o
-   * defeito.
-   *
-   * Continua sendo o modo `fake` da ADR-0002, e `assertAuthUsavelEmProducao`
-   * recusa subir com ele em producao.
    */
-  const identidade = new IdentidadeEmArquivo()
+  const identidade = criarIdentidade()
 
   return {
     provider: identidade,
@@ -273,6 +258,62 @@ export function buildAuthDeps(): AuthRouteDeps {
      */
     audit: new InMemoryAuditTrail(),
   }
+}
+
+/**
+ * Minimo de senha, o mesmo que `signupInputSchema` promete na tela.
+ *
+ * Repetido aqui porque quem recusa e o provedor, e um numero diferente daria a
+ * pior das recusas: o formulario aceita, a chamada sai, e o erro volta do outro
+ * lado com o texto dele.
+ */
+const MINIMO_DE_SENHA = 8
+
+/**
+ * Quem prova a identidade — ADR-0002.
+ *
+ * A ADR separou a decisao em duas perguntas, e esta funcao e o resultado da
+ * segunda. As duas implementacoes satisfazem as MESMAS portas
+ * (`IdentityProvider` e `IdentityRegistrar`), entao trocar de provedor e trocar
+ * este `if` — e nao migrar modelo de acesso, que continua sendo nosso. Era essa
+ * a aposta da ADR quando ela deixou a escolha entre a opcao C e a D em aberto,
+ * e ela se pagou: o Better Auth entrou sem tocar em `core`, em `db`, nem em
+ * nenhuma tela.
+ *
+ * `fake` segue sendo o modo local, e `assertAuthUsavelEmProducao` recusa subir
+ * com ele em producao.
+ */
+export function criarIdentidade(): IdentityProvider & IdentityRegistrar {
+  if (env.AUTH_PROVIDER === 'better-auth') {
+    if (env.BETTER_AUTH_SECRET === undefined) {
+      /*
+       * Falha no BOOT, e nao no primeiro login.
+       *
+       * Sem o segredo a biblioteca gera um por processo: duas instancias
+       * assinariam diferente, e cada reinicio invalidaria o que a anterior
+       * emitiu. E o mesmo defeito que a NR-083 acabou de tirar da nossa sessao,
+       * e ele voltaria pela porta do provedor.
+       */
+      throw new Error(
+        'AUTH_PROVIDER=better-auth exige BETTER_AUTH_SECRET (ADR-0002, opcao D). ' +
+          'Gere 32+ caracteres aleatorios e defina em .env.',
+      )
+    }
+
+    return new IdentidadeBetterAuth({
+      databaseUrl: env.DATABASE_URL,
+      secret: env.BETTER_AUTH_SECRET,
+      minimoDeSenha: MINIMO_DE_SENHA,
+    })
+  }
+
+  /*
+   * O falso persiste em DISCO, e nao em memoria. `pnpm dev` roda com `tsx
+   * watch`: com o mapa em memoria, CADA ARQUIVO SALVO apagava todas as contas,
+   * e a pessoa ficava presa — o login recusava porque a credencial evaporou, e
+   * cadastrar de novo recusava porque a empresa continuava no Postgres.
+   */
+  return new IdentidadeEmArquivo()
 }
 
 /**

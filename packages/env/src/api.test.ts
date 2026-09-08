@@ -54,3 +54,41 @@ describe('loadApiEnv', () => {
     expect(() => loadApiEnv({ ...base, REDIS_URL: 'rediss://user:pass@host:6380' })).not.toThrow()
   })
 })
+
+/**
+ * O segredo do Better Auth — ADR-0003.
+ *
+ * Opcional no schema e obrigatorio em `criarIdentidade`, e so quando
+ * `AUTH_PROVIDER=better-auth`. Exigi-lo aqui barraria o boot local, onde o
+ * provedor e o falso e este valor nao existe.
+ */
+describe('BETTER_AUTH_SECRET', () => {
+  const trintaEDois = 'x'.repeat(32)
+
+  it('e opcional — o modo fake nao tem segredo nenhum', () => {
+    expect(loadApiEnv(base).BETTER_AUTH_SECRET).toBeUndefined()
+  })
+
+  it('aceita 32 caracteres', () => {
+    expect(loadApiEnv({ ...base, BETTER_AUTH_SECRET: trintaEDois }).BETTER_AUTH_SECRET).toBe(
+      trintaEDois,
+    )
+  })
+
+  /*
+   * Abaixo de 32 a propria biblioteca so escreve um aviso no log, e aviso em
+   * log de boot ninguem le. Aqui vira recusa de subir.
+   */
+  it('recusa segredo curto', () => {
+    expect(() => loadApiEnv({ ...base, BETTER_AUTH_SECRET: 'curto-demais' })).toThrow(
+      /pelo menos 32 caracteres/,
+    )
+  })
+
+  /* Vazia e o mesmo que ausente — `opcionalNaoVazia` apara e some com ela.
+     Sem isto, um `BETTER_AUTH_SECRET=` no .env viraria segredo de zero
+     caracteres em vez de "nao configurado". */
+  it('trata string vazia como ausente', () => {
+    expect(loadApiEnv({ ...base, BETTER_AUTH_SECRET: '' }).BETTER_AUTH_SECRET).toBeUndefined()
+  })
+})

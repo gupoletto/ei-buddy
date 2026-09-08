@@ -53,10 +53,13 @@ PR**, e a linha sai da tabela de abertas.
 **Bloqueando o MVP agora:** DEC-003, DEC-009.
 Essas três travam trabalho de implementação já na Sprint 1.
 
-A DEC-008 fechou — [ADR-0002](adr/0002-autenticacao-identidade-propria.md).
-A DEC-009 continua aberta e agora **decide uma escolha de configuração, não de
-código**: a autenticação já tem porta, e a hospedagem só define qual
-implementação a composição injeta.
+A DEC-008 fechou — [ADR-0002](adr/0002-autenticacao-identidade-propria.md) e
+[ADR-0003](adr/0003-better-auth-como-prova-de-identidade.md).
+A DEC-009 continua aberta, e **a autenticação deixou de esperar por ela**: a
+ADR-0003 escolheu o Better Auth (opção D) antes de a hospedagem fechar, porque
+o provedor era o último item de desenvolvimento no caminho de produção. Se a
+DEC-009 cair em plataforma onde processo próprio seja inviável, trocar para a
+opção C é trocar uma função de composição.
 
 ---
 

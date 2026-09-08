@@ -44,3 +44,14 @@ overrides:
   # Expo executa e o 0.84.5, que nem usa o pacote — vendorizou a implementacao
   # em src/lib/imageSize.js.
   '@react-native/metro-config': '0.86.3'
+  # GHSA-2883-xcg3-v3hh (alta): `maxTotalMergeKeys` nao limita CPU quando a
+  # origem da mesclagem e vazia. Chega por dentro do ESLint
+  # (`@eslint/eslintrc`), em 60 caminhos — e dependencia de FERRAMENTA, nao de
+  # producao, mas o gate de auditoria e bloqueante em severidade alta (RNF-029)
+  # e nao distingue.
+  #
+  # Nao veio de mudanca nossa: a 4.3.1 ja estava no lock, e o aviso foi
+  # publicado depois do ultimo PR verde. Subir para a 4.3.2, que e a primeira
+  # corrigida, e a saida — sem teto, porque a serie 4 nao tem quebra prevista e
+  # prender aqui so adiaria o proximo aviso.
+  js-yaml: '>=4.3.2'
