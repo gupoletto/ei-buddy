@@ -160,12 +160,36 @@ do provedor moldaram o desenho, e estão no código:
   reutilizável depois que a nota autoriza. Isso dá metade da idempotência que a
   [RNF-043](../produto/requisitos-nao-funcionais.md) exige.
 
-**O que ficou pendente:** as credenciais por lojista. Cada empresa tem seu token
-Focus NFe, e não há coluna para guardá-lo — guardar em texto puro seria
-regressão de segurança. Ele entra junto com o certificado A1 cifrado
-([RF-004](../produto/requisitos-funcionais.md)), que tem o mesmo problema e a
-mesma solução. Até lá o adapter existe, passa na suíte de contrato e não está
-ligado à composição.
+**As credenciais por lojista foram resolvidas** (migration `0015`). Cada empresa
+tem seu token Focus NFe e seu certificado A1, os dois cifrados em AES-256-GCM
+antes de entrar no banco, em tabela própria e não em `companies` —
+[RF-004](../produto/requisitos-funcionais.md). O adapter está ligado à
+composição: o worker emite pela fila, e a api apenas **consulta**, porque
+reconciliar contingência é leitura. Sem `SECRETS_KEY` a api cai no emissor
+falso em vez de lançar; no worker a falta da chave lança, porque lá ela
+significaria emitir sem poder.
+
+> Este parágrafo dizia que as credenciais estavam pendentes e que o adapter
+> "não está ligado à composição". As três afirmações ficaram desatualizadas, e
+> quem consultasse a decisão concluiria que a emissão fiscal não funciona.
+
+**O que continua pendente**, e por motivos diferentes:
+
+| Requisito                         | Estado | Por quê                                                                                                                                                                                                                                                                                                                              |
+| --------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `RF-048` DANFE por WhatsApp       | ⬜     | Depende da [DEC-003](#dec-003), que segue aberta                                                                                                                                                                                                                                                                                     |
+| `RF-053` retransmissão automática | ⬜     | **Decisão consciente, não pendência de tempo.** A documentação da Focus não define como retransmitir uma nota offline: existe um campo `contingencia_offline_efetivada` que _sugere_ que o provedor resolve sozinho, e sugerir não basta para documento fiscal. Inventar a chamada produziria nota duplicada ou nota que nunca chega |
+
+O caso de uso `reconcileContingency` faz o que dá para fazer com segurança:
+**pergunta** o estado de cada nota offline, na ordem em que saíram, e atualiza
+a guarda. Funciona sob as duas hipóteses — se o provedor efetiva sozinho, a
+reconciliação percebe; se não, as notas seguem visíveis em contingência em vez
+de parecerem resolvidas.
+
+Hoje essa pergunta acontece quando alguém abre a tela. Um job periódico faria
+a nota se resolver sozinha, e é trabalho pequeno — mas exige uma consulta que
+atravessa empresas ("quais têm nota em contingência"), porque a varredura roda
+sem lojista na frente.
 
 ---
 
