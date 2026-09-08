@@ -220,6 +220,8 @@ export { createAppointment, reminderFireAt } from './schedule/create-appointment
 export type { CreateAppointmentDeps } from './schedule/create-appointment.js'
 export { listDayAppointments } from './schedule/list-day-appointments.js'
 export type { DayAgenda, ListDayAppointmentsDeps } from './schedule/list-day-appointments.js'
+export { listAppointmentRange } from './schedule/list-appointment-range.js'
+export type { ListAppointmentRangeDeps, RangeAgenda } from './schedule/list-appointment-range.js'
 
 /* Cadastro de conta — NR-014, RF-001, RF-002. */
 export { signup } from './auth/signup.js'

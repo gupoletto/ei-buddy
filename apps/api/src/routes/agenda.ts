@@ -1,6 +1,7 @@
 import {
   cancelAppointmentInputSchema,
   createAppointmentInputSchema,
+  listAppointmentRangeInputSchema,
   listDayAppointmentsInputSchema,
 } from '@na-regua/contracts'
 import {
@@ -8,6 +9,8 @@ import {
   cancelAppointment,
   createAppointment,
   type CreateAppointmentDeps,
+  listAppointmentRange,
+  type ListAppointmentRangeDeps,
   listDayAppointments,
 } from '@na-regua/core'
 import type { FastifyInstance } from 'fastify'
@@ -24,7 +27,7 @@ import { validate } from '../plugins/validate.js'
  * por outro caminho, com outras regras.
  */
 
-export type AgendaDeps = CreateAppointmentDeps & CancelAppointmentDeps
+export type AgendaDeps = CreateAppointmentDeps & CancelAppointmentDeps & ListAppointmentRangeDeps
 
 export function registerAgendaRoutes(app: FastifyInstance, deps: AgendaDeps): void {
   /** Marcar — RF-089, RF-090, RF-091. */
@@ -38,15 +41,33 @@ export function registerAgendaRoutes(app: FastifyInstance, deps: AgendaDeps): vo
   })
 
   /**
-   * A agenda do dia — RF-093.
+   * A agenda — RF-093.
    *
-   * `GET` com o dia na query, e nao no caminho: `/agenda?dia=2026-09-10` deixa
-   * claro que e um filtro sobre a mesma colecao. `/agenda/2026-09-10` pareceria
-   * um recurso, e o dia nao e um.
+   * `GET` com o recorte na query, e nao no caminho: `?dia=2026-09-10` deixa
+   * claro que e um filtro sobre a mesma colecao. `/agenda/2026-09-10`
+   * pareceria um recurso, e o dia nao e um.
+   *
+   * Dois recortes, uma rota, e a resposta diz qual veio:
+   *
+   * - `?de=&ate=` — o intervalo que o calendario do mes desenha. Devolve so a
+   *   lista: no calendario, mes sem nada marcado se desenha igual a mes cheio.
+   * - `?dia=` — a agenda daquele dia, com `isEmpty`. Ali a distincao importa:
+   *   "nao ha nada hoje" e "nao consegui carregar" sao coisas diferentes, e
+   *   lista vazia sozinha nao diz qual das duas aconteceu.
+   *
+   * O intervalo e conferido ANTES do dia. Quem manda `de` e `ate` nao mandou
+   * `dia`, e validar o dia primeiro recusaria o pedido por um campo que nao
+   * era para estar la.
    */
   app.get('/agenda', async (request, reply) => {
     const ctx = requireContext(request)
-    const { dia } = request.query as { dia?: string }
+    const { dia, de, ate } = request.query as { dia?: string; de?: string; ate?: string }
+
+    if (de !== undefined || ate !== undefined) {
+      const recorte = validate(listAppointmentRangeInputSchema, { from: de, to: ate })
+
+      return reply.code(200).send(await listAppointmentRange(deps, ctx, recorte))
+    }
 
     const input = validate(listDayAppointmentsInputSchema, { day: dia })
 

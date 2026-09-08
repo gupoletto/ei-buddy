@@ -45,6 +45,8 @@ export async function createAppointment(
     companyId: ctx.companyId,
     title: input.title,
     startsAt,
+    ...(input.endsAt === undefined ? {} : { endsAt: new Date(input.endsAt) }),
+    location: input.location,
     customerId: input.customerId,
     notes: input.notes,
     reminderMinutesBefore: input.reminderMinutesBefore,

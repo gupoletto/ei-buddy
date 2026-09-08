@@ -35,6 +35,9 @@ function agendaEmMemoria() {
         companyId: a.companyId,
         title: a.title,
         startsAt: a.startsAt.toISOString(),
+        /* `undefined` na entrada vira `null` na saida: "pontual" e um valor. */
+        endsAt: a.endsAt?.toISOString() ?? null,
+        location: a.location ?? null,
         customerId: a.customerId ?? null,
         notes: a.notes ?? null,
         reminderMinutesBefore: a.reminderMinutesBefore ?? null,
@@ -295,5 +298,157 @@ describe('cancelar — RF-092', () => {
     const r = await app.inject({ method: 'POST', url: `/agenda/${id}/cancelar`, payload: {} })
 
     expect(r.statusCode).toBe(404)
+  })
+})
+
+describe('hora de fim e local — RF-089', () => {
+  it('grava os dois e devolve na leitura', async () => {
+    const c = await buildApp()
+    app = c.app
+
+    /* Antes da migration 0020 nao havia coluna: o formulario pedia os dois e
+       eles eram descartados no caminho. */
+    const r = await marcar(app, {
+      title: 'Entrega Padaria Sol',
+      startsAt: AMANHA,
+      endsAt: '2026-12-10T15:30:00.000Z',
+      location: 'Rua Xavier da Silva, 88',
+    })
+
+    expect(r.statusCode).toBe(201)
+    expect(r.json().endsAt).toBe('2026-12-10T15:30:00.000Z')
+    expect(r.json().location).toBe('Rua Xavier da Silva, 88')
+  })
+
+  /* "Pagar aluguel as 10h" nao dura nada, e inventar meia hora ocuparia a
+     agenda com um bloco que ninguem pediu. */
+  it('compromisso pontual volta com endsAt NULO, e nao ausente', async () => {
+    const c = await buildApp()
+    app = c.app
+
+    const r = await marcar(app, { title: 'Pagar aluguel', startsAt: AMANHA })
+
+    expect(r.json().endsAt).toBeNull()
+    expect(r.json().location).toBeNull()
+  })
+
+  it('fim antes do inicio responde 400', async () => {
+    const c = await buildApp()
+    app = c.app
+
+    const r = await marcar(app, {
+      title: 'Impossivel',
+      startsAt: AMANHA,
+      endsAt: '2026-12-10T13:00:00.000Z',
+    })
+
+    expect(r.statusCode).toBe(400)
+  })
+
+  it('fim igual ao inicio tambem responde 400 — duracao zero e pontual', async () => {
+    const c = await buildApp()
+    app = c.app
+
+    const r = await marcar(app, { title: 'Zero', startsAt: AMANHA, endsAt: AMANHA })
+
+    expect(r.statusCode).toBe(400)
+  })
+})
+
+describe('a agenda de um intervalo — o calendario do mes', () => {
+  it('traz o que esta marcado entre as duas datas', async () => {
+    const c = await buildApp()
+    app = c.app
+    await marcar(app, { title: 'No inicio', startsAt: '2026-12-01T09:00:00.000Z' })
+    await marcar(app, { title: 'No meio', startsAt: '2026-12-15T09:00:00.000Z' })
+    await marcar(app, { title: 'No fim', startsAt: '2026-12-31T09:00:00.000Z' })
+
+    const r = await app.inject({ method: 'GET', url: '/agenda?de=2026-12-01&ate=2026-12-31' })
+
+    expect(r.statusCode).toBe(200)
+    expect(r.json().appointments.map((a: AppointmentOutput) => a.title)).toEqual([
+      'No inicio',
+      'No meio',
+      'No fim',
+    ])
+  })
+
+  /* O dia final entra INTEIRO. Cortar em T00:00 esconderia tudo o que esta
+     marcado nele, e quem pede "de 1 a 31" espera o 31 dentro. */
+  it('o dia final entra inteiro, e nao ate a meia-noite dele', async () => {
+    const c = await buildApp()
+    app = c.app
+    await marcar(app, { title: 'Ultima hora', startsAt: '2026-12-31T23:00:00.000Z' })
+
+    const r = await app.inject({ method: 'GET', url: '/agenda?de=2026-12-01&ate=2026-12-31' })
+
+    expect(r.json().appointments).toHaveLength(1)
+  })
+
+  it('o que esta fora do intervalo fica de fora', async () => {
+    const c = await buildApp()
+    app = c.app
+    await marcar(app, { title: 'Dezembro', startsAt: '2026-12-15T09:00:00.000Z' })
+    await marcar(app, { title: 'Janeiro', startsAt: '2027-01-05T09:00:00.000Z' })
+
+    const r = await app.inject({ method: 'GET', url: '/agenda?de=2026-12-01&ate=2026-12-31' })
+
+    expect(r.json().appointments.map((a: AppointmentOutput) => a.title)).toEqual(['Dezembro'])
+  })
+
+  /* Sem teto, `de=2020-01-01&ate=2030-12-31` varreria a agenda inteira da loja
+     numa resposta so — e o calendario nunca precisa de mais que o mes visivel
+     com as bordas das semanas vizinhas. */
+  it('recusa intervalo grande demais em vez de varrer a agenda inteira', async () => {
+    const c = await buildApp()
+    app = c.app
+
+    const r = await app.inject({ method: 'GET', url: '/agenda?de=2020-01-01&ate=2030-12-31' })
+
+    expect(r.statusCode).toBe(400)
+  })
+
+  it('recusa fim antes do inicio', async () => {
+    const c = await buildApp()
+    app = c.app
+
+    const r = await app.inject({ method: 'GET', url: '/agenda?de=2026-12-31&ate=2026-12-01' })
+
+    expect(r.statusCode).toBe(400)
+  })
+
+  /* O intervalo e conferido ANTES do dia: quem manda `de` e `ate` nao mandou
+     `dia`, e validar o dia primeiro recusaria por um campo que nao era para
+     estar la. */
+  it('mandar so `de` responde 400 do INTERVALO, e nao "dia obrigatorio"', async () => {
+    const c = await buildApp()
+    app = c.app
+
+    const r = await app.inject({ method: 'GET', url: '/agenda?de=2026-12-01' })
+
+    expect(r.statusCode).toBe(400)
+    expect(JSON.stringify(r.json())).toContain('to')
+  })
+
+  it('o cancelado nao aparece no intervalo', async () => {
+    const c = await buildApp()
+    app = c.app
+    const criado = await marcar(app, { title: 'Some', startsAt: '2026-12-15T09:00:00.000Z' })
+    await app.inject({ method: 'POST', url: `/agenda/${criado.json().id}/cancelar`, payload: {} })
+
+    const r = await app.inject({ method: 'GET', url: '/agenda?de=2026-12-01&ate=2026-12-31' })
+
+    expect(r.json().appointments).toHaveLength(0)
+  })
+
+  it('a agenda do dia continua respondendo isEmpty', async () => {
+    const c = await buildApp()
+    app = c.app
+
+    /* As duas formas convivem na mesma rota, e a do dia nao pode ter perdido
+       o campo que distingue "livre" de "falhou". */
+    const r = await app.inject({ method: 'GET', url: '/agenda?dia=2026-12-10' })
+
+    expect(r.json().isEmpty).toBe(true)
   })
 })
