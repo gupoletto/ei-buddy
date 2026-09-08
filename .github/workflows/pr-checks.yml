@@ -22,12 +22,41 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
 
+      - name: Ler o titulo e o corpo atuais do PR
+        # O payload do evento congela titulo e corpo no instante em que a
+        # rodada nasceu, e o botao "Re-run" REPRODUZ esse payload. Um PR aberto
+        # com o titulo autogerado do GitHub e renomeado depois ficava com o X
+        # vermelho para sempre: reexecutar reavaliava o titulo antigo.
+        #
+        # Aconteceu no #135 — a reexecucao voltou com
+        # `PR_TITLE: Feat/nr 029 baixa de titulo` depois de o titulo ja estar
+        # correto. Lendo pela api aqui, "Re-run" passa a refletir a realidade.
+        #
+        # `|| true` no fim: se a api nao responder, os passos seguintes caem no
+        # valor do evento. Barrar o PR por indisponibilidade da api seria
+        # trocar um falso vermelho por outro.
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUMERO: ${{ github.event.pull_request.number }}
+        run: |
+          {
+            echo "titulo<<FIM_TITULO"
+            gh pr view "$NUMERO" --repo "$GITHUB_REPOSITORY" --json title --jq .title
+            echo "FIM_TITULO"
+            echo "corpo<<FIM_CORPO"
+            gh pr view "$NUMERO" --repo "$GITHUB_REPOSITORY" --json body --jq '.body // ""'
+            echo "FIM_CORPO"
+          } >> "$GITHUB_OUTPUT" || true
+
       - name: Titulo do PR segue Conventional Commits
         # Usamos squash merge: o titulo do PR VIRA a mensagem do commit na main.
         # Por isso e ele que precisa passar, nao os commits da branch.
         env:
-          PR_TITLE: ${{ github.event.pull_request.title }}
-        run: echo "$PR_TITLE" | pnpm commitlint
+          PR_TITLE: ${{ steps.pr.outputs.titulo || github.event.pull_request.title }}
+        run: |
+          echo "Titulo avaliado: $PR_TITLE"
+          echo "$PR_TITLE" | pnpm commitlint
 
       - name: Nome da branch segue a convencao
         # O dependabot nomeia as branches dele (dependabot/npm_and_yarn/...) e
@@ -58,8 +87,8 @@ jobs:
         # Idem: atualizacao de dependencia nao sai de tarefa do ledger.
         if: ${{ !startsWith(github.head_ref, 'dependabot/') }}
         env:
-          PR_TITLE: ${{ github.event.pull_request.title }}
-          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_TITLE: ${{ steps.pr.outputs.titulo || github.event.pull_request.title }}
+          PR_BODY: ${{ steps.pr.outputs.corpo || github.event.pull_request.body }}
           BRANCH: ${{ github.head_ref }}
         run: |
           if ! echo "$PR_TITLE $PR_BODY $BRANCH" | grep -qE 'NR-[0-9]+'; then
