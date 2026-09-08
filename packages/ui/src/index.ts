@@ -20,4 +20,11 @@ export {
   spacing,
 } from './tokens/index.js'
 
-export { AA_LARGE_TEXT, AA_NORMAL_TEXT, contrastRatio, meetsAA } from './contrast.js'
+export {
+  AA_LARGE_TEXT,
+  AA_NORMAL_TEXT,
+  contrastRatio,
+  flatten,
+  meetsAA,
+  meetsAAOver,
+} from './contrast.js'
