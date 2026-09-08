@@ -1,12 +1,34 @@
 import { useState } from 'react'
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native'
+import {
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native'
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { entrar } from '@/lib/auth-api'
+import { entrar, escolherLoja } from '@/lib/auth-api'
+import type { LojaDaSessao } from '@/lib/session'
 import { validateCredential, validateLoginPassword } from '@/lib/validation'
 import Botao from '@/components/ui/Botao'
 import Campo from '@/components/ui/Campo'
 import { cores, espaco, fonte, peso, raio } from '@/theme/tokens'
+
+/** O papel na tela e em portugues, e nao o valor do contrato. */
+const PAPEL: Record<string, string> = {
+  owner: 'Dono',
+  staff: 'Funcionario',
+  accountant: 'Contador',
+  platform_admin: 'Administrador',
+}
+
+/** "Marina Alves" no cabecalho e formal demais. */
+function primeiroNome(nome: string): string {
+  return nome.trim().split(/\s+/)[0] ?? nome
+}
 
 export default function Login() {
   const router = useRouter()
@@ -17,6 +39,18 @@ export default function Login() {
   const [erroSenha, setErroSenha] = useState<string | null>(null)
   const [erroGeral, setErroGeral] = useState<string | null>(null)
   const [carregando, setCarregando] = useState(false)
+
+  /**
+   * Quem opera mais de uma loja entra e DEPOIS escolhe — US-059.
+   *
+   * Enquanto tem valor, a lista SUBSTITUI o formulario. A senha ja foi aceita,
+   * e deixar os campos na tela convida a pessoa a digitar de novo.
+   *
+   * Nao e passo a mais para todo mundo: com uma loja so, a api ja escolheu e
+   * esta tela nem aparece.
+   */
+  const [escolhendo, setEscolhendo] = useState<readonly LojaDaSessao[] | null>(null)
+  const [nome, setNome] = useState('')
 
   async function submeter() {
     const eCred = validateCredential(credencial)
@@ -30,15 +64,40 @@ export default function Login() {
 
     const r = await entrar(credencial, senha)
 
-    if (!r.ok) {
+    if (r.estado === 'falhou') {
       setErroGeral(r.erro)
       setCarregando(false)
       return
     }
 
-    /* `entrar` ja guardou a sessao e o token — inclusive a escolha de loja,
-       que precisa do token da primeira resposta para ser autenticada. Chamar
-       `abrirSessao` aqui de novo sobrescreveria com dados incompletos. */
+    if (r.estado === 'escolher-loja') {
+      setNome(r.nome)
+      setEscolhendo(r.lojas)
+      setCarregando(false)
+      return
+    }
+
+    entrarNoApp()
+  }
+
+  async function selecionar(companyId: string) {
+    setErroGeral(null)
+    setCarregando(true)
+
+    const r = await escolherLoja(companyId)
+
+    if (r.estado !== 'pronto') {
+      setErroGeral(r.estado === 'falhou' ? r.erro : 'Nao deu para abrir esta loja.')
+      setCarregando(false)
+      return
+    }
+
+    entrarNoApp()
+  }
+
+  function entrarNoApp() {
+    /* `entrar` e `escolherLoja` ja guardaram sessao e token. Chamar
+       `abrirSessao` aqui sobrescreveria com dados incompletos. */
     /* replace e nao push: voltar do app para o login nao faz sentido. */
     router.replace('/inicio')
   }
@@ -56,8 +115,12 @@ export default function Login() {
           </View>
 
           <View style={estilos.cabecalho}>
-            <Text style={estilos.titulo}>Entrar</Text>
-            <Text style={estilos.subtitulo}>Acesse o balcao do seu negocio.</Text>
+            <Text style={estilos.titulo}>{escolhendo === null ? 'Entrar' : 'Qual loja?'}</Text>
+            <Text style={estilos.subtitulo}>
+              {escolhendo === null
+                ? 'Acesse o balcao do seu negocio.'
+                : `Ola, ${primeiroNome(nome)}. Voce tem acesso a mais de uma.`}
+            </Text>
           </View>
 
           {erroGeral ? (
@@ -66,50 +129,62 @@ export default function Login() {
             </View>
           ) : null}
 
-          <View style={estilos.campos}>
-            <Campo
-              rotulo="E-mail ou telefone"
-              valor={credencial}
-              onChange={(v) => {
-                setCredencial(v)
-                if (erroCredencial) setErroCredencial(validateCredential(v))
-              }}
-              erro={erroCredencial}
-              placeholder="voce@empresa.com.br"
-              tipoTeclado="email-address"
-              autoCap="none"
-              editavel={!carregando}
-            />
+          {escolhendo === null ? (
+            <>
+              <View style={estilos.campos}>
+                <Campo
+                  rotulo="E-mail ou telefone"
+                  valor={credencial}
+                  onChange={(v) => {
+                    setCredencial(v)
+                    if (erroCredencial) setErroCredencial(validateCredential(v))
+                  }}
+                  erro={erroCredencial}
+                  placeholder="voce@empresa.com.br"
+                  tipoTeclado="email-address"
+                  autoCap="none"
+                  editavel={!carregando}
+                />
 
-            <Campo
-              rotulo="Senha"
-              valor={senha}
-              onChange={(v) => {
-                setSenha(v)
-                if (erroSenha) setErroSenha(validateLoginPassword(v))
-              }}
-              erro={erroSenha}
-              senha
-              autoCap="none"
-              editavel={!carregando}
-            />
-          </View>
+                <Campo
+                  rotulo="Senha"
+                  valor={senha}
+                  onChange={(v) => {
+                    setSenha(v)
+                    if (erroSenha) setErroSenha(validateLoginPassword(v))
+                  }}
+                  erro={erroSenha}
+                  senha
+                  autoCap="none"
+                  editavel={!carregando}
+                />
+              </View>
 
-          <Botao onPress={submeter} carregando={carregando} largura>
-            {carregando ? 'Entrando...' : 'Entrar'}
-          </Botao>
+              <Botao onPress={submeter} carregando={carregando} largura>
+                {carregando ? 'Entrando...' : 'Entrar'}
+              </Botao>
 
-          {/* --------------------------------------------------------------
-              APOIO A DEMONSTRACAO — remover ao ligar o backend.
-             -------------------------------------------------------------- */}
-          <View style={estilos.demo}>
-            <Text style={estilos.demoTitulo}>Modo demonstracao</Text>
-            <Text style={estilos.demoTexto}>Qualquer e-mail com senha de 6+ caracteres entra.</Text>
-          </View>
-
-          <Text style={estilos.rodape}>
-            Criar conta e gerenciar assinatura ficam no site — este app e o balcao.
-          </Text>
+              <Text style={estilos.rodape}>
+                Criar conta e gerenciar assinatura ficam no site — este app e o balcao.
+              </Text>
+            </>
+          ) : (
+            <View style={estilos.lojas}>
+              {escolhendo.map((loja) => (
+                <Pressable
+                  key={loja.companyId}
+                  onPress={() => void selecionar(loja.companyId)}
+                  disabled={carregando}
+                  style={({ pressed }) => [estilos.loja, pressed && estilos.lojaPressionada]}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Entrar em ${loja.companyName} como ${PAPEL[loja.role] ?? loja.role}`}
+                >
+                  <Text style={estilos.lojaNome}>{loja.companyName}</Text>
+                  <Text style={estilos.lojaPapel}>{PAPEL[loja.role] ?? loja.role}</Text>
+                </Pressable>
+              ))}
+            </View>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -152,22 +227,25 @@ const estilos = StyleSheet.create({
 
   campos: { gap: espaco.lg },
 
-  demo: {
-    padding: espaco.lg,
+  /*
+   * A lista de lojas. Alvo de toque generoso (56 de altura minima): a pessoa
+   * escolhe em pe, com uma mao — RNF-053.
+   */
+  lojas: { gap: espaco.sm, marginTop: espaco.md },
+  loja: {
+    minHeight: 56,
+    justifyContent: 'center',
+    gap: 2,
+    paddingHorizontal: espaco.lg,
+    paddingVertical: espaco.md,
+    borderRadius: raio.md,
+    backgroundColor: cores.superficie,
     borderWidth: 1,
-    borderStyle: 'dashed',
     borderColor: cores.borda,
-    borderRadius: raio.sm,
-    gap: espaco.xs,
   },
-  demoTitulo: {
-    fontSize: fonte.micro,
-    fontWeight: peso.forte,
-    color: cores.textoFraco,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  demoTexto: { fontSize: fonte.pequeno, color: cores.textoFraco },
+  lojaPressionada: { borderColor: cores.acento },
+  lojaNome: { fontSize: fonte.corpo, fontWeight: peso.forte, color: cores.texto },
+  lojaPapel: { fontSize: fonte.micro, color: cores.textoFraco },
 
   rodape: {
     fontSize: fonte.micro,

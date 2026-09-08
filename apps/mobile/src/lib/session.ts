@@ -27,11 +27,36 @@ import * as SecureStore from 'expo-secure-store'
 const CHAVE_PERFIL = 'eibuddy:perfil'
 const CHAVE_TOKEN = 'eibuddy:token'
 
-/** O que a interface precisa mostrar sobre quem entrou. */
+/** Uma loja a que a pessoa tem acesso. */
+export type LojaDaSessao = {
+  readonly companyId: string
+  readonly companyName: string
+  readonly role: string
+}
+
+/**
+ * O que a interface precisa mostrar sobre quem entrou.
+ *
+ * `empresaId` e `lojas` entraram junto com a escolha de loja. Antes a sessao
+ * guardava so o NOME da empresa ativa, e com isso:
+ *
+ * - o menu nao tinha como dizer em qual loja a pessoa esta — e nao dizia;
+ * - trocar de loja era impossivel sem sair e entrar de novo, porque a lista de
+ *   vinculos se perdia depois do login.
+ */
 export type Sessao = {
   userId: string
   nome: string
   empresa: string
+  /**
+   * Nulo enquanto a pessoa nao escolheu, e isso e estado LEGITIMO.
+   *
+   * Acontece entre o login e a escolha, e sobrevive a fechar o app no meio: a
+   * porta de entrada manda quem esta assim de volta para escolher, em vez de
+   * abrir o painel sem empresa e falhar em toda chamada.
+   */
+  empresaId: string | null
+  readonly lojas: readonly LojaDaSessao[]
 }
 
 export async function abrirSessao(sessao: Sessao, token: string): Promise<void> {

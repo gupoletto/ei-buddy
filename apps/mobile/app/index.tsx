@@ -19,7 +19,19 @@ export default function Entrada() {
 
     async function verificar() {
       const sessao = await lerSessao()
-      if (!cancelado) setEstado(sessao ? 'logado' : 'deslogado')
+
+      /*
+       * Sessao SEM loja escolhida volta para o login, e nao para o painel.
+       *
+       * E o estado de quem fechou o app entre entrar e escolher a loja: o token
+       * esta guardado e valido, mas nenhuma empresa esta ativa. Deixar passar
+       * abriria o painel com toda chamada falhando, sem nada explicando.
+       *
+       * `empresaId === undefined` cobre quem ja tinha sessao antes deste campo
+       * existir: entrar de novo custa um login e evita um app que nao funciona.
+       */
+      const pronta = sessao !== null && typeof sessao.empresaId === 'string'
+      if (!cancelado) setEstado(pronta ? 'logado' : 'deslogado')
     }
 
     void verificar()

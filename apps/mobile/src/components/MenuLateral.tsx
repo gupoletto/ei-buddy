@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { usePathname, useRouter } from 'expo-router'
 import type { DrawerContentComponentProps } from 'expo-router/drawer'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { encerrarSessao } from '@/lib/session'
+import { escolherLoja } from '@/lib/auth-api'
+import { encerrarSessao, lerSessao, type Sessao } from '@/lib/session'
 import { cores, espaco, fonte, peso, raio } from '@/theme/tokens'
 
 type Item = { rota: string; rotulo: string }
@@ -83,6 +84,50 @@ export default function MenuLateral(props: DrawerContentComponentProps) {
     router.push(rota as never)
   }
 
+  /*
+   * A sessao e lida aqui, e nao recebida por prop: o menu e montado pelo
+   * Drawer, que nao passa nada nosso. Ler no efeito custa uma leitura de
+   * AsyncStorage por abertura — barato, e mantem o nome da loja em dia depois
+   * de uma troca.
+   */
+  const [sessao, setSessao] = useState<Sessao | null>(null)
+  const [trocando, setTrocando] = useState(false)
+  const [trocandoPara, setTrocandoPara] = useState<string | null>(null)
+
+  const recarregarSessao = useCallback(async () => {
+    setSessao(await lerSessao())
+  }, [])
+
+  useEffect(() => {
+    void recarregarSessao()
+  }, [recarregarSessao])
+
+  /**
+   * Troca de loja sem sair — US-059.
+   *
+   * Volta para a tela inicial de proposito. A tela aberta pode ser o detalhe de
+   * uma venda ou de um cliente da loja ANTERIOR, e mante-la depois da troca
+   * mostraria "nao encontrado" — ou, pior, deixaria a pessoa achando que aquele
+   * dado e da loja nova.
+   */
+  async function trocarDeLoja(companyId: string) {
+    setTrocandoPara(companyId)
+
+    const r = await escolherLoja(companyId)
+
+    setTrocandoPara(null)
+
+    if (r.estado !== 'pronto') {
+      /* Nao troca e nao mente: o nome no menu continua o da loja de verdade. */
+      return
+    }
+
+    setTrocando(false)
+    await recarregarSessao()
+    props.navigation.closeDrawer()
+    router.replace('/inicio')
+  }
+
   async function sair() {
     await encerrarSessao()
     props.navigation.closeDrawer()
@@ -94,6 +139,55 @@ export default function MenuLateral(props: DrawerContentComponentProps) {
       <View style={estilos.marca}>
         <Text style={estilos.marcaNome}>Ei Buddy</Text>
       </View>
+
+      {/*
+        A loja ATIVA, sempre visivel.
+        A sessao guardava o nome dela desde sempre e nenhuma tela o mostrava —
+        um comentario no `auth-api` chegava a afirmar que "o menu lateral mostra
+        qual e". Nao mostrava. Quem opera mais de uma loja nao tinha como saber
+        em qual estava, e lancar no lugar errado nao dava nenhum sinal.
+      */}
+      {sessao !== null && sessao.empresa !== '' ? (
+        <Pressable
+          onPress={() => setTrocando((v) => !v)}
+          disabled={sessao.lojas.length < 2}
+          style={({ pressed }) => [estilos.loja, pressed && estilos.lojaPressionada]}
+          accessibilityRole={sessao.lojas.length < 2 ? 'text' : 'button'}
+          accessibilityLabel={
+            sessao.lojas.length < 2
+              ? `Loja ativa: ${sessao.empresa}`
+              : `Loja ativa: ${sessao.empresa}. Toque para trocar.`
+          }
+        >
+          <Text style={estilos.lojaRotulo}>Loja</Text>
+          <Text style={estilos.lojaNome} numberOfLines={1}>
+            {sessao.empresa}
+          </Text>
+          {sessao.lojas.length > 1 ? (
+            <Text style={estilos.lojaTrocar}>{trocando ? 'fechar' : 'trocar'}</Text>
+          ) : null}
+        </Pressable>
+      ) : null}
+
+      {trocando && sessao !== null ? (
+        <View style={estilos.outras}>
+          {sessao.lojas
+            .filter((l) => l.companyId !== sessao.empresaId)
+            .map((l) => (
+              <Pressable
+                key={l.companyId}
+                onPress={() => void trocarDeLoja(l.companyId)}
+                disabled={trocandoPara !== null}
+                style={({ pressed }) => [estilos.outra, pressed && estilos.lojaPressionada]}
+                accessibilityRole="button"
+              >
+                <Text style={estilos.outraNome} numberOfLines={1}>
+                  {trocandoPara === l.companyId ? 'Abrindo...' : l.companyName}
+                </Text>
+              </Pressable>
+            ))}
+        </View>
+      ) : null}
 
       <ScrollView contentContainerStyle={estilos.lista}>
         {GRUPOS.map((g) => {
@@ -155,6 +249,33 @@ const estilos = StyleSheet.create({
     paddingHorizontal: espaco.lg,
     paddingBottom: espaco.lg,
   },
+  /* A loja ativa. Alvo de toque de 56 — a pessoa troca em pe, com uma mao. */
+  loja: {
+    minHeight: 56,
+    justifyContent: 'center',
+    gap: 1,
+    marginTop: espaco.md,
+    paddingHorizontal: espaco.md,
+    paddingVertical: espaco.sm,
+    borderRadius: raio.md,
+    backgroundColor: cores.superficie,
+    borderWidth: 1,
+    borderColor: cores.borda,
+  },
+  lojaPressionada: { borderColor: cores.acento },
+  lojaRotulo: { fontSize: fonte.micro, color: cores.textoFraco },
+  lojaNome: { fontSize: fonte.pequeno, fontWeight: peso.forte, color: cores.texto },
+  lojaTrocar: { fontSize: fonte.micro, color: cores.acento },
+  outras: { gap: 2, marginTop: espaco.xs },
+  outra: {
+    minHeight: 48,
+    justifyContent: 'center',
+    paddingHorizontal: espaco.md,
+    borderRadius: raio.md,
+    backgroundColor: cores.campo,
+  },
+  outraNome: { fontSize: fonte.pequeno, color: cores.texto },
+
   marcaNome: { fontSize: fonte.medio, fontWeight: peso.pesado, color: cores.texto },
 
   lista: { paddingHorizontal: espaco.md, gap: espaco.sm, paddingBottom: espaco.lg },

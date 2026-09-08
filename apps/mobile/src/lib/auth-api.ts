@@ -1,5 +1,5 @@
 import { chamarApi } from './api'
-import { abrirSessao } from './session'
+import { abrirSessao, type LojaDaSessao } from './session'
 /**
  * ============================================================================
  * PONTOS DE INTEGRACAO — AUTENTICACAO (MOBILE)
@@ -14,19 +14,23 @@ import { abrirSessao } from './session'
  * so no web — aqui o lojista entra com uma conta que ja existe.
  */
 
-export type Usuario = {
-  nome: string
-  email: string
-  empresa: string
-}
-
-export type ResultadoLogin = { ok: true; usuario: Usuario } | { ok: false; erro: string }
-
 /**
- * SUBSTITUIR POR: POST /auth/login
+ * O desfecho do login, como UNIAO de TRES estados.
  *
- * Sem backend, qualquer credencial com senha de 6+ caracteres entra.
+ * Tres e nao dois, porque "entrou" e "falta escolher a loja" sao situacoes
+ * diferentes e a tela faz coisas diferentes com elas. Espremer as duas num
+ * `ok: true` obrigaria a tela a adivinhar pelo conteudo — e foi por nao existir
+ * esse terceiro estado que a versao anterior simplesmente ESCOLHIA a primeira
+ * loja sozinha.
+ *
+ * Nenhum deles devolve o usuario: quem precisa dele le a sessao, que ja foi
+ * gravada. O `Usuario` que existia aqui nao era lido por ninguem.
  */
+export type ResultadoLogin =
+  | { estado: 'pronto' }
+  | { estado: 'escolher-loja'; nome: string; lojas: readonly LojaDaSessao[] }
+  | { estado: 'falhou'; erro: string }
+
 type SessaoDaApi = {
   token: string
   userId: string
@@ -36,11 +40,18 @@ type SessaoDaApi = {
 }
 
 /**
- * Entra e guarda a sessao — RF-119, RF-120.
+ * Entra — RF-119, RF-120, US-059.
  *
- * Com UMA loja, escolhe sozinho e devolve pronto. Com varias, seria preciso
- * perguntar — e o app ainda nao tem essa tela. Por enquanto entra na primeira e
- * o menu lateral mostra qual e; a troca de loja e a NR-078 em diante.
+ * ## A loja deixou de ser sorteada
+ *
+ * Quem tem acesso a mais de uma loja caia na PRIMEIRA da lista, em silencio. O
+ * comentario que estava aqui tratava isso como tela faltando; a consequencia e
+ * maior. O contador que atende cinco lojas entrava numa qualquer, e a venda ou
+ * a conta que ele lancasse ia para a empresa errada — com o isolamento por RLS
+ * funcionando perfeitamente, o que torna o erro INVISIVEL: nada falha, nada
+ * avisa, o dado so esta no lugar errado.
+ *
+ * Agora quem pergunta e a tela, como no web.
  *
  * A mensagem de falha e a MESMA para usuario inexistente e senha errada, e vem
  * da api — RF-120 pede nao revelar se a conta existe, e reescrever aqui
@@ -52,43 +63,68 @@ export async function entrar(credencial: string, senha: string): Promise<Resulta
     body: { identifier: credencial, secret: senha },
   })
 
-  if (!r.ok) return { ok: false, erro: r.message }
+  if (!r.ok) return { estado: 'falhou', erro: r.message }
 
-  let sessao = r.dados
+  const sessao = r.dados
 
-  if (sessao.activeCompanyId === null) {
-    const primeira = sessao.memberships[0]
-
-    if (primeira === undefined) {
-      return {
-        ok: false,
-        erro: 'Sua conta ainda nao esta ligada a nenhuma loja. Fale com quem administra.',
-      }
+  if (sessao.memberships.length === 0) {
+    return {
+      estado: 'falhou',
+      erro: 'Sua conta ainda nao esta ligada a nenhuma loja. Fale com quem administra.',
     }
-
-    /*
-     * O token da PRIMEIRA resposta ja precisa estar guardado: a chamada de
-     * escolher loja e autenticada, e sem isso ela sairia sem `Authorization`
-     * e receberia 401.
-     */
-    await abrirSessao(
-      { userId: sessao.userId, nome: sessao.userName, empresa: primeira.companyName },
-      sessao.token,
-    )
-
-    const escolha = await chamarApi<SessaoDaApi>('/auth/select-company', {
-      method: 'POST',
-      body: { companyId: primeira.companyId },
-    })
-
-    if (!escolha.ok) return { ok: false, erro: escolha.message }
-    sessao = escolha.dados
   }
 
-  const ativa =
-    sessao.memberships.find((m) => m.companyId === sessao.activeCompanyId)?.companyName ?? ''
+  /*
+   * O token da PRIMEIRA resposta ja precisa estar guardado, mesmo com a loja
+   * ainda por escolher: a chamada de escolher e autenticada, e sem isso ela
+   * sairia sem `Authorization` e receberia 401.
+   *
+   * `empresaId: null` marca o meio do caminho. Se o app fechar aqui, a porta de
+   * entrada ve o nulo e devolve a pessoa para a escolha, em vez de abrir o
+   * painel sem empresa e falhar em toda chamada.
+   */
+  await gravar(sessao, null)
 
-  await abrirSessao({ userId: sessao.userId, nome: sessao.userName, empresa: ativa }, sessao.token)
+  if (sessao.activeCompanyId === null) {
+    return { estado: 'escolher-loja', nome: sessao.userName, lojas: sessao.memberships }
+  }
 
-  return { ok: true, usuario: { nome: sessao.userName, email: credencial, empresa: ativa } }
+  /* Uma loja so: a api ja escolheu, e perguntar entre uma opcao e cerimonia. */
+  await gravar(sessao, sessao.activeCompanyId)
+  return { estado: 'pronto' }
+}
+
+/**
+ * Fecha a sessao numa loja — US-059.
+ *
+ * Exportada porque serve a dois momentos: a escolha logo apos o login e a troca
+ * de loja pelo menu. Sao a mesma operacao, e duas implementacoes seriam duas
+ * chances de divergir.
+ */
+export async function escolherLoja(companyId: string): Promise<ResultadoLogin> {
+  const r = await chamarApi<SessaoDaApi>('/auth/select-company', {
+    method: 'POST',
+    body: { companyId },
+  })
+
+  if (!r.ok) return { estado: 'falhou', erro: r.message }
+
+  await gravar(r.dados, r.dados.activeCompanyId)
+  return { estado: 'pronto' }
+}
+
+/** Grava perfil e token. `empresaId` nulo e o estado de "falta escolher". */
+async function gravar(sessao: SessaoDaApi, empresaId: string | null): Promise<void> {
+  const ativa = sessao.memberships.find((m) => m.companyId === empresaId)
+
+  await abrirSessao(
+    {
+      userId: sessao.userId,
+      nome: sessao.userName,
+      empresa: ativa?.companyName ?? '',
+      empresaId,
+      lojas: sessao.memberships,
+    },
+    sessao.token,
+  )
 }
