@@ -55,6 +55,28 @@ describe('RLS por linha — RF-121, RF-122', () => {
     await expect(app`SELECT id FROM customers`).rejects.toThrow(/app\.company_id/)
   })
 
+  it('partners e coupons sao da plataforma: leitura sem app.company_id', async () => {
+    const partnerId = randomUUID()
+    const couponId = randomUUID()
+    await admin`
+      INSERT INTO partners (id, name) VALUES (${partnerId}, 'Clube X')
+    `
+    await admin`
+      INSERT INTO coupons (id, partner_id, code, kind, percent)
+      VALUES (${couponId}, ${partnerId}, 'CLUBEX10', 'percent', 10)
+    `
+
+    const partners = await app<{ id: string; name: string }[]>`
+      SELECT id, name FROM partners WHERE id = ${partnerId}
+    `
+    expect(partners).toEqual([{ id: partnerId, name: 'Clube X' }])
+
+    const coupons = await app<{ id: string; code: string }[]>`
+      SELECT id, code FROM coupons WHERE id = ${couponId}
+    `
+    expect(coupons).toEqual([{ id: couponId, code: 'CLUBEX10' }])
+  })
+
   it('com tenant, nao enxerga linha de outra empresa — RF-122', async () => {
     await admin`
       INSERT INTO customers (id, company_id, name) VALUES

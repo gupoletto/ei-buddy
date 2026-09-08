@@ -43,7 +43,7 @@ Público: desenvolvedores.
 | [`arquitetura/esquema-postgresql.md`](arquitetura/esquema-postgresql.md)     | Catálogo físico: tabelas, colunas, CHECKs, índices e políticas RLS           |
 | [`arquitetura/seguranca.md`](arquitetura/seguranca.md)                       | Autenticação, autorização, gestão de segredos e conformidade com a LGPD      |
 | [`arquitetura/modulos.md`](arquitetura/modulos.md)                           | Tabela-índice de todos os módulos, com fronteiras e donos                    |
-| [`arquitetura/integracoes/`](arquitetura/integracoes/)                       | Provedores: [Focus](arquitetura/integracoes/focusnfe.md), [Asaas](arquitetura/integracoes/asaas.md) ([fluxo](arquitetura/integracoes/fluxo-asaas.md), [split](arquitetura/integracoes/split-decision.md)) |
+| [`arquitetura/integracoes/`](arquitetura/integracoes/)                       | Provedores: [Focus](arquitetura/integracoes/focusnfe.md), [Asaas](arquitetura/integracoes/asaas.md) ([fluxo](arquitetura/integracoes/fluxo-asaas.md), [split](arquitetura/integracoes/split-decision.md)); [dúvidas do banco](arquitetura/integracoes/duvidas-db.md) |
 
 ### 🔧 Engenharia — _como trabalhamos_
 

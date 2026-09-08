@@ -254,9 +254,14 @@ dado de lojista é outra, e exige base legal e consentimento próprios
 | **Prazo**    | Sprint 3                                                                                                           |
 | **Bloqueia** | [RF-114](../produto/requisitos-funcionais.md), RF-115 · [US-056](../produto/user-stories.md#us-056--aplicar-cupom) |
 
-O web já tem autocadastro e campo de cupom no signup. **Ainda decidir:** cupom
-é desconto percentual, valor fixo ou período grátis? Cumulativo? Quem emite?
-Indicação entre lojistas?
+O web já tem autocadastro e campo de cupom no signup.
+
+**Já no schema:** quem emite é `partners` (Clube X emite vários códigos);
+desconto é `percent` ou `amount`; duração é `discount_cycles` (`NULL` = todos
+os ciclos). Revogação (`revoked_at`) e validade (`expires_at`) também.
+
+**Ainda decidir:** período grátis (além de desconto)? Cumulativo? Indicação
+entre lojistas?
 
 Convite de funcionário **não** está nesta DEC — é [ADR-0004](adr/0004-usuario-uma-empresa.md)
 (staff depois, mesma empresa).

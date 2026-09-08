@@ -166,9 +166,16 @@ CREATE TABLE inventory_movements (
   company_id uuid NOT NULL REFERENCES companies (id),
   product_id uuid NOT NULL REFERENCES products (id),
   quantity_delta integer NOT NULL,
+  stock_before integer NOT NULL,
+  stock_after integer NOT NULL,
   reason text NOT NULL,
   sale_id uuid,
-  created_at timestamptz NOT NULL DEFAULT now()
+  purchase_id uuid,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT inventory_movements_stock_snapshot_check
+    CHECK (stock_after = stock_before + quantity_delta),
+  CONSTRAINT inventory_movements_origin_exclusive_check
+    CHECK (sale_id IS NULL OR purchase_id IS NULL)
 );
 
 CREATE INDEX inventory_movements_company_created_idx ON inventory_movements (company_id, created_at DESC);
@@ -452,23 +459,40 @@ CREATE TABLE confirmations (
 CREATE INDEX confirmations_company_expires_idx ON confirmations (company_id, expires_at);
 
 -- H — assinatura SaaS (conta-pai Asaas). Cupom e da plataforma, sem tenant.
+-- partners: quem emite o cupom (Clube X). Nao e split PagMaxx/Asaas.
+CREATE TABLE partners (
+  id uuid PRIMARY KEY,
+  name text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT partners_name_unique UNIQUE (name)
+);
+
 CREATE TABLE coupons (
   id uuid PRIMARY KEY,
+  partner_id uuid NOT NULL REFERENCES partners (id),
   code text NOT NULL,
   kind text NOT NULL,
   percent numeric(7, 4),
   amount_cents bigint,
   expires_at timestamptz,
+  revoked_at timestamptz,
+  discount_cycles integer,
   max_redemptions integer,
   redeemed_count integer NOT NULL DEFAULT 0,
   created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT coupons_code_unique UNIQUE (code),
   CONSTRAINT coupons_kind_check CHECK (kind IN ('percent', 'amount')),
   CONSTRAINT coupons_value_check CHECK (
     (kind = 'percent' AND percent IS NOT NULL AND amount_cents IS NULL)
     OR (kind = 'amount' AND amount_cents IS NOT NULL AND percent IS NULL)
+  ),
+  CONSTRAINT coupons_discount_cycles_check CHECK (
+    discount_cycles IS NULL OR discount_cycles >= 1
   )
 );
+CREATE INDEX coupons_partner_id_idx ON coupons (partner_id);
 
 CREATE TABLE subscriptions (
   id uuid PRIMARY KEY,

@@ -7,7 +7,7 @@ em [`dados.md`](dados.md). Este arquivo descreve **o que o Postgres tem hoje**.
 SQL versionado: [`packages/db/migrations/0001_init.sql`](../../packages/db/migrations/0001_init.sql).
 Tipos Drizzle: [`packages/db/src/schema.ts`](../../packages/db/src/schema.ts).
 
-34 tabelas. Sem PagMaxx. Sem tabela de Split
+35 tabelas. Sem PagMaxx. Sem tabela de Split
 ([DEC-018](../decisoes/README.md#dec-018) — `wallet_id` já está em
 `company_asaas`). Focus e Asaas são satélites 1:0..1: a linha só existe quando
 há emissão, KYC ou cobrança online.
@@ -30,8 +30,9 @@ Detalhe e motivo em [`dados.md`](dados.md#convenções-de-schema). Em resumo:
 | Índice          | começa por `company_id`                                                                       |
 
 **Exceções de tenant:** `companies` (a PK *é* o tenant); `users.company_id`
-nulo até `/app/empresa`; `coupons` é da plataforma, sem `company_id` e sem RLS;
-`webhook_events.company_id` nulo no insert (inbox ainda sem tenant).
+nulo até `/app/empresa`; `partners` e `coupons` são da plataforma, sem
+`company_id` e sem RLS; `webhook_events.company_id` nulo no insert (inbox ainda
+sem tenant).
 
 ---
 
@@ -86,6 +87,7 @@ erDiagram
     CONVERSATIONS ||--|{ MESSAGES : "contem"
     CONVERSATIONS ||--o{ CONFIRMATIONS : "acao sensivel"
 
+    PARTNERS ||--o{ COUPONS : "emite"
     COUPONS ||--o{ SUBSCRIPTIONS : "desconto"
     SUBSCRIPTIONS ||--o| SUBSCRIPTION_ASAAS : "conta-pai"
     SUBSCRIPTIONS ||--o{ SUBSCRIPTION_CHARGES : "ciclos"
@@ -99,7 +101,7 @@ erDiagram
 | Financeiro             | `ledger_accounts`, `receivables`, `payables`, `settlements`                                                  | sim                          |
 | Agenda / CRM / suporte | `appointments`, `crm_cards`, `support_tickets`, `ticket_messages`                                            | sim                          |
 | Assistente             | `conversations`, `messages`, `confirmations`                                                                 | sim                          |
-| Assinatura SaaS        | `subscriptions`, `subscription_asaas`, `subscription_charges`, `coupons`                                     | `coupons` **não**            |
+| Assinatura SaaS        | `subscriptions`, `subscription_asaas`, `subscription_charges`, `partners`, `coupons`                         | `partners` e `coupons` **não** |
 | Plataforma             | `attachments`, `idempotency_keys`, `outbox`, `audit_logs`, `webhook_events`                                  | `webhook_events` **não**     |
 
 ---
@@ -279,15 +281,27 @@ Checagem fiscal: produto não leva código de serviço; serviço não leva `ncm`
 
 ### `inventory_movements`
 
-| Coluna           | Tipo                   | Notas                         |
-| ---------------- | ---------------------- | ----------------------------- |
-| `id`             | `uuid` PK              |                               |
-| `company_id`     | `uuid NOT NULL`        | → `companies`                 |
-| `product_id`     | `uuid NOT NULL`        | → `products`                  |
-| `quantity_delta` | `integer NOT NULL`     |                               |
-| `reason`         | `text NOT NULL`        |                               |
-| `sale_id`        | `uuid`                 | → `sales` (depois da criação) |
-| `created_at`     | `timestamptz NOT NULL` | sem `updated_at`              |
+Histórico de saldo. `products.stock` continua a fonte da verdade na tela;
+cada movimento grava o snapshot **na mesma transação** que atualiza o produto.
+
+`stock_after = stock_before + quantity_delta` (CHECK). Delta positivo entra
+(compra / ajuste); negativo sai (venda / ajuste). `sale_id` e `purchase_id`
+não convivem na mesma linha (ajuste: os dois nulos).
+
+`purchase_id` ainda **não** tem FK: tabela `purchases` está fora do recorte A–J.
+
+| Coluna           | Tipo                   | Notas                                              |
+| ---------------- | ---------------------- | -------------------------------------------------- |
+| `id`             | `uuid` PK              |                                                    |
+| `company_id`     | `uuid NOT NULL`        | → `companies`                                      |
+| `product_id`     | `uuid NOT NULL`        | → `products`                                       |
+| `quantity_delta` | `integer NOT NULL`     | + entra, − sai                                     |
+| `stock_before`   | `integer NOT NULL`     | saldo imediatamente **antes** do movimento         |
+| `stock_after`    | `integer NOT NULL`     | saldo **depois** (`stock_before + quantity_delta`) |
+| `reason`         | `text NOT NULL`        |                                                    |
+| `sale_id`        | `uuid`                 | → `sales` (depois da criação); baixa de venda      |
+| `purchase_id`    | `uuid`                 | entrada por compra; sem FK até existir `purchases` |
+| `created_at`     | `timestamptz NOT NULL` | sem `updated_at`                                   |
 
 Índice: `(company_id, created_at DESC)`.
 
@@ -604,25 +618,45 @@ Ação sensível do agente, com expiração.
 
 ## Assinatura SaaS
 
-Cobrança na **conta-pai** Asaas. Cupom é da plataforma, sem tenant.
+Cobrança na **conta-pai** Asaas. Parceiro e cupom são da plataforma, sem tenant.
+Não é o `partner` de split PagMaxx/Asaas ([DEC-018](../decisoes/README.md#dec-018)).
+
+### `partners`
+
+Quem emite o cupom (Clube X, Associação Comercial). **Sem** `company_id` e **sem** RLS. Um parceiro emite vários cupons.
+
+| Coluna       | Tipo                   | Notas    |
+| ------------ | ---------------------- | -------- |
+| `id`         | `uuid` PK              |          |
+| `name`       | `text NOT NULL`        | `UNIQUE` |
+| `created_at` | `timestamptz NOT NULL` |          |
+| `updated_at` | `timestamptz NOT NULL` |          |
 
 ### `coupons`
 
 **Sem** `company_id` e **sem** RLS.
 
-| Coluna            | Tipo                   | Notas                                              |
-| ----------------- | ---------------------- | -------------------------------------------------- |
-| `id`              | `uuid` PK              |                                                    |
-| `code`            | `text NOT NULL`        | `UNIQUE`                                           |
-| `kind`            | `text NOT NULL`        | `percent` \| `amount`                              |
-| `percent`         | `numeric(7, 4)`        | obrigatório se `kind = percent`                    |
-| `amount_cents`    | `bigint`               | obrigatório se `kind = amount`                     |
-| `expires_at`      | `timestamptz`          |                                                    |
-| `max_redemptions` | `integer`              |                                                    |
-| `redeemed_count`  | `integer NOT NULL`     | default `0`                                        |
-| `created_at`      | `timestamptz NOT NULL` |                                                    |
+| Coluna             | Tipo                   | Notas                                                         |
+| ------------------ | ---------------------- | ------------------------------------------------------------- |
+| `id`               | `uuid` PK              |                                                               |
+| `partner_id`       | `uuid NOT NULL`        | → `partners`                                                  |
+| `code`             | `text NOT NULL`        | `UNIQUE` — o que o lojista digita no signup                   |
+| `kind`             | `text NOT NULL`        | `percent` \| `amount`                                         |
+| `percent`          | `numeric(7, 4)`        | obrigatório se `kind = percent`                               |
+| `amount_cents`     | `bigint`               | obrigatório se `kind = amount`                                |
+| `expires_at`       | `timestamptz`          | nulo = sem validade de calendário                             |
+| `revoked_at`       | `timestamptz`          | nulo = vigente; preenchido = código morto sem apagar a linha  |
+| `discount_cycles`  | `integer`              | nulo = todos os ciclos; `1` = só o primeiro; `≥ 1` se preenchido |
+| `max_redemptions`  | `integer`              |                                                               |
+| `redeemed_count`   | `integer NOT NULL`     | default `0`                                                   |
+| `created_at`       | `timestamptz NOT NULL` |                                                               |
+| `updated_at`       | `timestamptz NOT NULL` |                                                               |
 
-`kind` e valor são mutuamente exclusivos (CHECK).
+`kind` e valor são mutuamente exclusivos (CHECK). `discount_cycles` nulo ou `≥ 1` (CHECK).
+
+Cupom aceito na aplicação (não é CHECK com `now()`): `revoked_at` nulo, `expires_at` nulo ou futuro, e cota (`max_redemptions`) ainda disponível.
+
+Índice: `(partner_id)`.
 
 ### `subscriptions`
 
@@ -761,7 +795,7 @@ Papel da aplicação: `naregua_app` (`NOSUPERUSER`, sem `BYPASSRLS`). Superuser
 do container (`naregua`) ignora RLS — a API não o usa.
 [ADR-0001](../decisoes/adr/0001-rls-por-linha.md).
 
-Em toda tabela de negócio listada no mapa (exceto `coupons` e
+Em toda tabela de negócio listada no mapa (exceto `partners`, `coupons` e
 `webhook_events`):
 
 ```sql

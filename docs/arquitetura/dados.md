@@ -111,7 +111,7 @@ erDiagram
 
 ### Agrupamento por módulo dono
 
-34 tabelas no Postgres deste recorte, incluindo satélites Focus/Asaas. Colunas
+35 tabelas no Postgres deste recorte, incluindo satélites Focus/Asaas. Colunas
 e restrições: [`esquema-postgresql.md`](esquema-postgresql.md).
 
 Integrações (Focus, Asaas) são **satélites 1:0..1**, não colunas em
@@ -125,7 +125,7 @@ Integrações (Focus, Asaas) são **satélites 1:0..1**, não colunas em
 | Financeiro             | `receivables`, `payables`, `settlements`, `ledger_accounts`                                              | `core`            |
 | Agenda / CRM / suporte | `appointments`, `crm_cards`, `support_tickets`, `ticket_messages`                                        | `core`            |
 | Assistente             | `conversations`, `messages`, `confirmations`                                                             | `agent`           |
-| Assinatura             | `subscriptions`, `subscription_asaas`, `subscription_charges`, `coupons`                                 | `billing`         |
+| Assinatura             | `subscriptions`, `subscription_asaas`, `subscription_charges`, `partners`, `coupons`                     | `billing`         |
 | Plataforma             | `audit_logs`, `idempotency_keys`, `attachments`, `outbox`, `webhook_events`                              | `core`            |
 
 **Fundido de propósito (não criar tabela):** `categories` e `suppliers` → texto em
@@ -220,6 +220,12 @@ Id do cliente na **subconta**. Linha só quando a cobrança precisa de `customer
 | `category`, `supplier`                                                                                                | `text`, sem tabela                 |
 | `ncm`                                                                                                                 | NFC-e; null em serviço             |
 | `codigo_tributacao_nacional_iss`, `codigo_nbs`                                                                        | NFS-e Nacional; null em mercadoria |
+
+`products.stock` é o saldo atual. Cada alteração gera `inventory_movements`
+com snapshot `stock_before` / `stock_after` (`stock_after = stock_before +
+quantity_delta`). Baixa de venda aponta `sale_id`; entrada por compra aponta
+`purchase_id` (coluna já existe; tabela `purchases` ainda fora do recorte).
+Ajuste: os dois ids nulos.
 
 **Não há** `item_lista_servico`, código municipal LC 116, CFOP nem CSOSN no
 produto. CFOP/CSOSN da NFC-e são padrão do adapter para MEI/Simples.
@@ -404,7 +410,7 @@ Backup não testado não é backup. O teste mensal é requisito, não boa práti
 
 ## Documentos relacionados
 
-- [Esquema PostgreSQL](esquema-postgresql.md) — catálogo físico das 34 tabelas
+- [Esquema PostgreSQL](esquema-postgresql.md) — catálogo físico das 35 tabelas
 - [`packages/db`](../../packages/db/README.md) — implementação do schema
 - [Princípios](principios.md) — a regra de dependência que `db` respeita
 - [Segurança](seguranca.md) — como o isolamento se conecta à autorização

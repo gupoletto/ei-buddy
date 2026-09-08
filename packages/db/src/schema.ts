@@ -219,8 +219,11 @@ export const inventoryMovements = pgTable(
       .notNull()
       .references(() => products.id),
     quantityDelta: integer('quantity_delta').notNull(),
+    stockBefore: integer('stock_before').notNull(),
+    stockAfter: integer('stock_after').notNull(),
     reason: text('reason').notNull(),
     saleId: uuid('sale_id').references(() => sales.id),
+    purchaseId: uuid('purchase_id'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   },
   (t) => [index('inventory_movements_company_created_idx').on(t.companyId, t.createdAt)],
@@ -540,17 +543,32 @@ export const confirmations = pgTable(
   (t) => [index('confirmations_company_expires_idx').on(t.companyId, t.expiresAt)],
 )
 
-export const coupons = pgTable('coupons', {
+export const partners = pgTable('partners', {
   id: uuid('id').primaryKey(),
-  code: text('code').notNull().unique(),
-  kind: text('kind').notNull(),
-  percent: numeric('percent', { precision: 7, scale: 4 }),
-  amountCents: bigint('amount_cents', { mode: 'number' }),
-  expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }),
-  maxRedemptions: integer('max_redemptions'),
-  redeemedCount: integer('redeemed_count').notNull().default(0),
-  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  name: text('name').notNull().unique(),
+  ...timestamps,
 })
+
+export const coupons = pgTable(
+  'coupons',
+  {
+    id: uuid('id').primaryKey(),
+    partnerId: uuid('partner_id')
+      .notNull()
+      .references(() => partners.id),
+    code: text('code').notNull().unique(),
+    kind: text('kind').notNull(),
+    percent: numeric('percent', { precision: 7, scale: 4 }),
+    amountCents: bigint('amount_cents', { mode: 'number' }),
+    expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }),
+    revokedAt: timestamp('revoked_at', { withTimezone: true, mode: 'date' }),
+    discountCycles: integer('discount_cycles'),
+    maxRedemptions: integer('max_redemptions'),
+    redeemedCount: integer('redeemed_count').notNull().default(0),
+    ...timestamps,
+  },
+  (t) => [index('coupons_partner_id_idx').on(t.partnerId)],
+)
 
 export const subscriptions = pgTable('subscriptions', {
   id: uuid('id').primaryKey(),
