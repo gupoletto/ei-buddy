@@ -12,7 +12,7 @@ import {
   type CardCrm,
   type ColunaId,
 } from '@/lib/crm-api'
-import { daysUntil, formatDate } from '@/lib/format'
+import { daysUntil, formatDate, hoje } from '@/lib/format'
 import { Badge, Card, EmptyState, PageHeader, Stat } from '@/components/ui/UI'
 import { Button } from '@/components/ui/Button'
 import Toast from '@/components/ui/Toast'
@@ -404,7 +404,9 @@ function FormCard({
   const [descricao, setDescricao] = useState('')
   const [tipo, setTipo] = useState<'pendencia' | 'contato'>('pendencia')
   const [cliente, setCliente] = useState('')
-  const [data, setData] = useState('2026-08-24')
+  /* O campo de data do cartao novo abria em 24/08/2026 — a pessoa tinha de
+     corrigir a data em todo cartao que criasse. */
+  const [data, setData] = useState(hoje())
   const [responsavel, setResponsavel] = useState('')
 
   /*

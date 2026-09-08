@@ -14,6 +14,7 @@ import { Spinner } from '@/components/auth/Fields'
 import { IconClose } from '@/components/Icons'
 import CampoTag from '@/components/app/CampoTag'
 import styles from './financeiro.module.css'
+import { hoje } from '@/lib/format'
 
 function paraNumero(valor: string): number {
   const limpo = valor.replace(/\./g, '').replace(',', '.')
@@ -21,8 +22,13 @@ function paraNumero(valor: string): number {
   return Number.isFinite(n) ? n : 0
 }
 
-/** Data de hoje no formato do input date. */
-const HOJE = '2026-08-24'
+/*
+ * A EMISSAO abria com uma constante fixa em 24/08/2026 — o vencimento sempre
+ * nasceu vazio e obrigatorio, mas a emissao vinha preenchida com a data
+ * errada. Emissao e a competencia do lancamento: uma conta lancada em setembro
+ * e gravada como emitida em agosto cai no mes errado do DRE, e o mes fechado
+ * muda depois de fechado.
+ */
 
 /**
  * Lancamento de titulo, a pagar ou a receber.
@@ -45,7 +51,7 @@ export default function FormularioTitulo({
   const [banco, setBanco] = useState('')
   const [plano, setPlano] = useState('')
   const [contraparte, setContraparte] = useState('')
-  const [emissao, setEmissao] = useState(HOJE)
+  const [emissao, setEmissao] = useState(hoje())
   const [vencimento, setVencimento] = useState('')
   const [valor, setValor] = useState('')
   const [descricao, setDescricao] = useState('')

@@ -15,31 +15,19 @@ import { pedir, type Resultado } from './http'
 /* Fuso: o banco guarda instante, a tela mostra dia e hora                     */
 /* -------------------------------------------------------------------------- */
 
-/**
- * O dia de hoje, no fuso de quem esta olhando.
+/*
+ * `hoje` e `diaLocal` MORAM em `format.ts` agora.
  *
- * Era a constante `'2026-08-24'`. A agenda abria congelada naquele dia para
- * sempre — "hoje" nunca era hoje, e "proximos compromissos" listava o passado.
+ * Nasceram aqui, ao consertar a agenda congelada em 24/08/2026, e depois se
+ * descobriu que o resto do app tinha a mesma data fixa em outros seis lugares
+ * — inclusive em `daysUntil`, que decide se um titulo esta vencido. Uma
+ * resposta para "que dia e hoje" serve o app inteiro; duas divergem.
  *
- * Nao usa `toISOString()`: ele converte para UTC, e as 21h de Sao Paulo viram
- * o dia seguinte. Para um calendario, um dia de diferenca e um defeito que
- * aparece so para quem abre a tela de noite.
+ * Reexportadas para os consumidores e o teste desta agenda continuarem
+ * apontando para ca.
  */
-export function hoje(): string {
-  return diaLocal(new Date())
-}
-
-/**
- * `AAAA-MM-DD` no fuso local, sem passar por UTC.
- *
- * Exportado para o teste exercitar ESTA funcao, e nao uma copia dela: o
- * defeito que ela evita — as 21h de Sao Paulo virando o dia seguinte — some se
- * o teste reimplementar a conversao do seu jeito.
- */
-export function diaLocal(d: Date): string {
-  const p = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
-}
+export { diaLocal, hoje } from './format'
+import { diaLocal, hoje } from './format'
 
 /** `HH:MM` no fuso local. */
 export function horaLocal(d: Date): string {

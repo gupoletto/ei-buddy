@@ -41,8 +41,50 @@ export function formatDateTime(value: string): string {
   return `${formatted} ${time.slice(0, 5)}`
 }
 
-/** Distancia em dias entre uma data e a referencia (negativo = vencido). */
-export function daysUntil(value: string, reference = '2026-08-24'): number {
+/**
+ * `AAAA-MM-DD` no fuso de quem esta olhando, sem passar por UTC.
+ *
+ * `toISOString()` converte para UTC, e as 21h de Sao Paulo viram o dia
+ * seguinte. Para "vence hoje" e para o dia de um calendario, um dia de
+ * diferenca e um defeito que aparece so para quem abre a tela de noite.
+ *
+ * Estava em `agenda-api.ts`, onde nasceu ao consertar a agenda congelada. Nao
+ * e funcao de agenda: e a resposta a "que dia e hoje", e o app inteiro
+ * pergunta isso.
+ */
+export function diaLocal(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
+}
+
+/** O dia de hoje, no fuso de quem esta olhando. */
+export function hoje(): string {
+  return diaLocal(new Date())
+}
+
+/** O mes de hoje, `AAAA-MM`. */
+export function mesDeHoje(): string {
+  return hoje().slice(0, 7)
+}
+
+/**
+ * Distancia em dias entre uma data e a referencia (negativo = vencido).
+ *
+ * ## A referencia era `'2026-08-24'`
+ *
+ * Fixa, no codigo, como padrao do parametro. O efeito nao ficava no canto: esta
+ * funcao decide o rotulo de vencimento e, em `ContasView`, decide se um titulo
+ * ESTA VENCIDO. Com a referencia parada em agosto, toda conta vencida depois
+ * daquele dia aparecia como "aberto" — o lojista abria a tela de contas a pagar
+ * e nao via o que estava atrasado.
+ *
+ * Tambem afetava o quadro do CRM (cartao atrasado), o detalhe do cliente e as
+ * respostas do assistente.
+ *
+ * O parametro fica, e continua util: teste e chamada de servidor passam a
+ * referencia para nao depender do relogio. So o PADRAO mudou.
+ */
+export function daysUntil(value: string, reference = hoje()): number {
   const target = new Date(`${value.split('T')[0]}T00:00:00`).getTime()
   const base = new Date(`${reference}T00:00:00`).getTime()
   return Math.round((target - base) / 86_400_000)

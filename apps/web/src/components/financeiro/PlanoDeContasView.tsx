@@ -17,7 +17,7 @@ import {
   type TipoDeConta,
 } from '@/lib/contabilidade-api'
 import type { CustoFixo } from '@/lib/types'
-import { formatMoney } from '@/lib/format'
+import { formatMoney, mesDeHoje } from '@/lib/format'
 import { Badge, Card, EmptyState, PageHeader, Stat } from '@/components/ui/UI'
 import { Button } from '@/components/ui/Button'
 import Toast from '@/components/ui/Toast'
@@ -147,7 +147,9 @@ export default function PlanoDeContasView() {
   async function gerarContas() {
     setGerando(true)
     /* SUBSTITUIR POR: POST /financeiro/custos-fixos/gerar */
-    const r = await gerarContasDeCustosFixos(custos, '2026-08')
+    /* O mes corrente, e nao `'2026-08'`: gerar as contas do custo fixo num mes
+       ja fechado joga lancamento no passado e desarruma o DRE daquele mes. */
+    const r = await gerarContasDeCustosFixos(custos, mesDeHoje())
     setGerando(false)
 
     setToast({
