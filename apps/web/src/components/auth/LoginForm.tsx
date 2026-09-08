@@ -199,20 +199,6 @@ export default function LoginForm() {
       <FormFooter>
         Nao tem conta? <Link href="/criar-conta">Criar conta</Link>
       </FormFooter>
-
-      {/* ------------------------------------------------------------------
-          APOIO A DEMONSTRACAO — remover quando o backend estiver ligado.
-          Sem API real nao ha como cair no estado de inadimplencia, entao
-          este atalho existe so para o time conseguir ver as duas telas.
-         ------------------------------------------------------------------ */}
-      <div className={loginStyles.demoBox}>
-        <strong className={loginStyles.demoTitle}>Modo demonstracao</strong>
-        <p className={loginStyles.demoText}>
-          Qualquer e-mail com senha de 6+ caracteres entra. Para ver o painel com{' '}
-          <em>pagamento pendente</em>, use um e-mail que contenha a palavra &ldquo;pendente&rdquo; —
-          por exemplo <code className={loginStyles.demoCode}>pendente@teste.com</code>.
-        </p>
-      </div>
     </>
   )
 }

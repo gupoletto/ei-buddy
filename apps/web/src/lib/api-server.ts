@@ -66,6 +66,13 @@ export type Resposta<T> =
  */
 const INDISPONIVEL = 'Nao conseguimos falar com o servidor. Tente de novo em instantes.'
 
+/**
+ * Em producao a mensagem fica generica; fora dela, diz o endereco.
+ *
+ * Lido uma vez, no modulo: `NODE_ENV` nao muda enquanto o processo vive.
+ */
+const PRODUCAO = process.env.NODE_ENV === 'production'
+
 export async function chamarApi<T>(
   caminho: string,
   opcoes: {
@@ -92,8 +99,29 @@ export async function chamarApi<T>(
       /* Sessao nunca vem de cache. */
       cache: 'no-store',
     })
-  } catch {
-    return { ok: false, status: 503, code: 'UNAVAILABLE', message: INDISPONIVEL, corpo: null }
+  } catch (erro) {
+    /*
+     * A falha de conexao era engolida por completo: o `catch` vazio devolvia
+     * 503 e nao deixava rastro em lugar nenhum. Quem estava desenvolvendo via
+     * "Nao conseguimos falar com o servidor" na tela, nada no terminal, e nao
+     * tinha como saber que faltava subir a api — a mensagem certa para o
+     * lojista e a errada para quem consegue resolver.
+     *
+     * O log e do SERVIDOR do Next, entao a topologia interna nao vaza para o
+     * navegador. A mensagem da tela continua generica em producao.
+     */
+    console.error(
+      `[api-server] ${opcoes.method ?? 'GET'} ${API_URL}${caminho} falhou:`,
+      erro instanceof Error ? erro.message : erro,
+    )
+
+    return {
+      ok: false,
+      status: 503,
+      code: 'UNAVAILABLE',
+      message: PRODUCAO ? INDISPONIVEL : `${INDISPONIVEL} (a api nao respondeu em ${API_URL})`,
+      corpo: null,
+    }
   }
 
   if (resposta.ok) {
