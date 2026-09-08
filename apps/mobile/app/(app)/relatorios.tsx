@@ -153,7 +153,7 @@ export default function Relatorios() {
 
       {carregando ? (
         <View style={estilos.centro}>
-          <ActivityIndicator color={cores.primaria} />
+          <ActivityIndicator color={cores.acento} />
         </View>
       ) : erro !== null ? (
         <View style={estilos.centro}>
@@ -181,7 +181,7 @@ export default function Relatorios() {
             <RefreshControl
               refreshing={atualizando}
               onRefresh={recarregar}
-              tintColor={cores.primaria}
+              tintColor={cores.acento}
             />
           }
         >
@@ -345,7 +345,9 @@ const estilos = StyleSheet.create({
     borderWidth: 1,
     borderColor: cores.borda,
   },
-  abaAtiva: { backgroundColor: cores.primaria, borderColor: cores.primaria },
+  /* `acento`: com `primaria`, o rotulo da aba ativa (`textoSobreAcento`,
+     quase preto) ficava a 1,12:1 — a aba selecionada era a unica ilegivel. */
+  abaAtiva: { backgroundColor: cores.acento, borderColor: cores.acento },
   abaTexto: { fontSize: fonte.pequeno, color: cores.textoFraco },
   abaTextoAtivo: { color: cores.textoSobreAcento, fontWeight: peso.forte },
 
@@ -371,7 +373,16 @@ const estilos = StyleSheet.create({
     backgroundColor: cores.borda,
     overflow: 'hidden',
   },
-  barra: { height: '100%', borderRadius: raio.pill, backgroundColor: cores.primaria },
+  /*
+   * `acento` e nao `primaria`. Medido: `primaria` contra a trilha da barra da
+   * **1,06:1** — a barra era indistinguivel do proprio trilho onde ela corre.
+   *
+   * Nao e violacao de WCAG, porque a barra e decorativa e o valor esta escrito
+   * por extenso ao lado. Mas barra que nao se ve nao e decoracao, e ausencia:
+   * ela existe para o olho comparar os meses de relance, e a 1,06:1 nao
+   * comparava nada. Com `acento`, 5,80:1.
+   */
+  barra: { height: '100%', borderRadius: raio.pill, backgroundColor: cores.acento },
 
   posicao: {
     flexDirection: 'row',

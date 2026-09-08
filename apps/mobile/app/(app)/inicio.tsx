@@ -127,7 +127,7 @@ export default function Inicio() {
           <RefreshControl
             refreshing={atualizando}
             onRefresh={recarregar}
-            tintColor={cores.primaria}
+            tintColor={cores.acento}
           />
         }
       >
@@ -409,7 +409,12 @@ const estilos = StyleSheet.create({
     borderWidth: 1,
     borderColor: cores.borda,
   },
-  indicadorDestaque: { borderColor: cores.primaria },
+  /*
+   * `acento` e nao `primaria`: `primaria` fica a 1,2:1 da superficie do
+   * cartao, entao a borda que deveria DESTACAR era invisivel — o indicador em
+   * destaque nao se distinguia dos outros.
+   */
+  indicadorDestaque: { borderColor: cores.acento },
   indicadorRotulo: { fontSize: fonte.micro, color: cores.textoFraco },
   indicadorValor: {
     fontSize: fonte.medio,
@@ -417,7 +422,12 @@ const estilos = StyleSheet.create({
     color: cores.texto,
     marginTop: espaco.xs,
   },
-  indicadorValorDestaque: { fontSize: fonte.titulo, color: cores.primaria },
+  /*
+   * O numero mais importante da tela inicial estava a 1,2:1 do proprio cartao:
+   * ilegivel. `primaria` e cor de tema claro e nao serve como texto no escuro
+   * — ha teste em `packages/ui` que impede a tentativa.
+   */
+  indicadorValorDestaque: { fontSize: fonte.titulo, color: cores.acento },
   indicadorApoio: { fontSize: fonte.micro, color: cores.textoFraco, marginTop: espaco.xs },
   alerta: { color: cores.erro },
 
@@ -428,7 +438,16 @@ const estilos = StyleSheet.create({
     minHeight: 72,
     justifyContent: 'center',
     borderRadius: raio.md,
-    backgroundColor: cores.primaria,
+    /*
+     * `acento`, como no `Botao` primario do design system.
+     *
+     * Com `primaria` aqui, o rotulo — que usa `textoSobreAcento`, quase preto
+     * — ficava a 1,12:1. A acao principal da tela inicial, aquela que a pessoa
+     * abre o app para fazer, tinha o texto invisivel. Esta tela havia
+     * divergido do componente compartilhado, e foi na divergencia que o
+     * contraste se perdeu.
+     */
+    backgroundColor: cores.acento,
   },
   atalhoPressionado: { opacity: 0.85 },
   atalhoTexto: { fontSize: fonte.medio, fontWeight: peso.forte, color: cores.textoSobreAcento },

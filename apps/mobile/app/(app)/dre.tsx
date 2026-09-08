@@ -127,7 +127,7 @@ export default function Relatorio() {
 
       {carregando ? (
         <View style={estilos.centro}>
-          <ActivityIndicator color={cores.primaria} />
+          <ActivityIndicator color={cores.acento} />
         </View>
       ) : erro !== null ? (
         <View style={estilos.centro}>
@@ -155,7 +155,7 @@ export default function Relatorio() {
             <RefreshControl
               refreshing={atualizando}
               onRefresh={recarregar}
-              tintColor={cores.primaria}
+              tintColor={cores.acento}
             />
           }
         >
@@ -308,7 +308,9 @@ const estilos = StyleSheet.create({
     borderWidth: 1,
     borderColor: cores.borda,
   },
-  abaAtiva: { backgroundColor: cores.primaria, borderColor: cores.primaria },
+  /* `acento`: com `primaria`, o rotulo da aba ativa (`textoSobreAcento`,
+     quase preto) ficava a 1,12:1 — a aba selecionada era a unica ilegivel. */
+  abaAtiva: { backgroundColor: cores.acento, borderColor: cores.acento },
   abaTexto: { fontSize: fonte.pequeno, color: cores.textoFraco },
   abaTextoAtivo: { color: cores.textoSobreAcento, fontWeight: peso.forte },
 
