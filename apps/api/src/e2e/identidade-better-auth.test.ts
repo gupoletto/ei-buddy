@@ -109,15 +109,68 @@ describe.skipIf(!DATABASE_URL)('provedor de identidade — NR-084', () => {
       ).toBeUndefined()
     })
 
+    /*
+     * O defeito que esta suite pegou, e a razao de `garantirUnicidade` existir.
+     *
+     * `signUpEmail` NAO recusa e-mail repetido, e o schema dele nao tem indice
+     * unico: sem a conferencia do adapter, a segunda chamada criava um SEGUNDO
+     * usuario com o mesmo endereco e id diferente. O estado que sobrava era
+     * pior que um erro — a senha do primeiro continuava valendo e resolvia para
+     * o primeiro id, e a do segundo nao entrava em lugar nenhum.
+     */
     it('cadastrar duas vezes o mesmo e-mail devolve indefinido', async () => {
       const identifier = email()
       const dados = { email: identifier, phone: null }
 
-      expect(
-        await identidade.register({ identifier, secret: 'senha-de-teste' }, dados),
-      ).not.toBeUndefined()
+      const primeiro = await identidade.register({ identifier, secret: 'senha-de-teste' }, dados)
+      expect(primeiro).not.toBeUndefined()
       expect(
         await identidade.register({ identifier, secret: 'outra-senha' }, dados),
+      ).toBeUndefined()
+
+      /* E a conta original continua intacta: a recusa nao pode ter mexido
+         nela, nem trocado a senha de quem ja estava la. */
+      const conferido = await identidade.verify({ identifier, secret: 'senha-de-teste' })
+      expect(conferido?.subject).toBe(primeiro?.subject)
+      expect(await identidade.verify({ identifier, secret: 'outra-senha' })).toBeUndefined()
+    })
+
+    /* Caixa diferente e a mesma pessoa — o indice e sobre `lower(email)`, como
+       `users_email_unico` do nosso lado. */
+    it('e-mail repetido em caixa diferente tambem e recusado', async () => {
+      const identifier = email()
+      await identidade.register(
+        { identifier, secret: 'senha-de-teste' },
+        { email: identifier, phone: null },
+      )
+
+      const gritado = identifier.toUpperCase()
+      expect(
+        await identidade.register(
+          { identifier: gritado, secret: 'outra-senha' },
+          { email: gritado, phone: null },
+        ),
+      ).toBeUndefined()
+    })
+
+    /* Mesma regra para o numero: dois cadastros no mesmo telefone fariam o
+       login por numero resolver para um dos dois por sorte da ordem. */
+    it('telefone repetido e recusado', async () => {
+      const phone = telefone()
+      await identidade.register(
+        { identifier: phone, secret: 'senha-de-teste' },
+        { email: null, phone },
+      )
+
+      const outro = email()
+      expect(
+        await identidade.register(
+          { identifier: outro, secret: 'senha-de-teste' },
+          {
+            email: outro,
+            phone,
+          },
+        ),
       ).toBeUndefined()
     })
 

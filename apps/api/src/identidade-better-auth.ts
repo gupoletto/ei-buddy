@@ -174,6 +174,54 @@ export class IdentidadeBetterAuth implements IdentityProvider, IdentityRegistrar
   async migrar(): Promise<void> {
     const ctx = await this.auth.$context
     await ctx.runMigrations()
+    await this.garantirUnicidade()
+  }
+
+  /**
+   * As restricoes de unicidade que a biblioteca NAO cria.
+   *
+   * ## O defeito que isto fecha
+   *
+   * `signUpEmail` nao recusa e-mail repetido, e o schema dele nao tem indice
+   * unico: cadastrar duas vezes o mesmo endereco cria DOIS usuarios, com ids
+   * diferentes. Foi um teste desta tarefa que pegou, contra Postgres.
+   *
+   * O estado que sobra e pior que um erro. A senha do primeiro continua valendo
+   * e resolve para o primeiro id; a senha do segundo nao entra em lugar nenhum.
+   * Do lado de fora parece "cadastrei e nao consigo entrar", e do lado de dentro
+   * ha uma pessoa a mais que ninguem alcanca.
+   *
+   * ## Por que aqui, e nao numa migration nossa
+   *
+   * Porque as tabelas nao existem quando a 0023 roda — ela cria o schema vazio,
+   * e quem cria as tabelas e a linha acima. Este e o primeiro momento em que ha
+   * onde por o indice.
+   *
+   * A regra "a biblioteca e dona do schema dela" continua valendo para a FORMA.
+   * Isto e outra coisa: "o mesmo e-mail nao pode ser duas pessoas" e regra
+   * nossa, e o indice e aditivo — a migracao dela acrescenta coluna e tabela,
+   * nunca remove indice.
+   *
+   * ## O risco conhecido
+   *
+   * Se uma versao futura criar um indice proprio sobre as mesmas colunas, o
+   * `runMigrations` dela recusa por conflito de definicao. E falha na MIGRACAO,
+   * com mensagem, e nao no login — que e a direcao certa de falhar. O nome
+   * `nosso_` marca de quem sao.
+   */
+  private async garantirUnicidade(): Promise<void> {
+    /* `lower(email)`, como `users_email_unico` (0002): comparar cru deixaria
+       passar duplicata por diferenca de caixa. */
+    await this.pool.query(
+      'CREATE UNIQUE INDEX IF NOT EXISTS nosso_user_email_unico ON "user" (lower(email))',
+    )
+
+    /* Parcial: o telefone e nulo na maioria das linhas, e nulo repetido nao e
+       duplicata. */
+    await this.pool.query(
+      'CREATE UNIQUE INDEX IF NOT EXISTS nosso_user_telefone_unico ' +
+        'ON "user" ("phoneNumber") WHERE "phoneNumber" IS NOT NULL',
+    )
   }
 
   async encerrar(): Promise<void> {
@@ -294,26 +342,68 @@ export class IdentidadeBetterAuth implements IdentityProvider, IdentityRegistrar
       return undefined
     }
 
+    /*
+     * Confere ANTES, porque `signUpEmail` nao confere.
+     *
+     * Sem isto ele cria um segundo usuario com o mesmo e-mail, e a porta
+     * receberia um `subject` novo para uma conta que ja existe — que e o
+     * oposto do que ela pede. `garantirUnicidade` fecha a corrida entre duas
+     * chamadas simultaneas; esta consulta e o que da a RESPOSTA limpa
+     * (`undefined`) em vez de um erro de constraint.
+     */
+    if (await this.jaExiste(email, dados.phone)) return undefined
+
     let criado: { user: { id: string } }
     try {
       criado = (await this.auth.api.signUpEmail({
         body: { name: credential.identifier, email, password: credential.secret },
       })) as { user: { id: string } }
     } catch {
-      /* Endereco ja usado cai aqui, e e o caso que a porta manda tratar como
-         resposta. Outras falhas tambem caem — e "nao deu para criar" e o que o
-         cadastro sabe fazer com qualquer uma delas. */
+      /* Senha curta demais cai aqui, e a corrida perdida no indice unico
+         tambem. "Nao deu para criar" e o que o cadastro sabe fazer com as
+         duas. */
       return undefined
     }
 
     if (dados.phone !== null) {
-      const ctx = await this.auth.$context
-      await ctx.internalAdapter.updateUser(criado.user.id, {
-        phoneNumber: dados.phone,
-        phoneNumberVerified: false,
-      })
+      try {
+        const ctx = await this.auth.$context
+        await ctx.internalAdapter.updateUser(criado.user.id, {
+          phoneNumber: dados.phone,
+          phoneNumberVerified: false,
+        })
+      } catch {
+        /*
+         * O telefone nao entrou — numero de outra pessoa, ou corrida no indice.
+         *
+         * Sobra um usuario com o e-mail e sem o numero, e devolver sucesso aqui
+         * faria o login por telefone falhar depois, sem explicacao. Melhor
+         * responder "nao deu" agora: o cadastro trata, e a linha orfa e
+         * inalcancavel — ninguem tem credencial para ela.
+         */
+        return undefined
+      }
     }
 
     return { subject: criado.user.id }
+  }
+
+  /**
+   * O e-mail ou o telefone ja pertencem a alguem?
+   *
+   * O telefone vai por consulta direta: o adapter interno tem
+   * `findUserByEmail` e nao tem equivalente por numero — o plugin resolve isso
+   * dentro do proprio endpoint de entrada.
+   */
+  private async jaExiste(email: string, phone: string | null): Promise<boolean> {
+    const ctx = await this.auth.$context
+
+    if ((await ctx.internalAdapter.findUserByEmail(email)) !== null) return true
+    if (phone === null) return false
+
+    const r = await this.pool.query('SELECT 1 FROM "user" WHERE "phoneNumber" = $1 LIMIT 1', [
+      phone,
+    ])
+    return r.rowCount !== null && r.rowCount > 0
   }
 }
