@@ -16,10 +16,14 @@ import { Button } from '@/components/ui/Button'
 import Toast from '@/components/ui/Toast'
 import { IconSparkles } from '@/components/Icons'
 import BlocosResposta from './BlocosResposta'
+import { hoje } from '@/lib/format'
 import styles from './assistente.module.css'
 
-/** Data de referencia do app. */
-const HOJE = '2026-08-24'
+/*
+ * A data das mensagens vinha de uma constante fixa em 24/08/2026 — o
+ * assistente datava a conversa em agosto por mais tempo que agosto durasse.
+ * Agora vem de `hoje()`, a mesma fonte do resto do app.
+ */
 
 export default function ChatAssistente() {
   const router = useRouter()
@@ -68,7 +72,7 @@ export default function ChatAssistente() {
       autor: 'usuario',
       canal: 'app',
       texto: limpo,
-      data: HOJE,
+      data: hoje(),
     }
 
     setMensagens((atual) => [...atual, daPessoa])
@@ -91,7 +95,7 @@ export default function ChatAssistente() {
         canal: 'app',
         texto: r.texto,
         blocos: r.blocos,
-        data: HOJE,
+        data: hoje(),
       },
     ])
     setPensando(false)

@@ -14,7 +14,7 @@ import {
   type SituacaoVisual,
 } from '@/lib/financeiro-api'
 import type { ContaReceber, StatusTitulo } from '@/lib/types'
-import { daysUntil, describeDueDate, formatDate, formatMoney } from '@/lib/format'
+import { daysUntil, describeDueDate, formatDate, formatMoney, mesDeHoje } from '@/lib/format'
 import { Badge, Card, EmptyState, PageHeader, Stat } from '@/components/ui/UI'
 import { Button } from '@/components/ui/Button'
 import Toast from '@/components/ui/Toast'
@@ -203,8 +203,10 @@ export default function ContasView({ tipo }: { tipo: 'pagar' | 'receber' }) {
   const totalAberto = emAberto.reduce((acc, l) => acc + (l.valor - l.valorBaixado), 0)
   const vencidos = emAberto.filter((l) => daysUntil(l.vencimento) < 0)
   const totalVencido = vencidos.reduce((acc, l) => acc + (l.valor - l.valorBaixado), 0)
+  /* `mesDeHoje()` e nao `'2026-08'`: o bloco "quitados no mes" mostrava agosto
+     para sempre, e em setembro ele exibia o mes passado como se fosse este. */
   const quitadosMes = linhas.filter(
-    (l) => l.status === 'pago' && l.vencimento.startsWith('2026-08'),
+    (l) => l.status === 'pago' && l.vencimento.startsWith(mesDeHoje()),
   )
   const totalMes = quitadosMes.reduce((acc, l) => acc + l.valorBaixado, 0)
 
