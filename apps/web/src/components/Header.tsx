@@ -1,6 +1,5 @@
 'use client'
 
-import Image from 'next/image'
 import Link from 'next/link'
 import { type MouseEvent, useEffect, useState } from 'react'
 import { BRAND, nav } from '@/content/site'
@@ -56,9 +55,6 @@ export default function Header() {
           className={styles.brand}
           aria-label={`${BRAND}, voltar ao topo`}
         >
-          <span className={styles.brandMark} aria-hidden="true">
-            <Image src="/buddy-azul.png" alt="" fill className={styles.brandImg} sizes="34px" />
-          </span>
           <span className={styles.brandName}>{BRAND}</span>
         </a>
 

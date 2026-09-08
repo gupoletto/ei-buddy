@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { usePathname, useRouter } from 'expo-router'
 import type { DrawerContentComponentProps } from 'expo-router/drawer'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -92,12 +92,6 @@ export default function MenuLateral(props: DrawerContentComponentProps) {
   return (
     <View style={[estilos.menu, { paddingTop: insets.top + espaco.lg }]}>
       <View style={estilos.marca}>
-        <Image
-          source={require('../../assets/buddy-azul.png')}
-          style={estilos.marcaSimbolo}
-          resizeMode="cover"
-          accessibilityIgnoresInvertColors
-        />
         <Text style={estilos.marcaNome}>Ei Buddy</Text>
       </View>
 
@@ -160,15 +154,6 @@ const estilos = StyleSheet.create({
     gap: espaco.md,
     paddingHorizontal: espaco.lg,
     paddingBottom: espaco.lg,
-  },
-  marcaSimbolo: {
-    /* 34 e nao 26: o Buddy e figura de corpo inteiro e nao sobrevive menor. */
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    /* Cor de espera enquanto a imagem carrega. */
-    backgroundColor: cores.acento,
-    overflow: 'hidden',
   },
   marcaNome: { fontSize: fonte.medio, fontWeight: peso.pesado, color: cores.texto },
 
