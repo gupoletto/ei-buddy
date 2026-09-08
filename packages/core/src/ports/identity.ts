@@ -144,8 +144,28 @@ export type SessionClaims =
 
 export type SessionIssuer = {
   issue(claims: SessionClaims, expiresAt: Date): Promise<string>
-  /** `undefined` para token invalido, expirado ou adulterado. */
+  /** `undefined` para token invalido, expirado, revogado ou adulterado. */
   read(token: string): Promise<SessionClaims | undefined>
+
+  /**
+   * Encerra a sessao ANTES da expiracao — RF-119, e o pre-requisito da RF-006.
+   *
+   * Existe porque sair sem isto nao encerrava nada: os clientes apagavam o
+   * token do proprio armazenamento e o servidor continuava aceitando ele por
+   * doze horas. Quem tivesse copiado o token — de um aparelho emprestado, de um
+   * navegador compartilhado — continuava dentro depois de a pessoa "sair".
+   *
+   * Idempotente e sem retorno: revogar duas vezes e revogar um token que nunca
+   * existiu tem o mesmo efeito visivel. Um booleano aqui viraria um oraculo de
+   * token valido para quem chutasse.
+   *
+   * A RF-006 (remover funcionario encerra a sessao) precisa de um segundo
+   * metodo, por usuario, e ele **nao** entra especulativamente: qual sessao
+   * encerrar quando alguem perde acesso a UMA loja e regra, e o contador que
+   * atende cinco nao pode ser expulso das outras quatro. Entra com a tarefa
+   * dela; o que faltava era existir onde revogar.
+   */
+  revoke(token: string): Promise<void>
 }
 
 /**

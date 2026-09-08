@@ -8,9 +8,11 @@ import {
   signup,
   type SignupDeps,
   loadProfile,
+  logout,
 } from '@na-regua/core'
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { LIMITE_DE_AUTENTICACAO } from '../plugins/rate-limit.js'
+import { lerToken } from '../plugins/session.js'
 import { validate } from '../plugins/validate.js'
 
 /**
@@ -116,11 +118,43 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthRouteDeps): v
 
       const input = validate(selectCompanyInputSchema, request.body)
 
-      const sessao = await selectCompany(deps, claims, input, meta(request))
+      /*
+       * O token APRESENTADO vai junto, para ser revogado quando o novo sair.
+       *
+       * `lerToken` de novo, e nao um campo em `request`: o plugin de sessao
+       * guarda os claims e nao o token, de proposito — token em objeto de
+       * requisicao acaba em log de erro. Aqui ele e lido, usado e descartado.
+       *
+       * `!` porque chegar aqui exige `sessionClaims`, e ele so existe quando
+       * havia token. O `if` acima ja garantiu.
+       */
+      const sessao = await selectCompany(deps, claims, input, meta(request), lerToken(request)!)
 
       return reply.code(200).send(sessao)
     },
   )
+
+  /**
+   * Sair — RF-119.
+   *
+   * `POST` e nao `DELETE`: sair grava — a linha da sessao ganha `revoked_at` e
+   * a trilha ganha um evento. `DELETE` prometeria que algo deixou de existir, e
+   * o que se quer e o oposto: fica registrado QUANDO a sessao terminou.
+   *
+   * Sempre 204, mesmo sem token. Sair nao e uma operacao que possa falhar do
+   * ponto de vista de quem clicou, e responder 401 a quem tenta sair sem sessao
+   * faria o cliente insistir numa tela em vez de ir para o login.
+   */
+  app.post('/auth/logout', async (request, reply) => {
+    const claims = request.sessionClaims
+    const token = lerToken(request)
+
+    if (claims !== undefined && token !== undefined) {
+      await logout(deps, claims, token, meta(request))
+    }
+
+    return reply.code(204).send()
+  })
 
   /**
    * Quem sou eu — a tela de shell (NR-013) pergunta isso ao abrir.

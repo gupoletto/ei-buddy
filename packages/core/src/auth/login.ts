@@ -135,12 +135,24 @@ export async function login(
  * login devolveu. Entre o login e a escolha o acesso pode ter sido revogado, e
  * confiar na lista de antes deixaria uma janela de doze horas em que quem foi
  * desligado ainda entra.
+ *
+ * ## O token anterior e REVOGADO
+ *
+ * Antes de haver onde revogar, cada escolha de loja deixava o token velho vivo
+ * pelas doze horas restantes. Quem opera cinco lojas e troca durante o dia
+ * acumulava uma credencial valida por troca, nenhuma delas na mao de ninguem —
+ * e a de `companyId: null` continuava podendo escolher loja de novo.
+ *
+ * Revoga o token que foi APRESENTADO, e nenhum outro: sessao de outro aparelho
+ * tem token proprio e nao e afetada. Trocar de loja no celular nao pode
+ * deslogar o computador.
  */
 export async function selectCompany(
   deps: AuthDeps,
   sessao: SessionClaims,
   input: SelectCompanyInput,
   meta: LoginMeta,
+  tokenAnterior: string,
 ): Promise<SessionOutput> {
   const vinculo = await deps.users.findMembership(input.companyId, sessao.userId)
 
@@ -163,6 +175,14 @@ export async function selectCompany(
     expiraEm,
   )
 
+  /*
+   * DEPOIS de emitir o novo, nunca antes: se a emissao falhar entre os dois
+   * passos, a pessoa fica com o token antigo — que ainda funciona — em vez de
+   * com nenhum. Revogar primeiro trocaria uma falha recuperavel por um logout
+   * que ninguem pediu.
+   */
+  await deps.sessions.revoke(tokenAnterior)
+
   await registraEntrada(deps, vinculo.companyId, sessao.userId, meta)
 
   return {
@@ -173,6 +193,55 @@ export async function selectCompany(
     memberships: [...vinculos],
     activeCompanyId: vinculo.companyId,
   }
+}
+
+/**
+ * Sair — RF-119.
+ *
+ * ## Sair nao encerrava nada
+ *
+ * Os dois clientes apagavam o token do proprio armazenamento: o web limpava o
+ * cookie, o mobile apagava o `SecureStore`. O servidor nunca soube, e o token
+ * continuava valido pelas doze horas restantes. Quem tivesse copiado o token —
+ * aparelho emprestado, navegador de balcao compartilhado, extrato de um log
+ * antigo — seguia dentro depois de a pessoa clicar em "Sair".
+ *
+ * Nao dava para consertar antes desta tarefa: com o emissor em memoria, o unico
+ * jeito de invalidar um token era reiniciar o processo, que invalidava todos.
+ *
+ * ## Nao devolve nada, e nao falha
+ *
+ * Do ponto de vista de quem clicou, sair sempre da certo. O cliente navega para
+ * o login de qualquer jeito — e e melhor que ele o faca do que ficar preso numa
+ * tela pedindo para tentar sair de novo.
+ *
+ * ## A trilha so registra quando ha empresa
+ *
+ * Mesma razao de `registraEntrada`: a auditoria e organizada sob a empresa, e
+ * sessao sem loja escolhida nao tem uma sob a qual gravar. Inventar uma
+ * quebraria o isolamento da propria trilha.
+ */
+export async function logout(
+  deps: AuthDeps,
+  sessao: SessionClaims,
+  token: string,
+  meta: LoginMeta,
+): Promise<void> {
+  await deps.sessions.revoke(token)
+
+  if (sessao.companyId === null) return
+
+  await deps.audit.record({
+    companyId: sessao.companyId,
+    entity: 'User',
+    entityId: sessao.userId,
+    action: 'updated',
+    actorId: sessao.userId,
+    channel: meta.channel,
+    occurredAt: meta.now,
+    before: null,
+    after: { event: 'session_ended', requestId: meta.requestId },
+  })
 }
 
 /**

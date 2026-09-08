@@ -1,5 +1,5 @@
 import { chamarApi } from './api'
-import { abrirSessao, type LojaDaSessao } from './session'
+import { abrirSessao, encerrarSessao, type LojaDaSessao } from './session'
 /**
  * ============================================================================
  * PONTOS DE INTEGRACAO — AUTENTICACAO (MOBILE)
@@ -111,6 +111,34 @@ export async function escolherLoja(companyId: string): Promise<ResultadoLogin> {
 
   await gravar(r.dados, r.dados.activeCompanyId)
   return { estado: 'pronto' }
+}
+
+/**
+ * Sair — NR-083, RF-119.
+ *
+ * ## Duas metades, e faltava a primeira
+ *
+ * `encerrarSessao` apaga o perfil e o token do aparelho, e isso continua sendo
+ * necessario. O que faltava era AVISAR o servidor: o token seguia valido pelas
+ * doze horas restantes, e quem tivesse uma copia dele continuava dentro depois
+ * de a pessoa tocar em "Sair".
+ *
+ * ## A api primeiro, o aparelho depois
+ *
+ * Nesta ordem porque a chamada precisa do token, e `encerrarSessao` o apaga. Ao
+ * contrario, a revogacao sairia sem `Authorization` e o servidor nao saberia
+ * qual sessao encerrar.
+ *
+ * ## Falha da api nao impede sair
+ *
+ * No balcao o sinal cai, e nao sair porque a rede falhou seria deixar a sessao
+ * aberta no aparelho — o oposto do que a pessoa pediu. O `catch` implicito esta
+ * em `chamarApi`, que devolve resultado em vez de lancar; o resultado e
+ * ignorado de proposito.
+ */
+export async function sair(): Promise<void> {
+  await chamarApi('/auth/logout', { method: 'POST' })
+  await encerrarSessao()
 }
 
 /** Grava perfil e token. `empresaId` nulo e o estado de "falta escolher". */

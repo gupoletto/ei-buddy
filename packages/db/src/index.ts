@@ -72,5 +72,8 @@ export { createSaleHistoryRepository } from './sale-history-repository.js'
 /* Chamados de suporte — NR-080, US-062. */
 export { createSupportRepository } from './support-repository.js'
 
+/* Sessao persistente e desaceleracao de login — NR-083, ADR-0002. */
+export { createLoginThrottle, createSessionIssuer } from './session-repository.js'
+
 /* Baixa e estorno de titulo — NR-029, RF-063 a RF-067. */
 export { createSettlementQueries, createSettlementUnitOfWork } from './settlement-repository.js'

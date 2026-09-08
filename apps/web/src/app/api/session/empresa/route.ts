@@ -44,9 +44,13 @@ export async function POST(request: Request) {
 
   const resposta = NextResponse.json(semToken(r.dados))
   /*
-   * Substitui o cookie. O token antigo continua valido na api ate expirar —
-   * nao ha revogacao, e isso esta registrado: a sessao e por token assinado,
-   * nao por tabela. O que muda e qual token ESTE navegador usa.
+   * Substitui o cookie, e o token antigo JA NAO VALE MAIS.
+   *
+   * Este comentario dizia o contrario — "o token antigo continua valido na api
+   * ate expirar, nao ha revogacao, a sessao e por token assinado, nao por
+   * tabela". Era verdade e virou mentira na NR-083: a sessao passou a ser linha
+   * no Postgres e `selectCompany` revoga o token apresentado depois de emitir o
+   * novo. Trocar de loja durante o dia deixava uma credencial viva por troca.
    */
   resposta.cookies.set(SESSION_COOKIE, r.dados.token, opcoesDoCookie(DURACAO_DO_COOKIE_SEGUNDOS))
   return resposta

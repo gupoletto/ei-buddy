@@ -39,8 +39,31 @@ export async function POST(request: Request) {
   return resposta
 }
 
-/** Sair. */
+/**
+ * Sair — NR-083, RF-119.
+ *
+ * ## Antes daqui, sair nao encerrava nada
+ *
+ * Este handler apagava o cookie e pronto. O token continuava VALIDO no servidor
+ * pelas doze horas restantes: quem tivesse uma copia dele — navegador de balcao
+ * compartilhado, aparelho emprestado — seguia dentro depois de a pessoa clicar
+ * em "Sair". Nao dava para consertar antes: com o emissor de sessao em memoria,
+ * o unico jeito de invalidar um token era reiniciar a api, o que invalidava
+ * todos.
+ *
+ * ## O cookie e apagado mesmo se a api falhar
+ *
+ * Sair sempre da certo do ponto de vista de quem clicou. Se a chamada nao for,
+ * o pior caso e o de antes — token vivo do lado do servidor —, e prender a
+ * pessoa numa sessao que ela pediu para encerrar seria pior que isso.
+ */
 export async function DELETE() {
+  const token = (await cookies()).get(SESSION_COOKIE)?.value
+
+  if (token !== undefined) {
+    await chamarApi('/auth/logout', { method: 'POST', token })
+  }
+
   const resposta = NextResponse.json({ ok: true })
   /* `maxAge: 0` com as MESMAS opcoes: cookie apagado com path ou sameSite
      diferente do que foi escrito nao e apagado — fica um orfao que o navegador
