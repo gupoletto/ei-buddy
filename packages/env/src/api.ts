@@ -35,6 +35,22 @@ export const apiEnvSchema = baseEnvSchema.extend({
   /** DEC-008. `fake` localmente — ambientes.md#modo-fake. */
   AUTH_PROVIDER: providerSchema,
   /**
+   * Segredo do Better Auth — ADR-0002 (opcao D), NR-084.
+   *
+   * Opcional AQUI e obrigatoria LA: quem exige e `criarIdentidade`, e so quando
+   * `AUTH_PROVIDER=better-auth`. Torna-la obrigatoria neste schema barraria o
+   * boot local, onde o provedor e o falso e este valor nao existe — mesmo
+   * criterio de `SECRETS_KEY`.
+   *
+   * Os 32 caracteres sao o piso que a propria biblioteca avisa em log quando
+   * nao e atendido. Conferir aqui transforma um aviso que ninguem le numa
+   * recusa de subir.
+   */
+  BETTER_AUTH_SECRET: opcionalNaoVazia.refine(
+    (v: string | undefined) => v === undefined || v.length >= 32,
+    { message: 'BETTER_AUTH_SECRET precisa de pelo menos 32 caracteres.' },
+  ),
+  /**
    * Comprimento nao e validado aqui: politica de segredo forte e decisao do
    * adapter de autenticacao (DEC-008), nao deste pacote.
    */
