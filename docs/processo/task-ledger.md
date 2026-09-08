@@ -50,17 +50,26 @@ consome. A porta é declarada pelo núcleo; a seta aponta para dentro
 
 |                               | Tarefas | Dias |
 | ----------------------------- | ------: | ---: |
-| Total                         |      59 |  161 |
-| ✅ Concluídas                 |      49 |  126 |
+| Total                         |      61 |  166 |
+| ✅ Concluídas                 |      51 |  131 |
 | 🚧 Bloqueadas por decisão     |       9 |   33 |
 | 🚧 Bloqueadas por dependência |       1 |    2 |
 | ⬜ A fazer, pode começar hoje |       0 |    0 |
 
-> **Números conferidos contra a `main` em 2026-09-05**, não estimados: cada
+> **Números conferidos contra a `main` em 2026-09-08**, não estimados: cada
 > ✅ tem commit mesclado com `Refs: NR-xxx` no histórico. O NR-012 é a
 > exceção — foi mesclado antes de a convenção de rodapé existir (PR #15).
 > As somas saem das linhas deste arquivo e fecham com o
 > [`monday-import.csv`](monday-import.csv) que `pnpm ledger:csv` gera.
+
+> **NR-080 entrou aqui depois de já ter sido entregue.** O suporte foi mesclado
+> citando um id que não existia neste arquivo, e a NR-081 (baixa e estorno)
+> nasceu reusando o mesmo número — dois trabalhos diferentes apontando para um
+> id só, que é exatamente o que a convenção "ID nunca é reaproveitado" existe
+> para impedir. A colisão foi desfeita renomeando a NR-081, a mais nova, nos
+> comentários dela, e registrando as duas tarefas aqui. O `ledger:check` recusa
+> id duplicado **entre linhas**; ele não lê comentário de código, e foi por essa
+> fresta que o número passou duas vezes.
 
 **A DEC-002 fechou** — [ADR-0001](../decisoes/adr/0001-rls-por-linha.md), RLS
 por linha, com o isolamento já materializado em `packages/db` (NR-007) e os
@@ -139,7 +148,7 @@ Objetivo: emitir NFC-e e controlar contas a pagar e receber.
 | NR-044 | `payments`: adapter PagMaxx — Pix, link de pagamento, webhook com HMAC |   🟠   | `payments`        |   4 | NR-043 | DEC-006, DEC-015 | RF-034, RF-068         |   🚧   |
 | NR-073 | `mobile`: pagamento, resumo com líquido e margem                       |   🟢   | `mobile`          |   3 | NR-071 | —                | US-018–020             |   ✅   |
 | NR-074 | `web`: contas a pagar e a receber                                      |   🟢   | `web`             |   4 | NR-029 | —                | E6, E7                 |   ✅   |
-| NR-080 | Baixa e estorno de título ligados de verdade, no web e no mobile       |   🟢   | `web` `mobile`    |   3 | NR-074 | —                | RF-059, RF-066, RF-067 |   ✅   |
+| NR-081 | Baixa e estorno de título ligados de verdade, no web e no mobile       |   🟢   | `web` `mobile`    |   3 | NR-074 | —                | RF-059, RF-066, RF-067 |   ✅   |
 
 ## Sprint 4 — WhatsApp e assinatura
 
@@ -169,16 +178,18 @@ Objetivo: operar o ERP por mensagem e cobrar a mensalidade.
 
 ## Backlog
 
-| ID     | Tarefa                                               | Trilha | Módulo   | Est | Dep    | Bloq                     | US/RF           | Status |
-| ------ | ---------------------------------------------------- | :----: | -------- | --: | ------ | ------------------------ | --------------- | :----: |
-| NR-016 | `CHANGELOG` gerado dos commits + processo de release |   🟠   | `repo`   |   1 | —      | —                        | —               |   ✅   |
-| NR-034 | `core`: agenda e lembretes                           |   🔵   | `core`   |   2 | —      | —                        | RF-089–093      |   ✅   |
-| NR-035 | `db`: schema de agenda (`appointments`)              |   🔵   | `db`     |   1 | NR-008 | —                        | RF-089, RF-090  |   ✅   |
-| NR-036 | `api`: rotas de agenda                               |   🟠   | `api`    |   1 | NR-035 | —                        | RF-089–093      |   ✅   |
-| NR-037 | `db`: repositórios da venda e trilha de estoque      |   🔵   | `db`     |   2 | NR-020 | —                        | RF-024, RNF-046 |   ✅   |
-| NR-049 | E2E do caminho crítico (3 fluxos)                    |   🟠   | `repo`   |   3 | NR-071 | **DEC-003**, **DEC-006** | RNF-068         |   🚧   |
-| NR-078 | `mobile`: agenda                                     |   🟢   | `mobile` |   2 | NR-036 | —                        | US-043–045      |   ✅   |
-| NR-079 | `web`: conteúdo real da landing                      |   🟢   | `web`    |   1 | —      | —                        | —               |   ✅   |
+| ID     | Tarefa                                               | Trilha | Módulo                  | Est | Dep    | Bloq                     | US/RF           | Status |
+| ------ | ---------------------------------------------------- | :----: | ----------------------- | --: | ------ | ------------------------ | --------------- | :----: |
+| NR-016 | `CHANGELOG` gerado dos commits + processo de release |   🟠   | `repo`                  |   1 | —      | —                        | —               |   ✅   |
+| NR-034 | `core`: agenda e lembretes                           |   🔵   | `core`                  |   2 | —      | —                        | RF-089–093      |   ✅   |
+| NR-035 | `db`: schema de agenda (`appointments`)              |   🔵   | `db`                    |   1 | NR-008 | —                        | RF-089, RF-090  |   ✅   |
+| NR-036 | `api`: rotas de agenda                               |   🟠   | `api`                   |   1 | NR-035 | —                        | RF-089–093      |   ✅   |
+| NR-037 | `db`: repositórios da venda e trilha de estoque      |   🔵   | `db`                    |   2 | NR-020 | —                        | RF-024, RNF-046 |   ✅   |
+| NR-049 | E2E do caminho crítico (3 fluxos)                    |   🟠   | `repo`                  |   3 | NR-071 | **DEC-003**, **DEC-006** | RNF-068         |   🚧   |
+| NR-078 | `mobile`: agenda                                     |   🟢   | `mobile`                |   2 | NR-036 | —                        | US-043–045      |   ✅   |
+| NR-079 | `web`: conteúdo real da landing                      |   🟢   | `web`                   |   1 | —      | —                        | —               |   ✅   |
+| NR-080 | Suporte: schema, casos de uso, rotas e web           |   🔵   | `db` `core` `api` `web` |   3 | NR-008 | —                        | US-062          |   ✅   |
+| NR-082 | `mobile`: suporte                                    |   🟢   | `mobile`                |   2 | NR-080 | —                        | US-062          |   ✅   |
 
 ---
 
@@ -297,12 +308,12 @@ passou a ser retrabalho: trocar os tokens quando a marca fechar.
 
 | Trilha                          | Tarefas | Dias | Observação                                       |
 | ------------------------------- | ------: | ---: | ------------------------------------------------ |
-| 🔵 1 — Núcleo & Dados           |      19 |   47 | é o gargalo; a fila dela segue em NR-023         |
+| 🔵 1 — Núcleo & Dados           |      20 |   50 | é o gargalo; a fila dela segue em NR-023         |
 | 🟠 2 — Plataforma & Integrações |      25 |   69 | a mais carregada e a mais bloqueada (9 decisões) |
-| 🟢 3 — Clientes                 |      14 |   41 | depende de schema, mas já não está bloqueada     |
+| 🟢 3 — Clientes                 |      15 |   43 | depende de schema, mas já não está bloqueada     |
 | Compartilhada                   |       1 |    4 | documentação (NR-002)                            |
 
-Somando: **161 dias-desenvolvedor** em 59 tarefas. Com 3 pessoas, isso é cerca
+Somando: **166 dias-desenvolvedor** em 61 tarefas. Com 3 pessoas, isso é cerca
 de 11 semanas de trabalho — desde que nada fique bloqueado, o que não é o caso
 hoje.
 

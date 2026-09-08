@@ -75,7 +75,7 @@ export default function ContasView({ tipo }: { tipo: 'pagar' | 'receber' }) {
   }, [buscar])
 
   /*
-   * Baixa e estorno acontecem AQUI agora — NR-080.
+   * Baixa e estorno acontecem AQUI agora — NR-081.
    *
    * O `aviso` e a resposta curta que a tela da depois: nao ha `Toast` no
    * mobile, e um `Alert` de sucesso obriga a pessoa a tocar em "ok" para voltar
