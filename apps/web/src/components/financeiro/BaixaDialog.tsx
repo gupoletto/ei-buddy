@@ -1,17 +1,30 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { formatMoney } from '@/lib/format'
+import { formatMoney, hoje } from '@/lib/format'
+import {
+  type DadosDaBaixa,
+  FORMAS_DE_RECEBIMENTO,
+  type FormaDeRecebimento,
+  NOMES_BANCOS,
+} from '@/lib/financeiro-api'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/auth/Fields'
 import { IconClose } from '@/components/Icons'
 import styles from './financeiro.module.css'
 
-/** Converte "1.234,56" em numero. */
-function paraNumero(valor: string): number {
+/**
+ * Converte "1.234,56" em CENTAVOS.
+ *
+ * Centavos, e nao reais: o valor vai para a api como inteiro, e converter uma
+ * vez aqui evita `Math.round(x * 100)` espalhado pela tela. Em ponto flutuante
+ * `19.99 * 100` da `1998.9999999999998` — arredondar uma vez, na borda, e o que
+ * impede um centavo de sumir.
+ */
+function paraCentavos(valor: string): number {
   const limpo = valor.replace(/\./g, '').replace(',', '.')
   const n = Number(limpo)
-  return Number.isFinite(n) ? n : 0
+  return Number.isFinite(n) ? Math.round(n * 100) : 0
 }
 
 /**
@@ -24,7 +37,7 @@ function paraNumero(valor: string): number {
 export default function BaixaDialog({
   titulo,
   descricao,
-  saldo,
+  saldoCents,
   verbo,
   processando = false,
   erro,
@@ -33,16 +46,35 @@ export default function BaixaDialog({
 }: {
   titulo: string
   descricao: string
-  saldo: number
-  /** "pagar" ou "receber" — muda o texto dos botoes. */
+  /**
+   * O saldo em CENTAVOS.
+   *
+   * Era em reais, e a baixa total mandaria `saldo * 100` para a api. Com o
+   * arredondamento do ponto flutuante isso deixa um centavo para tras de vez em
+   * quando — e um titulo que fica devendo R$ 0,01 depois de quitado nao e
+   * detalhe: ele continua na lista de contas em aberto, para sempre.
+   */
+  saldoCents: number
+  /** "pagar" ou "receber" — muda o texto e QUAIS campos aparecem. */
   verbo: 'pagar' | 'receber'
   processando?: boolean
   erro?: string | null
-  onConfirmar: (valor: number) => void
+  onConfirmar: (dados: DadosDaBaixa) => void
   onCancelar: () => void
 }) {
   const [modo, setModo] = useState<'total' | 'parcial'>('total')
   const [valorParcial, setValorParcial] = useState('')
+  /*
+   * A data da baixa, e nao "hoje" a forca.
+   *
+   * Ela e obrigatoria no contrato pelo mesmo motivo que a conta bancaria: a
+   * baixa existe para casar com o extrato (RF-059). Lancada com a data em que
+   * alguem lembrou de registrar, ela nao casa com nada — e lancar na segunda a
+   * conta paga na sexta e o caso normal, nao a excecao.
+   */
+  const [data, setData] = useState(hoje)
+  const [conta, setConta] = useState('')
+  const [forma, setForma] = useState<FormaDeRecebimento>('pix')
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -58,11 +90,26 @@ export default function BaixaDialog({
     }
   }, [onCancelar, processando])
 
-  const valor = modo === 'total' ? saldo : paraNumero(valorParcial)
-  const restante = saldo - valor
-  const valorValido = valor > 0 && valor <= saldo + 0.01
+  const pagar = verbo === 'pagar'
 
-  const rotuloAcao = verbo === 'pagar' ? 'Baixar pagamento' : 'Baixar recebimento'
+  /* Na baixa TOTAL o valor e o saldo exato — nao passa por reais e volta. */
+  const valorCents = modo === 'total' ? saldoCents : paraCentavos(valorParcial)
+  const restanteCents = saldoCents - valorCents
+  /* Sem a tolerancia de um centavo que existia aqui: em inteiros ela nao e
+     necessaria, e era ela que deixava passar uma baixa maior que o saldo — que
+     o servidor recusa depois, com a pessoa achando que tinha dado certo. */
+  const valorValido = valorCents > 0 && valorCents <= saldoCents
+  const contaValida = !pagar || conta.trim() !== ''
+  const podeConfirmar = valorValido && contaValida && data !== ''
+
+  const rotuloAcao = pagar ? 'Baixar pagamento' : 'Baixar recebimento'
+
+  const confirmar = () =>
+    onConfirmar({
+      amountCents: valorCents,
+      settledOn: data,
+      ...(pagar ? { bankAccount: conta.trim() } : { method: forma }),
+    })
 
   return (
     <div className={styles.dialogRoot}>
@@ -103,7 +150,7 @@ export default function BaixaDialog({
 
         <div className={styles.baixaSaldo}>
           <span>Saldo em aberto</span>
-          <strong>{formatMoney(saldo)}</strong>
+          <strong>{formatMoney(saldoCents / 100)}</strong>
         </div>
 
         <div className={styles.baixaModos} role="group" aria-label="Tipo de baixa">
@@ -127,7 +174,7 @@ export default function BaixaDialog({
 
         {modo === 'parcial' ? (
           <label className={styles.baixaCampo}>
-            <span>Valor {verbo === 'pagar' ? 'pago' : 'recebido'} agora</span>
+            <span>Valor {pagar ? 'pago' : 'recebido'} agora</span>
             <input
               className={styles.baixaInput}
               value={valorParcial}
@@ -136,15 +183,66 @@ export default function BaixaDialog({
               inputMode="decimal"
               autoFocus
             />
-            {valor > 0 ? (
+            {valorCents > 0 ? (
               <span className={styles.baixaRestante}>
-                {restante > 0.01
-                  ? `Restam ${formatMoney(restante)} em aberto`
-                  : 'Este valor quita o titulo'}
+                {valorCents > saldoCents
+                  ? 'Este valor passa do saldo em aberto'
+                  : restanteCents > 0
+                    ? `Restam ${formatMoney(restanteCents / 100)} em aberto`
+                    : 'Este valor quita o titulo'}
               </span>
             ) : null}
           </label>
         ) : null}
+
+        <div className={styles.baixaLinha}>
+          <label className={styles.baixaCampo}>
+            <span>Data da {pagar ? 'saida' : 'entrada'}</span>
+            <input
+              type="date"
+              className={styles.baixaInput}
+              value={data}
+              onChange={(e) => setData(e.target.value)}
+              max={hoje()}
+            />
+          </label>
+
+          {pagar ? (
+            <label className={styles.baixaCampo}>
+              <span>Conta de onde saiu</span>
+              <input
+                className={styles.baixaInput}
+                value={conta}
+                onChange={(e) => setConta(e.target.value)}
+                placeholder="Ex.: Banco do Brasil"
+                list="baixa-contas"
+                maxLength={140}
+              />
+              {/* `datalist` e nao `select`: a lista de bancos ajuda, mas a conta
+                  pode ser uma que nao esta nela — e a api aceita texto livre. */}
+              <datalist id="baixa-contas">
+                {NOMES_BANCOS.map((b) => (
+                  <option key={b} value={b} />
+                ))}
+              </datalist>
+            </label>
+          ) : (
+            <label className={styles.baixaCampo}>
+              <span>Como o cliente pagou</span>
+              <select
+                className={styles.baixaInput}
+                value={forma}
+                onChange={(e) => setForma(e.target.value as FormaDeRecebimento)}
+              >
+                {FORMAS_DE_RECEBIMENTO.map((f) => (
+                  <option key={f.valor} value={f.valor}>
+                    {f.rotulo}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+        </div>
 
         {erro ? (
           <p className={styles.baixaErro} role="alert">
@@ -156,14 +254,14 @@ export default function BaixaDialog({
           <Button variant="secondary" onClick={onCancelar} disabled={processando}>
             Cancelar
           </Button>
-          <Button onClick={() => onConfirmar(valor)} disabled={processando || !valorValido}>
+          <Button onClick={confirmar} disabled={processando || !podeConfirmar}>
             {processando ? (
               <>
                 <Spinner size={15} />
                 Registrando...
               </>
             ) : (
-              `Confirmar ${formatMoney(valor)}`
+              `Confirmar ${formatMoney(valorCents / 100)}`
             )}
           </Button>
         </div>

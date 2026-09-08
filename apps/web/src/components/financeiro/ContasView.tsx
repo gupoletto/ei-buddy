@@ -2,18 +2,18 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
-  carregarContasAPagar,
-  type ContaAPagar,
   baixarTitulo,
-  estornarTitulo,
+  carregarContasAPagar,
+  carregarContasAReceber,
+  type ContaAPagar,
+  type ContaAReceber,
+  type DadosDaBaixa,
   exportar,
-  listarContasReceber,
   ROTULO_SITUACAO,
   situacaoDoTitulo,
-  TIPOS_RECEBIMENTO,
   type SituacaoVisual,
 } from '@/lib/financeiro-api'
-import type { ContaReceber, StatusTitulo } from '@/lib/types'
+import type { StatusTitulo } from '@/lib/types'
 import { daysUntil, describeDueDate, formatDate, formatMoney, mesDeHoje } from '@/lib/format'
 import { Badge, Card, EmptyState, PageHeader, Stat } from '@/components/ui/UI'
 import { Button } from '@/components/ui/Button'
@@ -21,8 +21,8 @@ import Toast from '@/components/ui/Toast'
 import { IconFilter, IconPlus, IconUpload } from '@/components/Icons'
 import { COMANDOS_PAGAR, COMANDOS_RECEBER } from '@/lib/comandos'
 import ComandosWhatsApp from '@/components/app/ComandosWhatsApp'
-import ConfirmarDialog from '@/components/app/ConfirmarDialog'
 import BaixaDialog from './BaixaDialog'
+import EstornoDialog from './EstornoDialog'
 import FormularioTitulo from './FormularioTitulo'
 import styles from './financeiro.module.css'
 
@@ -45,19 +45,15 @@ function statusDaApi(status: string, vencimento: string): StatusTitulo {
   return daysUntil(vencimento) < 0 ? 'vencido' : 'aberto'
 }
 
-function paraLinhaDaApi(c: ContaAPagar): Linha {
+function paraLinhaAPagar(c: ContaAPagar): Linha {
   return {
     id: c.id,
     contraparte: c.supplier,
     descricao: c.description,
     vencimento: c.dueDate,
-    /* Centavos para reais na borda: a tela inteira trabalha em reais. */
-    valor: c.amountCents / 100,
-    valorBaixado: c.settledAmountCents / 100,
+    valorCents: c.amountCents,
+    valorBaixadoCents: c.settledAmountCents,
     status: statusDaApi(c.status, c.dueDate),
-    /* O banco da baixa nao vem no titulo — ele mora em `payable_settlements`,
-       uma linha por baixa, e o titulo pode ter varias. Vazio e honesto. */
-    banco: '',
     /* A classificacao agora e id de conta (NR-077), e esta lista mostra NOME.
        Buscar o nome exige o plano carregado; a tela de contas ainda nao o
        carrega, entao mostra vazio em vez de mostrar um uuid. */
@@ -65,16 +61,54 @@ function paraLinhaDaApi(c: ContaAPagar): Linha {
   }
 }
 
+/**
+ * O recebivel da api para a linha da tela — NR-080.
+ *
+ * Esta conversao nao existia: a tela de contas a receber era alimentada por
+ * dado de exemplo, ao lado de uma tela de contas a pagar real.
+ *
+ * `customerName` nulo e o balcao permitindo venda sem identificar o cliente —
+ * nao um dado faltando por erro.
+ *
+ * A coluna que na tela de pagar mostra o plano de conta aqui mostra a PARCELA,
+ * e nao a forma de pagamento: `ReceivableOutput` nao carrega forma, porque ela
+ * e fato do pagamento e mora em `payments`. Inventar um rotulo aqui seria a
+ * tela afirmando algo que o servidor nao disse.
+ */
+function paraLinhaAReceber(c: ContaAReceber): Linha {
+  return {
+    id: c.id,
+    contraparte: c.customerName ?? 'Cliente nao identificado',
+    descricao: c.description,
+    vencimento: c.dueDate,
+    /* Bruto, e nao `netAmountCents`: e sobre o bruto que a baixa e conferida no
+       servidor. Mostrar o liquido e cobrar o bruto daria um saldo que nao fecha
+       com o que a confirmacao aceita. */
+    valorCents: c.amountCents,
+    valorBaixadoCents: c.settledAmountCents,
+    status: statusDaApi(c.status, c.dueDate),
+    classificacao: c.installmentCount > 1 ? `${c.installmentNumber}/${c.installmentCount}` : '',
+  }
+}
+
+/**
+ * A linha como a tela precisa dela.
+ *
+ * Valores em CENTAVOS, e nao em reais. Eram em reais, e a baixa total passaria
+ * `saldo * 100` de volta para a api: em ponto flutuante isso deixa um centavo
+ * para tras de vez em quando, e um titulo que fica devendo R$ 0,01 depois de
+ * quitado nao sai mais da lista de contas em aberto. Os reais aparecem so na
+ * formatacao, dividindo por 100 no ponto de exibir.
+ */
 type Linha = {
   id: string
   contraparte: string
   descricao: string
   vencimento: string
-  valor: number
-  valorBaixado: number
+  valorCents: number
+  valorBaixadoCents: number
   status: StatusTitulo
-  banco: string
-  /** Plano de conta (pagar) ou tipo de recebimento (receber). */
+  /** Plano de conta (pagar) ou parcela (receber). */
   classificacao: string
 }
 
@@ -92,47 +126,53 @@ type FiltroStatus = 'todos' | 'aberto' | 'vencido' | 'quitado'
 export default function ContasView({ tipo }: { tipo: 'pagar' | 'receber' }) {
   const pagar = tipo === 'pagar'
 
-  /* Estado local: sem backend, a lista precisa refletir baixa e estorno
-     para a tela ser navegavel de verdade. */
   /*
-   * CONTAS A PAGAR vem da api (NR-074). CONTAS A RECEBER continua no mock: a
-   * tabela `receivables` existe desde a 0003, mas nao ha caso de uso de listar
-   * em `core` nem rota na api — e uma tela alimentada por dado inventado ao
-   * lado de uma tela real seria pior que duas telas mock, porque ninguem
-   * saberia qual e qual.
+   * As DUAS listas vem da api — NR-080.
    *
-   * Isso esta dito no PR. A metade que falta e uma tarefa: listar recebiveis.
+   * Contas a receber estava no mock: a rota `GET /contas-a-receber` existe
+   * desde a NR-074 e o web nao a chamava. Ficavam duas telas irmas, uma com
+   * dado do banco e outra com dado inventado, sem nada na interface dizendo
+   * qual era qual — e o botao de baixa da tela falsa apontando para ids que nao
+   * existem no banco.
    */
-  const [linhas, setLinhas] = useState<Linha[]>(() =>
-    pagar ? [] : listarContasReceber().map(paraLinhaReceber),
-  )
-  const [carregando, setCarregando] = useState(pagar)
+  const [linhas, setLinhas] = useState<Linha[]>([])
+  const [carregando, setCarregando] = useState(true)
   const [erroCarga, setErroCarga] = useState<string | null>(null)
 
   /*
-   * Fora do efeito porque o botao de "tentar de novo" chama o MESMO caminho.
+   * Fora do efeito porque tres caminhos chamam o MESMO carregamento: a
+   * montagem, o botao de "tentar de novo" e o retorno de uma baixa ou estorno.
    * Erro de rede que so oferece recarregar a pagina inteira faz o lojista
    * perder os filtros que acabou de montar.
    */
   const carregar = useCallback(async () => {
-    const r = await carregarContasAPagar()
-    setCarregando(false)
-
-    if (!r.ok) {
-      setErroCarga(r.erro)
-      return
-    }
-
     /* O servidor ja agrupa e ja soma. A tela achata para a lista que ela
        desenha, mas NAO recalcula total: somar aqui daria um numero que pode
        divergir do relatorio, e "quanto preciso ter em caixa" nao pode ter
        duas respostas. */
-    setLinhas(r.dados.grupos.flatMap((g) => g.payables.map(paraLinhaDaApi)))
-  }, [])
+    if (pagar) {
+      const r = await carregarContasAPagar()
+      setCarregando(false)
+      if (!r.ok) {
+        setErroCarga(r.erro)
+        return
+      }
+      setErroCarga(null)
+      setLinhas(r.dados.grupos.flatMap((g) => g.payables.map(paraLinhaAPagar)))
+      return
+    }
+
+    const r = await carregarContasAReceber()
+    setCarregando(false)
+    if (!r.ok) {
+      setErroCarga(r.erro)
+      return
+    }
+    setErroCarga(null)
+    setLinhas(r.dados.grupos.flatMap((g) => g.receivables.map(paraLinhaAReceber)))
+  }, [pagar])
 
   useEffect(() => {
-    if (!pagar) return
-
     /* O `async` explicito e para o lint, e o que ele diz e verdade: todo
        `setState` de `carregar` vem DEPOIS do await, nunca sincrono no corpo
        do efeito. Chamada nua, o compilador do React para no nome da funcao e
@@ -140,7 +180,7 @@ export default function ContasView({ tipo }: { tipo: 'pagar' | 'receber' }) {
     void (async () => {
       await carregar()
     })()
-  }, [pagar, carregar])
+  }, [carregar])
 
   /*
    * A primeira carga JA comeca com `carregando`; quem precisa religa-lo e a
@@ -164,6 +204,9 @@ export default function ContasView({ tipo }: { tipo: 'pagar' | 'receber' }) {
   const [baixando, setBaixando] = useState<Linha | null>(null)
   const [estornando, setEstornando] = useState<Linha | null>(null)
   const [processando, setProcessando] = useState(false)
+  /* Nao ha `processandoEstorno`: o `EstornoDialog` cuida do proprio ciclo —
+     ele carrega o historico, escolhe a baixa e confirma. O que volta para ca e
+     so o desfecho. */
   const [erroDialogo, setErroDialogo] = useState<string | null>(null)
   const [toast, setToast] = useState<{ msg: string; tone: 'success' | 'error' } | null>(null)
 
@@ -178,7 +221,6 @@ export default function ContasView({ tipo }: { tipo: 'pagar' | 'receber' }) {
 
   const filtradas = useMemo(() => {
     return linhas.filter((l) => {
-      const saldo = l.valor - l.valorBaixado
       const dias = daysUntil(l.vencimento)
       const situacao = situacaoDoTitulo(l.status, l.vencimento, dias)
 
@@ -193,89 +235,69 @@ export default function ContasView({ tipo }: { tipo: 'pagar' | 'receber' }) {
          "o que vence ate sexta" quer o que ainda deve. */
       if (ate && l.vencimento > ate) return false
 
-      void saldo
       return true
     })
   }, [linhas, filtroStatus, filtroClassificacao, filtroContraparte, ate])
 
-  /* --- Indicadores --- */
+  /* --- Indicadores. Somados em CENTAVOS, formatados em reais no fim. --- */
   const emAberto = linhas.filter((l) => l.status !== 'pago')
-  const totalAberto = emAberto.reduce((acc, l) => acc + (l.valor - l.valorBaixado), 0)
+  const totalAberto = emAberto.reduce((acc, l) => acc + (l.valorCents - l.valorBaixadoCents), 0)
   const vencidos = emAberto.filter((l) => daysUntil(l.vencimento) < 0)
-  const totalVencido = vencidos.reduce((acc, l) => acc + (l.valor - l.valorBaixado), 0)
+  const totalVencido = vencidos.reduce((acc, l) => acc + (l.valorCents - l.valorBaixadoCents), 0)
   /* `mesDeHoje()` e nao `'2026-08'`: o bloco "quitados no mes" mostrava agosto
      para sempre, e em setembro ele exibia o mes passado como se fosse este. */
   const quitadosMes = linhas.filter(
     (l) => l.status === 'pago' && l.vencimento.startsWith(mesDeHoje()),
   )
-  const totalMes = quitadosMes.reduce((acc, l) => acc + l.valorBaixado, 0)
+  const totalMes = quitadosMes.reduce((acc, l) => acc + l.valorBaixadoCents, 0)
 
   /* ---------------------------------------------------------------- *
    * Baixa e estorno
    * ---------------------------------------------------------------- */
 
-  async function confirmarBaixa(valorBaixa: number) {
+  /**
+   * Baixa de verdade — RF-059, RF-066.
+   *
+   * ## A lista recarrega em vez de ser remendada
+   *
+   * O que existia aqui atualizava a linha na memoria com o que a propria tela
+   * havia calculado. Com um falso respondendo, dava no mesmo; com o servidor
+   * respondendo, nao da: quem decide o novo saldo e o novo status e `core`, com
+   * o titulo lido DENTRO da transacao. Se outra pessoa baixou o mesmo titulo
+   * enquanto este dialogo estava aberto, o remendo mostraria um saldo que nao
+   * existe — e a tela ficaria discordando do banco sem nada avisando.
+   *
+   * Recarregar custa uma ida a mais. Em troca, o que a tela mostra e sempre o
+   * que o servidor tem.
+   */
+  async function confirmarBaixa(dados: DadosDaBaixa) {
     if (!baixando) return
 
     setProcessando(true)
     setErroDialogo(null)
 
-    const saldo = baixando.valor - baixando.valorBaixado
-    /* SUBSTITUIR POR: POST /financeiro/titulos/:id/baixas */
-    const r = await baixarTitulo(baixando.id, valorBaixa, saldo)
+    const r = await baixarTitulo(tipo, baixando.id, dados)
     setProcessando(false)
 
     if (!r.ok) {
-      setErroDialogo(r.error)
+      /* O erro fica DENTRO do dialogo, e nao num toast: valor acima do saldo e
+         conta em branco sao coisas que a pessoa corrige ali mesmo. Fechar o
+         dialogo a obrigaria a preencher tudo de novo. */
+      setErroDialogo(r.erro)
       return
     }
 
-    setLinhas((atual) =>
-      atual.map((l) =>
-        l.id === baixando.id
-          ? { ...l, valorBaixado: l.valorBaixado + r.valorBaixado, status: r.status }
-          : l,
-      ),
-    )
+    const quitou = baixando.valorBaixadoCents + r.dados.amountCents >= baixando.valorCents
 
     setBaixando(null)
     setToast({
-      msg:
-        r.status === 'pago'
-          ? `Titulo quitado: ${formatMoney(r.valorBaixado)}.`
-          : `Baixa parcial de ${formatMoney(r.valorBaixado)} registrada.`,
+      msg: quitou
+        ? `Titulo quitado: ${formatMoney(r.dados.amountCents / 100)}.`
+        : `Baixa parcial de ${formatMoney(r.dados.amountCents / 100)} registrada.`,
       tone: 'success',
     })
-  }
 
-  async function confirmarEstorno() {
-    if (!estornando) return
-
-    setProcessando(true)
-    /* SUBSTITUIR POR: DELETE /financeiro/titulos/:id/baixas/:baixaId */
-    const r = await estornarTitulo(estornando.id)
-    setProcessando(false)
-
-    if (!r.ok) {
-      setToast({ msg: r.error, tone: 'error' })
-      setEstornando(null)
-      return
-    }
-
-    setLinhas((atual) =>
-      atual.map((l) =>
-        l.id === estornando.id
-          ? {
-              ...l,
-              valorBaixado: 0,
-              status: daysUntil(l.vencimento) < 0 ? 'vencido' : 'aberto',
-            }
-          : l,
-      ),
-    )
-
-    setEstornando(null)
-    setToast({ msg: 'Baixa estornada. O titulo voltou para em aberto.', tone: 'success' })
+    await carregar()
   }
 
   async function exportarLista(formato: 'csv' | 'pdf') {
@@ -447,7 +469,7 @@ export default function ContasView({ tipo }: { tipo: 'pagar' | 'receber' }) {
         ) : (
           <ul className={styles.titulos}>
             {filtradas.map((l) => {
-              const saldo = l.valor - l.valorBaixado
+              const saldoCents = l.valorCents - l.valorBaixadoCents
               const dias = daysUntil(l.vencimento)
               const situacao = situacaoDoTitulo(l.status, l.vencimento, dias)
               const quitado = l.status === 'pago'
@@ -473,12 +495,16 @@ export default function ContasView({ tipo }: { tipo: 'pagar' | 'receber' }) {
                   </div>
 
                   <div className={styles.tituloValores}>
-                    <strong>{formatMoney(saldo > 0 ? saldo : l.valor)}</strong>
-                    {l.valorBaixado > 0 && !quitado ? <span>de {formatMoney(l.valor)}</span> : null}
+                    <strong>
+                      {formatMoney((saldoCents > 0 ? saldoCents : l.valorCents) / 100)}
+                    </strong>
+                    {l.valorBaixadoCents > 0 && !quitado ? (
+                      <span>de {formatMoney(l.valorCents / 100)}</span>
+                    ) : null}
                   </div>
 
                   <div className={styles.tituloAcoes}>
-                    {quitado || l.valorBaixado > 0 ? (
+                    {quitado || l.valorBaixadoCents > 0 ? (
                       <Button variant="secondary" size="sm" onClick={() => setEstornando(l)}>
                         Estornar
                       </Button>
@@ -522,7 +548,7 @@ export default function ContasView({ tipo }: { tipo: 'pagar' | 'receber' }) {
         <BaixaDialog
           titulo={baixando.contraparte}
           descricao={`${baixando.descricao} · vence ${formatDate(baixando.vencimento)}`}
-          saldo={baixando.valor - baixando.valorBaixado}
+          saldoCents={baixando.valorCents - baixando.valorBaixadoCents}
           verbo={tipo}
           processando={processando}
           erro={erroDialogo}
@@ -534,23 +560,23 @@ export default function ContasView({ tipo }: { tipo: 'pagar' | 'receber' }) {
         />
       ) : null}
 
+      {/*
+        O estorno virou dialogo proprio (NR-080) e nao mais um "tem certeza?".
+        Um titulo pode ter varias baixas e o servidor estorna UMA — a pergunta
+        "estornar o titulo" nao tinha resposta. Ele carrega o historico, deixa
+        escolher e cobra o motivo, que a trilha guarda.
+      */}
       {estornando ? (
-        <ConfirmarDialog
-          titulo="Estornar baixa"
-          descricao="A baixa sera desfeita e o titulo volta para em aberto. O historico guarda o estorno — nada e apagado."
-          tom="perigo"
-          rotuloConfirmar="Estornar"
-          processando={processando}
-          detalhe={
-            <div className={styles.estornoDetalhe}>
-              <strong>{estornando.contraparte}</strong>
-              <span>{estornando.descricao}</span>
-              <span className={styles.estornoValor}>
-                {formatMoney(estornando.valorBaixado || estornando.valor)}
-              </span>
-            </div>
-          }
-          onConfirmar={confirmarEstorno}
+        <EstornoDialog
+          tipo={tipo}
+          tituloId={estornando.id}
+          contraparte={estornando.contraparte}
+          descricao={`${estornando.descricao} · vence ${formatDate(estornando.vencimento)}`}
+          onEstornado={(msg) => {
+            setEstornando(null)
+            setToast({ msg, tone: 'success' })
+            void carregar()
+          }}
           onCancelar={() => setEstornando(null)}
         />
       ) : null}
@@ -560,22 +586,4 @@ export default function ContasView({ tipo }: { tipo: 'pagar' | 'receber' }) {
       ) : null}
     </>
   )
-}
-
-/* ------------------------------------------------------------------ */
-
-function paraLinhaReceber(c: ContaReceber): Linha {
-  const tipoRotulo = TIPOS_RECEBIMENTO.find((t) => t.valor === c.tipo)?.rotulo ?? c.tipo
-
-  return {
-    id: c.id,
-    contraparte: c.clienteNome,
-    descricao: c.referente,
-    vencimento: c.vencimento,
-    valor: c.valor,
-    valorBaixado: c.valorRecebido,
-    status: c.status,
-    banco: c.bancoNome,
-    classificacao: tipoRotulo,
-  }
 }

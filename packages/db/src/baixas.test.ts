@@ -8,7 +8,7 @@ import {
 import postgres, { type Sql } from 'postgres'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { migrate } from './migrate.js'
-import { createSettlementUnitOfWork } from './settlement-repository.js'
+import { createSettlementQueries, createSettlementUnitOfWork } from './settlement-repository.js'
 import { cnpjDeTeste, conectarComoAplicacao, type ConexaoDeAplicacao } from './test-support.js'
 import { withTenant } from './tenant.js'
 
@@ -37,6 +37,7 @@ describe.skipIf(!DATABASE_URL)('baixa e estorno — NR-029', () => {
   let usuario: string
 
   let uow: ReturnType<typeof createSettlementUnitOfWork>
+  let baixas: ReturnType<typeof createSettlementQueries>
 
   const AGORA = new Date('2026-09-07T12:00:00.000Z')
   const HOJE = '2026-09-07'
@@ -137,6 +138,8 @@ describe.skipIf(!DATABASE_URL)('baixa e estorno — NR-029', () => {
     `
 
     uow = createSettlementUnitOfWork(sql)
+
+    baixas = createSettlementQueries(sql)
   }, 60_000)
 
   afterAll(async () => {
@@ -344,6 +347,98 @@ describe.skipIf(!DATABASE_URL)('baixa e estorno — NR-029', () => {
 
       expect(estorno.reversesId).toBe(baixa.id)
       expect(estorno.amountCents).toBe(-15_000)
+    })
+  })
+
+  /**
+   * O historico de baixas — RF-067.
+   *
+   * A tela precisa dele para estornar: o estorno endereca a BAIXA, e a lista de
+   * titulos nao traz os ids delas.
+   *
+   * O que se prova aqui e o que so o banco prova. Que a consulta acha as baixas
+   * na tabela CERTA das duas. Que o estorno aparece junto, negativo — porque
+   * somar as linhas tem de dar o saldo baixado, e uma lista que esconde o
+   * estorno discordaria do titulo. E, sobretudo, que a empresa do lado nao ve
+   * nada: e a unica consulta de baixa que nasce FORA da transacao de escrita, e
+   * uma que esquecesse `withTenant` devolveria a loja errada em silencio.
+   */
+  describe('historico de baixas — RF-067', () => {
+    it('lista as baixas de uma conta a pagar, com o estorno junto', async () => {
+      const conta = await criarPagavel(empresaA, 30_000)
+
+      const primeira = await settlePayable(deps(), contexto(empresaA), {
+        payableId: conta,
+        amountCents: 10_000,
+        settledOn: HOJE,
+        bankAccount: 'Itau 1234',
+      })
+      const segunda = await settlePayable(deps(), contexto(empresaA), {
+        payableId: conta,
+        amountCents: 20_000,
+        settledOn: HOJE,
+        bankAccount: 'Itau 1234',
+      })
+      await reverseSettlement(deps(), contexto(empresaA), {
+        settlementId: segunda.id,
+        reason: 'Lancada na conta errada',
+      })
+
+      const lista = await baixas.listByTitulo(empresaA, 'payable', conta)
+
+      expect(lista).toHaveLength(3)
+      /* Somar as linhas da o saldo baixado — a propriedade que o estorno
+         negativo preserva, e a razao de ele nao ser omitido daqui. */
+      expect(lista.reduce((acc, b) => acc + b.amountCents, 0)).toBe(10_000)
+      expect(lista.some((b) => b.id === primeira.id)).toBe(true)
+      expect(lista.filter((b) => b.reversesId === segunda.id)).toHaveLength(1)
+      /* Toda linha aponta o titulo, e nenhuma se confunde com recebivel. */
+      expect(lista.every((b) => b.payableId === conta && b.receivableId === null)).toBe(true)
+    })
+
+    it('lista as baixas de um recebivel — a outra tabela', async () => {
+      const cliente = await criarCliente(empresaA, 25_000)
+      const titulo = await criarRecebivel(empresaA, 25_000, cliente)
+
+      const baixa = await settleReceivable(deps(), contexto(empresaA), {
+        receivableId: titulo,
+        amountCents: 25_000,
+        settledOn: HOJE,
+        method: 'pix',
+      })
+
+      const lista = await baixas.listByTitulo(empresaA, 'receivable', titulo)
+
+      expect(lista).toHaveLength(1)
+      expect(lista[0]!.id).toBe(baixa.id)
+      expect(lista[0]!.receivableId).toBe(titulo)
+      expect(lista[0]!.payableId).toBeNull()
+      /* A forma do RECEBIMENTO, que so esta tabela guarda. */
+      expect(lista[0]!.method).toBe('pix')
+    })
+
+    it('nao devolve a baixa da loja do lado', async () => {
+      const conta = await criarPagavel(empresaA, 12_000)
+      await settlePayable(deps(), contexto(empresaA), {
+        payableId: conta,
+        amountCents: 12_000,
+        settledOn: HOJE,
+        bankAccount: 'Itau 1234',
+      })
+
+      /*
+       * MESMO id de titulo, tenant diferente. Sem `withTenant`, a consulta
+       * filtra so por `payable_id` e devolveria a baixa da empresa A — e como
+       * ela existe e o id confere, nada pareceria errado.
+       */
+      expect(await baixas.listByTitulo(empresaB, 'payable', conta)).toHaveLength(0)
+    })
+
+    it('titulo sem baixa devolve lista vazia, e nao erro', async () => {
+      const conta = await criarPagavel(empresaA, 5_000)
+
+      /* A tela abre o historico de qualquer titulo. Vazio e uma resposta. */
+      expect(await baixas.listByTitulo(empresaA, 'payable', conta)).toEqual([])
     })
   })
 })

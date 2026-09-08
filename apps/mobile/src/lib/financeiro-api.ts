@@ -11,11 +11,8 @@
  *  | gerarContasDeCustosFixos | POST /financeiro/custos-fixos/gerar | botao      |
  *  | exportar              | GET  /financeiro/titulos/export  | botao exportar  |
  *
- * SOBRE BAIXA E ESTORNO: no backend isto NAO pode ser um UPDATE no titulo.
- * Cada baixa precisa ser um lancamento proprio, com valor, data e autor, e
- * o estorno precisa ser outro lancamento que anula o primeiro — nunca um
- * DELETE. Sem esse historico nao ha como auditar por que um saldo mudou,
- * e conciliacao bancaria sem auditoria e chute.
+ * BAIXA E ESTORNO SAIRAM desta lista de pendencias na NR-080: sao reais, contra
+ * a api, no fim do arquivo.
  */
 
 import { chamarApi, type Resposta } from './api'
@@ -62,9 +59,14 @@ export const TIPOS_RECEBIMENTO = [
  * contraparte trocada, e formas diferentes fariam o total significar uma coisa
  * numa e outra na outra.
  *
- * Valores em REAIS. A api fala em centavos inteiros (RNF-044) e a conversao
- * acontece aqui, na borda — deixar centavos subir faria cada tela dividir por
- * cem no lugar que lembrasse.
+ * Valores em CENTAVOS, como a api fala (RNF-044).
+ *
+ * Eram em reais, convertidos aqui na borda, e isso bastava enquanto a tela
+ * apenas MOSTRAVA. Com a baixa de verdade nao basta: a baixa total manda o saldo
+ * de volta para a api, e `saldo * 100` em ponto flutuante deixa um centavo para
+ * tras de vez em quando — um titulo que fica devendo R$ 0,01 depois de quitado
+ * nao sai mais da lista de contas em aberto. A divisao por cem virou coisa do
+ * ponto de EXIBIR.
  */
 export type Titulo = {
   id: string
@@ -73,15 +75,15 @@ export type Titulo = {
   descricao: string
   /** AAAA-MM-DD. */
   vencimento: string
-  valor: number
-  baixado: number
+  valorCents: number
+  baixadoCents: number
   status: StatusTitulo
 }
 
 export type ListaDeTitulos = {
   titulos: Titulo[]
-  /** Soma do que AINDA falta, e nao do valor original. */
-  total: number
+  /** Soma do que AINDA falta, e nao do valor original. Em centavos. */
+  totalCents: number
   temVencidos: boolean
 }
 
@@ -106,8 +108,6 @@ type ReceberDaApi = {
   dueDate: string
   status: string
 }
-
-const emReais = (centavos: number) => centavos / 100
 
 /**
  * O status da api vira o da tela.
@@ -145,12 +145,12 @@ export async function listarContasPagar(): Promise<Resposta<ListaDeTitulos>> {
           contraparte: p.supplier,
           descricao: p.description,
           vencimento: p.dueDate,
-          valor: emReais(p.amountCents),
-          baixado: emReais(p.settledAmountCents),
+          valorCents: p.amountCents,
+          baixadoCents: p.settledAmountCents,
           status: paraStatus(p.status),
         })),
       ),
-      total: emReais(r.dados.totalCents),
+      totalCents: r.dados.totalCents,
       temVencidos: r.dados.temVencidas,
     },
   }
@@ -177,12 +177,12 @@ export async function listarContasReceber(): Promise<Resposta<ListaDeTitulos>> {
           contraparte: rec.customerName ?? 'Cliente nao identificado',
           descricao: rec.description,
           vencimento: rec.dueDate,
-          valor: emReais(rec.amountCents),
-          baixado: emReais(rec.settledAmountCents),
+          valorCents: rec.amountCents,
+          baixadoCents: rec.settledAmountCents,
           status: paraStatus(rec.status),
         })),
       ),
-      total: emReais(r.dados.totalCents),
+      totalCents: r.dados.totalCents,
       temVencidos: r.dados.temVencidas,
     },
   }
@@ -208,48 +208,106 @@ export function listarCustosFixos(): CustoFixo[] {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Baixa e estorno                                                            */
+/* Baixa e estorno, de verdade — NR-080, RF-059, RF-066, RF-067               */
 /* -------------------------------------------------------------------------- */
 
 /**
- * Por que a baixa nao acontece no celular — RF-063, RF-064.
+ * A baixa saiu do celular por uma razao que agora deixou de valer.
  *
- * As rotas existem desde a NR-029. O que falta nao e codigo: e a PERGUNTA que
- * cada uma faz.
- *
- * - `POST /contas-a-pagar/:id/baixas` exige `bankAccount` — de qual conta o
- *   dinheiro saiu. Sem isso a conciliacao bancaria nao fecha, e o campo nao tem
- *   padrao razoavel: chutar "a primeira conta" poe a saida na conta errada, e o
- *   erro so aparece no extrato do mes seguinte.
- * - `POST /contas-a-receber/:id/baixas` exige `method` — como o dinheiro
- *   entrou. Nao e a forma da venda, e a do recebimento: quem vendeu fiado pode
- *   receber em pix, e e isso que o relatorio de caixa mostra.
- *
- * A tela de hoje confirma num `Alert`, que nao tem onde escolher nada. Mandar
- * um padrao inventado seria pior que nao ter o botao: a baixa entraria com dado
+ * O que estava aqui era `BAIXA_SO_NO_WEB`: um texto de recusa, porque as duas
+ * rotas exigem uma escolha — de qual conta o dinheiro saiu, ou como ele entrou —
+ * e a tela confirmava num `Alert`, que nao tem onde oferecer nada. Mandar um
+ * padrao inventado seria pior que nao ter o botao: a baixa entraria com dado
  * errado, e dado financeiro errado com cara de certo e o que ninguem consegue
  * auditar depois.
  *
- * Ate esta tela ganhar a escolha, a baixa fica no web, que ja pergunta as duas
- * coisas. O que muda agora e o botao parar de MENTIR: ele era
- * `await delay(800)` seguido de `{ ok: true }`, e a tela respondia "baixado"
- * enquanto o saldo continuava o mesmo no dia seguinte.
+ * A resposta nao era esconder a operacao mais diaria do financeiro do aparelho
+ * que o lojista tem na mao. Era a tela PERGUNTAR. `BaixaModal` pergunta, e o
+ * estorno tambem: `EstornoModal` carrega o historico de baixas do titulo, deixa
+ * escolher qual desfazer e cobra o motivo.
  */
-export const BAIXA_SO_NO_WEB =
-  'A baixa precisa da conta bancaria (a pagar) ou da forma de recebimento (a receber). ' +
-  'Enquanto esta tela nao pergunta, faca a baixa pelo Ei Buddy no computador.'
+
+export type TipoDeTitulo = 'pagar' | 'receber'
+
+/** Como o dinheiro ENTROU — as cinco do contrato, sem inventar uma sexta. */
+export type FormaDeRecebimento = 'cash' | 'pix' | 'debit' | 'credit' | 'wallet'
+
+export const FORMAS_DE_RECEBIMENTO: readonly { valor: FormaDeRecebimento; rotulo: string }[] = [
+  { valor: 'pix', rotulo: 'Pix' },
+  { valor: 'cash', rotulo: 'Dinheiro' },
+  { valor: 'debit', rotulo: 'Debito' },
+  { valor: 'credit', rotulo: 'Credito' },
+  { valor: 'wallet', rotulo: 'Carteira' },
+]
 
 /**
- * O estorno, pelo mesmo motivo, tambem nao sai daqui.
+ * Uma linha do historico de baixas.
  *
- * `POST /baixas/:id/estorno` aponta para a BAIXA e nao para o titulo — um
- * titulo com tres baixas nao diz sozinho qual desfazer —, e a lista de titulos
- * nao carrega as baixas de cada um. Sem elas, "estornar" no celular seria um
- * palpite sobre qual lancamento desfazer.
+ * `amountCents` NEGATIVO e estorno, e nao erro de sinal: o estorno nao apaga a
+ * baixa, grava a linha oposta. Somar as linhas da o saldo baixado, sempre.
  */
-export const ESTORNO_SO_NO_WEB =
-  'O estorno aponta para uma baixa especifica, e esta tela mostra so o saldo. ' +
-  'Faca o estorno pelo Ei Buddy no computador.'
+export type Baixa = {
+  id: string
+  payableId: string | null
+  receivableId: string | null
+  amountCents: number
+  method: string | null
+  bankAccount: string | null
+  settledOn: string
+  notes: string | null
+  /** Preenchido na linha de estorno, apontando a baixa desfeita. */
+  reversesId: string | null
+  createdBy: string | null
+  createdAt: string
+}
+
+const caminhoDasBaixas = (tipo: TipoDeTitulo, tituloId: string) =>
+  `/contas-a-${tipo}/${encodeURIComponent(tituloId)}/baixas`
+
+/**
+ * O historico de baixas de um titulo — RF-067.
+ *
+ * O estorno endereca a BAIXA (`POST /baixas/:id/estorno`) e a lista de titulos
+ * nao traz os ids delas. Era esta consulta que faltava para o celular poder
+ * estornar sem palpitar sobre qual lancamento desfazer.
+ */
+export const listarBaixas = (tipo: TipoDeTitulo, tituloId: string): Promise<Resposta<Baixa[]>> =>
+  chamarApi<Baixa[]>(caminhoDasBaixas(tipo, tituloId))
+
+export type DadosDaBaixa = {
+  /** Em CENTAVOS. */
+  amountCents: number
+  settledOn: string
+  /** So na conta a pagar: de qual conta o dinheiro saiu — RF-059. */
+  bankAccount?: string
+  /** So no recebivel: como o dinheiro entrou — RF-066. */
+  method?: FormaDeRecebimento
+  notes?: string
+}
+
+/** Baixa, total ou parcial — RF-059, RF-066. */
+export const baixarTitulo = (
+  tipo: TipoDeTitulo,
+  tituloId: string,
+  dados: DadosDaBaixa,
+): Promise<Resposta<Baixa>> =>
+  chamarApi<Baixa>(caminhoDasBaixas(tipo, tituloId), { method: 'POST', body: dados })
+
+/**
+ * Estorno — RF-067.
+ *
+ * O id e o da BAIXA, e o caminho nao diz se ela e de conta a pagar ou a
+ * receber: o servidor procura nas duas tabelas.
+ *
+ * `motivo` e obrigatorio la, e com razao — um estorno sem motivo e um numero
+ * que mudou sem explicacao, e "por que esse saldo mudou" e exatamente a
+ * pergunta que traz alguem ao historico.
+ */
+export const estornarBaixa = (baixaId: string, motivo: string): Promise<Resposta<Baixa>> =>
+  chamarApi<Baixa>(`/baixas/${encodeURIComponent(baixaId)}/estorno`, {
+    method: 'POST',
+    body: { reason: motivo },
+  })
 
 /* -------------------------------------------------------------------------- */
 /* Gravacao de titulos                                                        */

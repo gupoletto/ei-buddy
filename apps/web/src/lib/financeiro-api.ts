@@ -6,23 +6,20 @@
  *  | Funcao                | Endpoint esperado                | Disparo         |
  *  |-----------------------|----------------------------------|-----------------|
  *  | salvarTitulo          | POST/PUT /financeiro/titulos     | submit do form  |
- *  | baixarTitulo          | POST /financeiro/titulos/:id/baixas | confirmar baixa |
- *  | estornarTitulo        | DELETE /financeiro/titulos/:id/baixas/:baixaId | estorno |
  *  | salvarPlanoContas     | POST/PUT /financeiro/planos      | submit          |
  *  | salvarCustoFixo       | POST/PUT /financeiro/custos-fixos| submit          |
  *  | gerarContasDeCustosFixos | POST /financeiro/custos-fixos/gerar | botao      |
  *  | exportar              | GET  /financeiro/titulos/export  | botao exportar  |
  *
- * SOBRE BAIXA E ESTORNO: no backend isto NAO pode ser um UPDATE no titulo.
- * Cada baixa precisa ser um lancamento proprio, com valor, data e autor, e
- * o estorno precisa ser outro lancamento que anula o primeiro — nunca um
- * DELETE. Sem esse historico nao ha como auditar por que um saldo mudou,
- * e conciliacao bancaria sem auditoria e chute.
+ * BAIXA E ESTORNO SAIRAM DESTA LISTA — sao reais desde a NR-080, no fim do
+ * arquivo. O aviso que morava aqui dizia que a baixa nao podia ser um UPDATE
+ * no titulo, e o servidor concorda: cada baixa e uma linha propria, e o estorno
+ * e outra linha, negativa, apontando para a primeira. Nunca um DELETE.
  */
 
-import { contasPagar, contasReceber, planoContas, custosFixos, bancos, clientes } from './mock-data'
+import { contasPagar, planoContas, custosFixos, bancos, clientes } from './mock-data'
 import { pedir, type Resultado } from './http'
-import type { ContaPagar, ContaReceber, CustoFixo, PlanoContas, StatusTitulo } from './types'
+import type { CustoFixo, PlanoContas, StatusTitulo } from './types'
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
@@ -53,16 +50,6 @@ export const TIPOS_RECEBIMENTO = [
 /* Estado das listas                                                          */
 /* -------------------------------------------------------------------------- */
 
-/** SUBSTITUIR POR: GET /financeiro/titulos?tipo=pagar */
-export function listarContasPagar(): ContaPagar[] {
-  return contasPagar.map((c) => ({ ...c }))
-}
-
-/** SUBSTITUIR POR: GET /financeiro/titulos?tipo=receber */
-export function listarContasReceber(): ContaReceber[] {
-  return contasReceber.map((c) => ({ ...c }))
-}
-
 /** SUBSTITUIR POR: GET /financeiro/planos */
 export function listarPlanos(): PlanoContas[] {
   return planoContas.map((p) => ({ ...p }))
@@ -71,49 +58,6 @@ export function listarPlanos(): PlanoContas[] {
 /** SUBSTITUIR POR: GET /financeiro/custos-fixos */
 export function listarCustosFixos(): CustoFixo[] {
   return custosFixos.map((c) => ({ ...c }))
-}
-
-/* -------------------------------------------------------------------------- */
-/* Baixa e estorno                                                            */
-/* -------------------------------------------------------------------------- */
-
-export type ResultadoBaixa =
-  { ok: true; status: StatusTitulo; valorBaixado: number } | { ok: false; error: string }
-
-/**
- * SUBSTITUIR POR: POST /financeiro/titulos/:id/baixas
- *
- * `valor` e o quanto foi pago/recebido agora. Quando for menor que o saldo,
- * o titulo fica "parcial" e o restante continua em aberto.
- */
-export async function baixarTitulo(
-  id: string,
-  valor: number,
-  saldo: number,
-): Promise<ResultadoBaixa> {
-  await delay(800)
-  void id
-
-  if (!Number.isFinite(valor) || valor <= 0) {
-    return { ok: false, error: 'Informe um valor maior que zero.' }
-  }
-
-  /* Tolerancia de 1 centavo para nao brigar com arredondamento. */
-  if (valor > saldo + 0.01) {
-    return { ok: false, error: 'O valor da baixa e maior que o saldo em aberto.' }
-  }
-
-  const quitou = valor >= saldo - 0.01
-  return { ok: true, status: quitou ? 'pago' : 'parcial', valorBaixado: valor }
-}
-
-/** SUBSTITUIR POR: DELETE /financeiro/titulos/:id/baixas/:baixaId */
-export async function estornarTitulo(
-  id: string,
-): Promise<{ ok: true } | { ok: false; error: string }> {
-  await delay(700)
-  void id
-  return { ok: true }
 }
 
 /* -------------------------------------------------------------------------- */
@@ -339,3 +283,149 @@ export const lancarContaAPagar = (entrada: {
   recurrence?: { frequency: 'weekly' | 'monthly'; occurrences: number }
 }): Promise<ResultadoContas<{ payables: ContaAPagar[]; count: number }>> =>
   pedir('/api/contas-a-pagar', { method: 'POST', body: JSON.stringify(entrada) })
+
+/* -------------------------------------------------------------------------- */
+/* Contas a receber contra a api — NR-080                                     */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * O recebivel como a api o descreve.
+ *
+ * Esta lista era MOCK ate agora, ao lado de uma lista de contas a pagar real —
+ * duas telas irmas, uma com dado do banco e outra com dado inventado, e nada na
+ * interface dizendo qual era qual. A rota `GET /contas-a-receber` existe desde
+ * a NR-074; faltava o cliente.
+ */
+export type ContaAReceber = {
+  id: string
+  saleId: string | null
+  customerId: string | null
+  /** Nulo quando a venda saiu sem identificar o cliente — o balcao permite. */
+  customerName: string | null
+  description: string
+  amountCents: number
+  /** Liquido previsto, ja sem a tarifa da adquirente — RF-063. */
+  netAmountCents: number
+  settledAmountCents: number
+  dueDate: string
+  installmentNumber: number
+  installmentCount: number
+  status: 'open' | 'partially_settled' | 'settled' | 'cancelled'
+}
+
+export type GrupoDeRecebimento = {
+  faixa: FaixaDeVencimento
+  receivables: ContaAReceber[]
+  totalCents: number
+}
+
+export type ContasAReceberAgrupadas = {
+  grupos: GrupoDeRecebimento[]
+  totalCents: number
+  temVencidas: boolean
+}
+
+export const carregarContasAReceber = (): Promise<ResultadoContas<ContasAReceberAgrupadas>> =>
+  pedir<ContasAReceberAgrupadas>('/api/contas-a-receber')
+
+/* -------------------------------------------------------------------------- */
+/* Baixa e estorno contra a api — NR-080, RF-059, RF-066, RF-067              */
+/* -------------------------------------------------------------------------- */
+
+export type TipoDeTitulo = 'pagar' | 'receber'
+
+/**
+ * Uma linha do historico de baixas.
+ *
+ * `amountCents` NEGATIVO e estorno, e nao um erro de sinal: o estorno nao apaga
+ * a baixa, grava a linha oposta. A propriedade que isso preserva e util na
+ * tela — somar as linhas da o saldo baixado, sempre.
+ */
+export type Baixa = {
+  id: string
+  payableId: string | null
+  receivableId: string | null
+  amountCents: number
+  method: string | null
+  bankAccount: string | null
+  settledOn: string
+  notes: string | null
+  /** Preenchido na linha de estorno, apontando a baixa desfeita. */
+  reversesId: string | null
+  createdBy: string | null
+  createdAt: string
+}
+
+const caminhoDoTitulo = (tipo: TipoDeTitulo, id: string) =>
+  `/api/contas-a-${tipo}/${encodeURIComponent(id)}/baixas`
+
+/**
+ * O historico de baixas de um titulo — RF-067.
+ *
+ * A tela precisa dele para estornar: o estorno endereca a BAIXA, e a lista de
+ * titulos nao traz os ids delas. Antes disto o botao "Estornar" chamava uma
+ * funcao falsa que respondia `ok` sem nada acontecer no banco.
+ */
+export const carregarBaixas = (
+  tipo: TipoDeTitulo,
+  tituloId: string,
+): Promise<ResultadoContas<Baixa[]>> => pedir<Baixa[]>(caminhoDoTitulo(tipo, tituloId))
+
+/** Como o dinheiro ENTROU. Nao e a forma da venda — e a do recebimento. */
+export type FormaDeRecebimento = 'cash' | 'pix' | 'debit' | 'credit' | 'wallet'
+
+/**
+ * As cinco do `paymentMethodSchema`, na ordem em que o balcao usa.
+ *
+ * Sem "outro": o contrato nao tem esse valor, e inventa-lo aqui daria um 400
+ * na hora de confirmar, depois de a pessoa ja ter escolhido.
+ */
+export const FORMAS_DE_RECEBIMENTO: readonly { valor: FormaDeRecebimento; rotulo: string }[] = [
+  { valor: 'pix', rotulo: 'Pix' },
+  { valor: 'cash', rotulo: 'Dinheiro' },
+  { valor: 'debit', rotulo: 'Cartao de debito' },
+  { valor: 'credit', rotulo: 'Cartao de credito' },
+  { valor: 'wallet', rotulo: 'Carteira digital' },
+]
+
+export type DadosDaBaixa = {
+  /** Em CENTAVOS. A tela mostra reais; a fronteira converte uma vez so. */
+  amountCents: number
+  settledOn: string
+  /** So em conta a pagar: de qual conta o dinheiro saiu. */
+  bankAccount?: string
+  /** So em recebivel: como o dinheiro entrou. */
+  method?: FormaDeRecebimento
+  notes?: string
+}
+
+/**
+ * Baixa, total ou parcial — RF-059, RF-066.
+ *
+ * Uma funcao para os dois tipos porque a ROTA e simetrica; o que difere e o
+ * corpo, e quem monta o corpo e a tela, que sabe qual titulo esta baixando.
+ */
+export const baixarTitulo = (
+  tipo: TipoDeTitulo,
+  tituloId: string,
+  dados: DadosDaBaixa,
+): Promise<ResultadoContas<Baixa>> =>
+  pedir<Baixa>(caminhoDoTitulo(tipo, tituloId), {
+    method: 'POST',
+    body: JSON.stringify(dados),
+  })
+
+/**
+ * Estorno — RF-067.
+ *
+ * Recebe o id da BAIXA, e nao o do titulo, e nao diz se ele e a pagar ou a
+ * receber: o servidor procura nas duas tabelas. `motivo` e obrigatorio la, e
+ * com razao — um estorno sem motivo e um numero que mudou sem explicacao, e a
+ * pergunta "por que esse saldo mudou" e exatamente a que traz alguem ao
+ * historico.
+ */
+export const estornarBaixa = (baixaId: string, motivo: string): Promise<ResultadoContas<Baixa>> =>
+  pedir<Baixa>(`/api/baixas/${encodeURIComponent(baixaId)}/estorno`, {
+    method: 'POST',
+    body: JSON.stringify({ reason: motivo }),
+  })

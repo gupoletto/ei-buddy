@@ -30,6 +30,7 @@ import {
   createInventoryQueries,
   createInventoryUnitOfWork,
   createReportRepository,
+  createSettlementQueries,
   createSettlementUnitOfWork,
   createSupportRepository,
   createCompanyRepository,
@@ -428,8 +429,10 @@ export function buildSuporteDeps(): SuporteDeps {
  * repositorio de auditoria, ela e de memoria — mesma pendencia das outras.
  */
 export function buildBaixasDeps(): BaixasDeps {
+  const sql = getClient(env.DATABASE_URL)
   return {
-    uow: createSettlementUnitOfWork(getClient(env.DATABASE_URL)),
+    uow: createSettlementUnitOfWork(sql),
+    settlements: createSettlementQueries(sql),
     audit: new InMemoryAuditTrail(),
   }
 }

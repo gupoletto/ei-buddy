@@ -102,12 +102,15 @@ export type {
   ReceivablesAgrupadas,
 } from './receivables/list-receivables.js'
 export type { ReceivableQueries } from './ports/receivable-repository.js'
+export { listSettlements } from './settlements/list-settlements.js'
+export type { ListSettlementsDeps } from './settlements/list-settlements.js'
 export { reverseSettlement } from './settlements/reverse-settlement.js'
 export { settlePayable, settleReceivable } from './settlements/settle.js'
 export type { SettleDeps } from './settlements/settle.js'
 export { mexeNoSaldoDoCliente } from './settlements/customer-balance.js'
 export type {
   NewSettlement,
+  SettlementQueries,
   SettlementTransaction,
   SettlementUnitOfWork,
   TituloSnapshot,

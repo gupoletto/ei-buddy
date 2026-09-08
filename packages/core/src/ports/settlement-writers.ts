@@ -83,6 +83,25 @@ export type SettlementTransaction = {
   adjustCustomerBalance(companyId: CompanyId, customerId: string, deltaCents: number): Promise<void>
 }
 
+/**
+ * Leitura das baixas de um titulo — RF-067.
+ *
+ * Fora da transacao de escrita: e consulta, e o estorno que vier depois abre a
+ * sua propria.
+ *
+ * Existe porque **o estorno aponta para a BAIXA, e nao para o titulo**, e
+ * nenhuma listagem de titulo carregava os ids das baixas. A tela mostrava um
+ * botao de estornar sem ter o que mandar para a api — e chamava um falso. Ligar
+ * a baixa de verdade sem isto deixaria o estorno mentindo ao lado dela.
+ */
+export type SettlementQueries = {
+  listByTitulo(
+    companyId: CompanyId,
+    tipo: 'payable' | 'receivable',
+    tituloId: string,
+  ): Promise<readonly SettlementOutput[]>
+}
+
 export type SettlementUnitOfWork = {
   transaction<T>(companyId: CompanyId, fn: (tx: SettlementTransaction) => Promise<T>): Promise<T>
 }

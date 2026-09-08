@@ -50,8 +50,8 @@ consome. A porta é declarada pelo núcleo; a seta aponta para dentro
 
 |                               | Tarefas | Dias |
 | ----------------------------- | ------: | ---: |
-| Total                         |      58 |  158 |
-| ✅ Concluídas                 |      48 |  123 |
+| Total                         |      59 |  161 |
+| ✅ Concluídas                 |      49 |  126 |
 | 🚧 Bloqueadas por decisão     |       9 |   33 |
 | 🚧 Bloqueadas por dependência |       1 |    2 |
 | ⬜ A fazer, pode começar hoje |       0 |    0 |
@@ -67,8 +67,14 @@ por linha, com o isolamento já materializado em `packages/db` (NR-007) e os
 cadastros, vendas e financeiro no schema (NR-008, NR-020) e os casos de uso de
 cadastro, o `registerSale` e a movimentação de estoque em `core` (NR-021,
 NR-022, NR-023), a agenda no schema (NR-035) e a trilha de auditoria
-(NR-025) e as contas a pagar com baixa e estorno (NR-028, NR-029) os consumidores de fila (NR-041) e o plano de contas com DRE (NR-032). Dos 80
-dias que faltam, **35 podem começar hoje**, em 12 tarefas; A NR-027 saiu: a rota de venda agora e real — ver a nota abaixo.
+(NR-025) e as contas a pagar com baixa e estorno (NR-028, NR-029) os
+consumidores de fila (NR-041) e o plano de contas com DRE (NR-032).
+
+Dos **35 dias que faltam, nenhum pode começar hoje**: as 10 tarefas restantes
+estão atrás de uma decisão de negócio (9) ou de outra tarefa que está (1). A
+linha ⬜ do painel é zero, e isso não é folga — é fila parada esperando
+resposta. As decisões em aberto estão em
+[Bloqueios por decisão](#bloqueios-por-decisão).
 
 ---
 
@@ -133,6 +139,7 @@ Objetivo: emitir NFC-e e controlar contas a pagar e receber.
 | NR-044 | `payments`: adapter PagMaxx — Pix, link de pagamento, webhook com HMAC |   🟠   | `payments`        |   4 | NR-043 | DEC-006, DEC-015 | RF-034, RF-068         |   🚧   |
 | NR-073 | `mobile`: pagamento, resumo com líquido e margem                       |   🟢   | `mobile`          |   3 | NR-071 | —                | US-018–020             |   ✅   |
 | NR-074 | `web`: contas a pagar e a receber                                      |   🟢   | `web`             |   4 | NR-029 | —                | E6, E7                 |   ✅   |
+| NR-080 | Baixa e estorno de título ligados de verdade, no web e no mobile       |   🟢   | `web` `mobile`    |   3 | NR-074 | —                | RF-059, RF-066, RF-067 |   ✅   |
 
 ## Sprint 4 — WhatsApp e assinatura
 
@@ -292,11 +299,11 @@ passou a ser retrabalho: trocar os tokens quando a marca fechar.
 | ------------------------------- | ------: | ---: | ------------------------------------------------ |
 | 🔵 1 — Núcleo & Dados           |      19 |   47 | é o gargalo; a fila dela segue em NR-023         |
 | 🟠 2 — Plataforma & Integrações |      25 |   69 | a mais carregada e a mais bloqueada (9 decisões) |
-| 🟢 3 — Clientes                 |      13 |   38 | depende de schema, mas já não está bloqueada     |
+| 🟢 3 — Clientes                 |      14 |   41 | depende de schema, mas já não está bloqueada     |
 | Compartilhada                   |       1 |    4 | documentação (NR-002)                            |
 
-Somando: **157 dias-desenvolvedor** em 58 tarefas. Com 3 pessoas, isso é cerca
-de 10 semanas de trabalho — desde que nada fique bloqueado, o que não é o caso
+Somando: **161 dias-desenvolvedor** em 59 tarefas. Com 3 pessoas, isso é cerca
+de 11 semanas de trabalho — desde que nada fique bloqueado, o que não é o caso
 hoje.
 
 A trilha 3 não está mais ociosa por falta de `ui`: NR-011 e NR-012 saíram com a
