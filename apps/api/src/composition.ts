@@ -9,12 +9,7 @@
  * fronteiras na CI barra o PR — e com razao.
  */
 import { randomUUID } from 'node:crypto'
-import {
-  createDefaultSaleSettings,
-  InMemoryAuditTrail,
-  InMemoryLoginThrottle,
-  InMemorySessionIssuer,
-} from '@na-regua/core'
+import { createDefaultSaleSettings, InMemoryAuditTrail } from '@na-regua/core'
 import type { AgendaDeps } from './routes/agenda.js'
 import type { AuthRouteDeps } from './routes/auth.js'
 import { IdentidadeEmArquivo } from './identidade-em-arquivo.js'
@@ -30,6 +25,8 @@ import {
   createInventoryQueries,
   createInventoryUnitOfWork,
   createReportRepository,
+  createLoginThrottle,
+  createSessionIssuer,
   createSettlementQueries,
   createSettlementUnitOfWork,
   createSupportRepository,
@@ -257,8 +254,16 @@ export function buildAuthDeps(): AuthRouteDeps {
     companies: createCompanyRepository(sql),
     accounts: createChartOfAccountsRepository(sql),
     users: createUserDirectory(sql),
-    sessions: new InMemorySessionIssuer(),
-    throttle: new InMemoryLoginThrottle(),
+    /*
+     * Sessao e desaceleracao no POSTGRES — NR-083.
+     *
+     * Eram `Map` na instancia, e as tres consequencias estao na migration 0022:
+     * reiniciar deslogava todo mundo, duas instancias nao compartilhavam nada,
+     * e sessao nao dava para revogar — que era o que impedia a RF-006 e fazia
+     * "Sair" nao encerrar nada.
+     */
+    sessions: createSessionIssuer(sql),
+    throttle: createLoginThrottle(sql),
     /*
      * A trilha do login ainda nao persiste: `packages/db` nao expoe repositorio
      * de auditoria. Registrar em memoria e melhor que nao registrar — o caso de
@@ -277,15 +282,18 @@ export function buildAuthDeps(): AuthRouteDeps {
  * o processo, nao aceitar login em silencio. `AUTH_PROVIDER=fake` aceita
  * qualquer credencial — subir assim seria publicar um sistema sem porta.
  *
- * A verificacao olha o provedor, mas o que ela protege sao as tres coisas: o
- * emissor de sessao e a desaceleracao tambem sao de memoria, e sobem juntos.
+ * A mensagem ENCURTOU nesta tarefa, e o encurtamento e a noticia: ela dizia que
+ * "a sessao e a desaceleracao tambem sao de memoria", e as duas passaram a
+ * viver no Postgres (NR-083). Sobrou uma coisa a resolver, e e a escolha entre
+ * a Opcao C e a D da ADR-0002 — provedor gerenciado ou biblioteca
+ * auto-hospedada.
  */
 export function assertAuthUsavelEmProducao(): void {
   if (env.NODE_ENV === 'production' && env.AUTH_PROVIDER === 'fake') {
     throw new Error(
       'AUTH_PROVIDER=fake aceita qualquer credencial e nao pode rodar em producao. ' +
-        'A sessao e a desaceleracao tambem sao de memoria (ADR-0002). ' +
-        'Defina um provedor real antes de subir.',
+        'A sessao e a desaceleracao ja sao persistentes; falta o provedor de ' +
+        'identidade (ADR-0002, opcao C ou D). Defina um provedor real antes de subir.',
     )
   }
 }

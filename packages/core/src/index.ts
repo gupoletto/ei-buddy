@@ -181,7 +181,7 @@ export type {
 
 /* --- Autenticacao — NR-014 --- */
 export { inviteUser } from './auth/invite-user.js'
-export { DURACAO_DA_SESSAO_HORAS, login, selectCompany } from './auth/login.js'
+export { DURACAO_DA_SESSAO_HORAS, login, logout, selectCompany } from './auth/login.js'
 export { loadProfile } from './auth/profile.js'
 export type { Profile, ProfileDeps } from './auth/profile.js'
 /*

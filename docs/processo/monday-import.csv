@@ -60,3 +60,4 @@ NR-078 — mobile: agenda,Backlog,Trilha 3 — Clientes,Done,Low,2,Backlog,NR-03
 NR-079 — web: conteúdo real da landing,Backlog,Trilha 3 — Clientes,Done,Low,1,Backlog,,,web,—,docs/processo/task-ledger.md
 "NR-080 — Suporte: schema, casos de uso, rotas e web",Backlog,Trilha 1 — Nucleo & Dados,Done,Low,3,Backlog,NR-008,,db core api web,US-062,docs/processo/task-ledger.md
 NR-082 — mobile: suporte,Backlog,Trilha 3 — Clientes,Done,Low,2,Backlog,NR-080,,mobile,US-062,docs/processo/task-ledger.md
+"NR-083 — Sessão persistente e revogável, e desaceleração no banco",Backlog,Trilha 1 — Nucleo & Dados,Done,Low,3,Backlog,NR-014,,db core api,"RF-119, RF-120",docs/processo/task-ledger.md

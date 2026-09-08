@@ -3,8 +3,8 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { usePathname, useRouter } from 'expo-router'
 import type { DrawerContentComponentProps } from 'expo-router/drawer'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { escolherLoja } from '@/lib/auth-api'
-import { encerrarSessao, lerSessao, type Sessao } from '@/lib/session'
+import { escolherLoja, sair as encerrarNoServidor } from '@/lib/auth-api'
+import { lerSessao, type Sessao } from '@/lib/session'
 import { cores, espaco, fonte, peso, raio } from '@/theme/tokens'
 
 type Item = { rota: string; rotulo: string }
@@ -129,7 +129,10 @@ export default function MenuLateral(props: DrawerContentComponentProps) {
   }
 
   async function sair() {
-    await encerrarSessao()
+    /* `sair` do `auth-api`, e nao `encerrarSessao` direto: ele avisa o servidor
+       ANTES de apagar o token, e sem esse aviso o token continuava valido por
+       doze horas depois de a pessoa tocar aqui (NR-083). */
+    await encerrarNoServidor()
     props.navigation.closeDrawer()
     router.replace('/login')
   }

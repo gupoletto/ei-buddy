@@ -122,6 +122,28 @@ afterEach(async () => {
 const entrar = (a: FastifyInstance) =>
   a.inject({ method: 'POST', url: '/auth/login', payload: CREDENCIAL })
 
+const protegida = (a: FastifyInstance, token: string) =>
+  a.inject({ method: 'GET', url: '/protegida', headers: { authorization: `Bearer ${token}` } })
+
+/**
+ * Entra E escolhe a loja, devolvendo o token operavel.
+ *
+ * A credencial do teste tem DUAS lojas, entao o token do login sai com
+ * `companyId: null` e nao abre rota protegida — de proposito (ver o describe de
+ * "sessao sem empresa nao opera"). Quem quer um token que opera precisa passar
+ * pela escolha.
+ */
+async function entrarEEscolher(a: FastifyInstance): Promise<string> {
+  const primeiro = (await entrar(a)).json().token
+  const r = await a.inject({
+    method: 'POST',
+    url: '/auth/select-company',
+    headers: { authorization: `Bearer ${primeiro}` },
+    payload: { companyId: 'empresa-1' },
+  })
+  return r.json().token as string
+}
+
 describe('leitura do cabecalho', () => {
   const req = (authorization?: string) =>
     ({ headers: authorization === undefined ? {} : { authorization } }) as never
@@ -239,6 +261,36 @@ describe('escolher a loja — RF-119', () => {
     })
     return { c, r }
   }
+
+  /*
+   * O token de antes deixava de ser usado e continuava VALIDO pelas doze horas
+   * restantes — e o de `companyId: null` continuava podendo escolher loja de
+   * novo. Antes de a sessao ser persistente nao havia onde revoga-lo (NR-083).
+   */
+  it('revoga o token que escolheu a loja', async () => {
+    const c = await buildApp()
+    app = c.app
+    const primeiro = (await entrar(app)).json().token
+
+    const r = await app.inject({
+      method: 'POST',
+      url: '/auth/select-company',
+      headers: { authorization: `Bearer ${primeiro}` },
+      payload: { companyId: 'empresa-1' },
+    })
+
+    /* O novo vale, o antigo nao. Uma segunda escolha com o token velho seria
+       401 — e antes ela funcionava. */
+    expect((await protegida(app, r.json().token)).statusCode).toBe(200)
+
+    const comOVelho = await app.inject({
+      method: 'POST',
+      url: '/auth/select-company',
+      headers: { authorization: `Bearer ${primeiro}` },
+      payload: { companyId: 'empresa-2' },
+    })
+    expect(comOVelho.statusCode).toBe(401)
+  })
 
   it('emite sessao com empresa e papel', async () => {
     const { r } = await comLojaEscolhida()
@@ -457,5 +509,72 @@ describe('cadastro de conta — NR-014, RF-001', () => {
 
     expect(r.statusCode).toBe(409)
     expect(r.body).not.toContain('Mercearia da Ana')
+  })
+})
+
+describe('sair — RF-119, NR-083', () => {
+  const sair = (a: FastifyInstance, token?: string) =>
+    a.inject({
+      method: 'POST',
+      url: '/auth/logout',
+      headers: token === undefined ? {} : { authorization: `Bearer ${token}` },
+    })
+
+  /*
+   * O comportamento que faltava. "Sair" apagava o cookie no web e o
+   * `SecureStore` no mobile, e o servidor continuava aceitando o token pelas
+   * doze horas restantes — quem tivesse uma copia dele seguia dentro.
+   */
+  it('o token para de abrir rota protegida depois de sair', async () => {
+    const c = await buildApp()
+    app = c.app
+    const token = await entrarEEscolher(app)
+    expect((await protegida(app, token)).statusCode).toBe(200)
+
+    const saida = await sair(app, token)
+
+    expect(saida.statusCode).toBe(204)
+    expect((await protegida(app, token)).statusCode).toBe(401)
+  })
+
+  /* Sair nao e operacao que possa falhar para quem clicou: responder 401 faria
+     o cliente insistir numa tela em vez de ir para o login. */
+  it('responde 204 sem token', async () => {
+    const c = await buildApp()
+    app = c.app
+
+    expect((await sair(app)).statusCode).toBe(204)
+  })
+
+  it('responde 204 com token que nunca existiu', async () => {
+    const c = await buildApp()
+    app = c.app
+
+    expect((await sair(app, 'nunca-existiu')).statusCode).toBe(204)
+  })
+
+  /* Sair de um aparelho nao pode deslogar o outro: cada login tem token
+     proprio, e a revogacao e do token APRESENTADO. */
+  it('nao derruba a outra sessao da mesma pessoa', async () => {
+    const c = await buildApp()
+    app = c.app
+    const doCelular = await entrarEEscolher(app)
+    const doComputador = await entrarEEscolher(app)
+
+    await sair(app, doCelular)
+
+    expect((await protegida(app, doCelular)).statusCode).toBe(401)
+    expect((await protegida(app, doComputador)).statusCode).toBe(200)
+  })
+
+  /* Sair duas vezes e sair. */
+  it('e idempotente', async () => {
+    const c = await buildApp()
+    app = c.app
+    const token = await entrarEEscolher(app)
+
+    await sair(app, token)
+
+    expect((await sair(app, token)).statusCode).toBe(204)
   })
 })

@@ -10,7 +10,7 @@ import {
   TENTATIVAS_ATE_DESACELERAR,
 } from './fakes.js'
 import { inviteUser } from './invite-user.js'
-import { DURACAO_DA_SESSAO_HORAS, login, selectCompany, type LoginMeta } from './login.js'
+import { DURACAO_DA_SESSAO_HORAS, login, logout, selectCompany, type LoginMeta } from './login.js'
 import { loadProfile } from './profile.js'
 
 const AGORA = new Date('2026-09-03T12:00:00.000Z')
@@ -354,13 +354,15 @@ describe('escolher a loja — RF-119', () => {
     c.users.adicionarVinculo({ companyId: 'empresa-2', userId: u.id, role: 'staff' })
     c.provider.registrar('c@x.com', 'ok', { subject: 'sub-c', email: 'c@x.com' })
     const s = await login(c.deps, { identifier: 'c@x.com', secret: 'ok' }, meta())
-    return { ...c, usuario: u, sessao: (await c.sessions.read(s.token))! }
+    /* O TOKEN vem junto: `selectCompany` revoga o que foi apresentado, e um
+       teste que inventasse um token aqui provaria a revogacao do token errado. */
+    return { ...c, usuario: u, sessao: (await c.sessions.read(s.token))!, token: s.token }
   }
 
   it('emite sessao com a empresa e o papel daquela loja', async () => {
-    const { deps, sessions, usuario, sessao } = await comDuasLojas()
+    const { deps, sessions, usuario, sessao, token } = await comDuasLojas()
 
-    const s = await selectCompany(deps, sessao, { companyId: 'empresa-2' }, meta())
+    const s = await selectCompany(deps, sessao, { companyId: 'empresa-2' }, meta(), token)
 
     expect(s.activeCompanyId).toBe('empresa-2')
     expect(sessions.claimsDe(s.token)).toEqual({
@@ -376,11 +378,11 @@ describe('escolher a loja — RF-119', () => {
    * deixaria uma janela de doze horas para quem foi desligado.
    */
   it('recusa loja cujo acesso foi revogado depois do login', async () => {
-    const { deps, users, usuario, sessao } = await comDuasLojas()
+    const { deps, users, usuario, sessao, token } = await comDuasLojas()
     users.revogar('empresa-2', usuario.id)
 
     const erro = await pegaErro(() =>
-      selectCompany(deps, sessao, { companyId: 'empresa-2' }, meta()),
+      selectCompany(deps, sessao, { companyId: 'empresa-2' }, meta(), token),
     )
 
     expect(isAppError(erro) && erro.code).toBe('NOT_FOUND')
@@ -388,21 +390,112 @@ describe('escolher a loja — RF-119', () => {
 
   /* 403 confirmaria que a loja existe para quem chutou um id. */
   it('responde NOT_FOUND para loja de que a pessoa nunca fez parte', async () => {
-    const { deps, sessao } = await comDuasLojas()
+    const { deps, sessao, token } = await comDuasLojas()
 
     const erro = await pegaErro(() =>
-      selectCompany(deps, sessao, { companyId: 'empresa-alheia' }, meta()),
+      selectCompany(deps, sessao, { companyId: 'empresa-alheia' }, meta(), token),
     )
 
     expect(isAppError(erro) && erro.code).toBe('NOT_FOUND')
   })
 
   it('registra a entrada na loja escolhida', async () => {
-    const { deps, audit, sessao } = await comDuasLojas()
+    const { deps, audit, sessao, token } = await comDuasLojas()
 
-    await selectCompany(deps, sessao, { companyId: 'empresa-2' }, meta())
+    await selectCompany(deps, sessao, { companyId: 'empresa-2' }, meta(), token)
 
     expect(audit.daEmpresa('empresa-2')).toHaveLength(1)
+  })
+
+  /*
+   * O token de antes deixava de ser usado e continuava VALIDO pelas doze horas
+   * restantes. Quem opera cinco lojas e troca durante o dia acumulava uma
+   * credencial viva por troca, nenhuma delas na mao de ninguem.
+   */
+  it('revoga o token apresentado depois de emitir o novo', async () => {
+    const { deps, sessions, sessao, token } = await comDuasLojas()
+
+    const s = await selectCompany(deps, sessao, { companyId: 'empresa-2' }, meta(), token)
+
+    expect(await sessions.read(token)).toBeUndefined()
+    /* E o novo vale — revogar o velho nao pode levar o novo junto. */
+    expect(await sessions.read(s.token)).not.toBeUndefined()
+  })
+
+  /* Falhar na escolha nao pode deslogar: a pessoa fica com o token que tinha. */
+  it('nao revoga o token quando a loja e recusada', async () => {
+    const { deps, sessions, sessao, token } = await comDuasLojas()
+
+    await pegaErro(() => selectCompany(deps, sessao, { companyId: 'nao-existe' }, meta(), token))
+
+    expect(await sessions.read(token)).not.toBeUndefined()
+  })
+})
+
+describe('sair — RF-119', () => {
+  async function logada() {
+    const c = cenario()
+    const u = c.users.adicionarUsuario({ name: 'Ana', email: 'ana@loja.com', subject: 'sub-a' })
+    c.users.adicionarVinculo({ companyId: 'empresa-1', userId: u.id, role: 'owner' })
+    c.provider.registrar('ana@loja.com', 'ok', { subject: 'sub-a', email: 'ana@loja.com' })
+    const s = await login(c.deps, { identifier: 'ana@loja.com', secret: 'ok' }, meta())
+    return { ...c, usuario: u, token: s.token, sessao: (await c.sessions.read(s.token))! }
+  }
+
+  /*
+   * O comportamento que faltava. Os clientes apagavam o token do proprio
+   * armazenamento e o servidor continuava aceitando ele — quem tivesse copiado
+   * o token seguia dentro depois de a pessoa clicar em "Sair".
+   */
+  it('o token para de valer', async () => {
+    const { deps, sessions, sessao, token } = await logada()
+
+    await logout(deps, sessao, token, meta())
+
+    expect(await sessions.read(token)).toBeUndefined()
+  })
+
+  it('registra a saida na trilha da empresa ativa', async () => {
+    const { deps, audit, sessao, token } = await logada()
+
+    await logout(deps, sessao, token, meta())
+
+    const eventos = audit.daEmpresa('empresa-1')
+    /* Entrada e saida: o login ja registrou a primeira. */
+    expect(eventos).toHaveLength(2)
+    expect(eventos.at(-1)?.after).toMatchObject({ event: 'session_ended' })
+  })
+
+  /*
+   * Sessao sem loja escolhida nao tem empresa sob a qual gravar, e inventar uma
+   * quebraria o isolamento da propria trilha. O token, ainda assim, para de
+   * valer — que e o que "sair" promete.
+   */
+  it('sem loja escolhida, revoga sem registrar na trilha', async () => {
+    const c = cenario()
+    const u = c.users.adicionarUsuario({ name: 'Contador', email: 'c@x.com', subject: 'sub-c' })
+    c.users.adicionarVinculo({ companyId: 'empresa-1', userId: u.id, role: 'accountant' })
+    c.users.adicionarVinculo({ companyId: 'empresa-2', userId: u.id, role: 'staff' })
+    c.provider.registrar('c@x.com', 'ok', { subject: 'sub-c', email: 'c@x.com' })
+
+    const s = await login(c.deps, { identifier: 'c@x.com', secret: 'ok' }, meta())
+    const claims = (await c.sessions.read(s.token))!
+    expect(claims.companyId).toBeNull()
+
+    await logout(c.deps, claims, s.token, meta())
+
+    expect(await c.sessions.read(s.token)).toBeUndefined()
+    expect(c.audit.daEmpresa('empresa-1')).toHaveLength(0)
+  })
+
+  /* Sair duas vezes e sair: o segundo clique nao pode virar erro. */
+  it('e idempotente', async () => {
+    const { deps, sessao, token } = await logada()
+
+    await logout(deps, sessao, token, meta())
+    await logout(deps, sessao, token, meta())
+
+    expect(true).toBe(true)
   })
 })
 
