@@ -29,7 +29,6 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
       <aside className={styles.brandPanel}>
         <div className={styles.brandInner}>
           <Link href="/" className={styles.brand}>
-            <span className={styles.brandMark} aria-hidden="true" />
             <span className={styles.brandName}>{BRAND}</span>
           </Link>
 

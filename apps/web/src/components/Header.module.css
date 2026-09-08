@@ -31,25 +31,6 @@
   margin-right: auto;
 }
 
-.brandMark {
-  /* 34px e nao 26px: o Buddy e uma figura de corpo inteiro, e abaixo disso
-     o rosto e a camiseta viram uma mancha. */
-  position: relative;
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  /* Cor de espera enquanto a imagem carrega — evita o buraco branco. */
-  background: var(--brand-gradient);
-  overflow: hidden;
-  flex: none;
-}
-
-.brandImg {
-  /* O arquivo ja vem recortado em quadrado; `cover` fica como defesa caso
-     a arte seja trocada por uma versao em outra proporcao. */
-  object-fit: cover;
-}
-
 .brandName {
   font-family: var(--font-display);
   font-size: 18px;

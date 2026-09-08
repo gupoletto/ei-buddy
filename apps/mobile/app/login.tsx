@@ -52,7 +52,6 @@ export default function Login() {
       >
         <ScrollView contentContainerStyle={estilos.conteudo} keyboardShouldPersistTaps="handled">
           <View style={estilos.marca}>
-            <View style={estilos.marcaSimbolo} />
             <Text style={estilos.marcaNome}>Ei Buddy</Text>
           </View>
 
@@ -128,12 +127,6 @@ const estilos = StyleSheet.create({
   },
 
   marca: { flexDirection: 'row', alignItems: 'center', gap: espaco.md },
-  marcaSimbolo: {
-    width: 30,
-    height: 30,
-    borderRadius: 10,
-    backgroundColor: cores.acento,
-  },
   marcaNome: {
     fontSize: fonte.titulo,
     fontWeight: peso.pesado,
