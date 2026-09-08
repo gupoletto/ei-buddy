@@ -66,6 +66,13 @@ export type Resposta<T> =
  */
 const INDISPONIVEL = 'Nao conseguimos falar com o servidor. Tente de novo em instantes.'
 
+/**
+ * Em producao a mensagem fica generica; fora dela, diz o endereco.
+ *
+ * Lido uma vez, no modulo: `NODE_ENV` nao muda enquanto o processo vive.
+ */
+const PRODUCAO = process.env.NODE_ENV === 'production'
+
 export async function chamarApi<T>(
   caminho: string,
   opcoes: {
@@ -92,8 +99,40 @@ export async function chamarApi<T>(
       /* Sessao nunca vem de cache. */
       cache: 'no-store',
     })
-  } catch {
-    return { ok: false, status: 503, code: 'UNAVAILABLE', message: INDISPONIVEL, corpo: null }
+  } catch (erro) {
+    /*
+     * A falha de conexao era engolida por completo: o `catch` vazio devolvia
+     * 503 e nao deixava rastro em lugar nenhum. Quem estava desenvolvendo via
+     * "Nao conseguimos falar com o servidor" na tela, nada no terminal, e nao
+     * tinha como saber que faltava subir a api — a mensagem certa para o
+     * lojista e a errada para quem consegue resolver.
+     *
+     * O log e do SERVIDOR do Next, entao a topologia interna nao vaza para o
+     * navegador. A mensagem da tela continua generica em producao.
+     */
+    /*
+     * O primeiro argumento e um literal CONSTANTE, e o resto vai estruturado.
+     *
+     * A primeira versao interpolava o caminho na primeira posicao, e o CodeQL
+     * reprovou: `js/tainted-format-string`. O Node trata o primeiro argumento
+     * do `console.error` como FORMAT STRING — `%s`, `%d`, `%j` sao
+     * substituidos. Um caminho contendo `%s` consumiria o argumento seguinte,
+     * embaralhando o log; e log embaralhado por quem escolhe a entrada e
+     * falsificacao de log.
+     */
+    console.error('[api-server] chamada a api falhou', {
+      method: opcoes.method ?? 'GET',
+      url: `${API_URL}${caminho}`,
+      causa: erro instanceof Error ? erro.message : erro,
+    })
+
+    return {
+      ok: false,
+      status: 503,
+      code: 'UNAVAILABLE',
+      message: PRODUCAO ? INDISPONIVEL : `${INDISPONIVEL} (a api nao respondeu em ${API_URL})`,
+      corpo: null,
+    }
   }
 
   if (resposta.ok) {
