@@ -1,30 +1,29 @@
-import { useMemo, useState } from 'react'
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { contasPagar, contasReceber } from '@/lib/mock-data'
 import {
-  baixarTitulo,
-  estornarTitulo,
+  BAIXA_SO_NO_WEB,
+  ESTORNO_SO_NO_WEB,
+  listarContasPagar,
+  listarContasReceber,
   situacaoDoTitulo,
   ROTULO_SITUACAO,
+  type Titulo,
 } from '@/lib/financeiro-api'
-import type { StatusTitulo } from '@/lib/types'
 import { daysUntil, describeDueDate, formatDate, formatMoney } from '@/lib/format'
 import Cabecalho from '@/components/Cabecalho'
 import Sanfona from '@/components/ui/Sanfona'
 import { Etiqueta, Vazio } from '@/components/ui/Cartao'
 import { cores, espaco, fonte, peso, raio } from '@/theme/tokens'
 
-/** Forma comum entre conta a pagar e a receber. */
-type Linha = {
-  id: string
-  contraparte: string
-  descricao: string
-  vencimento: string
-  valor: number
-  baixado: number
-  status: StatusTitulo
-}
+/**
+ * Forma comum entre conta a pagar e a receber — vem pronta de `financeiro-api`.
+ *
+ * As duas telas sao a mesma estrutura com a contraparte trocada, e o mapeamento
+ * mora num lugar so: fazer aqui obrigaria esta tela a conhecer o formato das
+ * DUAS respostas da api, e a divergir da proxima tela que ler as mesmas listas.
+ */
+type Linha = Titulo
 
 /**
  * Contas a pagar / a receber.
@@ -39,27 +38,39 @@ type Linha = {
 export default function ContasView({ tipo }: { tipo: 'pagar' | 'receber' }) {
   const pagar = tipo === 'pagar'
 
-  const [linhas, setLinhas] = useState<Linha[]>(() =>
-    pagar
-      ? contasPagar.map((c) => ({
-          id: c.id,
-          contraparte: c.fornecedor,
-          descricao: c.descricao,
-          vencimento: c.vencimento,
-          valor: c.valor,
-          baixado: c.valorPago,
-          status: c.status,
-        }))
-      : contasReceber.map((c) => ({
-          id: c.id,
-          contraparte: c.clienteNome,
-          descricao: c.referente,
-          vencimento: c.vencimento,
-          valor: c.valor,
-          baixado: c.valorRecebido,
-          status: c.status,
-        })),
-  )
+  /*
+   * Comeca VAZIO e busca no servidor.
+   *
+   * A tela lia `lib/mock-data`: as mesmas contas de exemplo para qualquer
+   * loja, com o total no cabecalho somando dinheiro que nao existia. O lojista
+   * abria "Contas a pagar" e via o vencimento de outra empresa.
+   */
+  const [linhas, setLinhas] = useState<Linha[]>([])
+  const [carregando, setCarregando] = useState(true)
+  const [erro, setErro] = useState<string | null>(null)
+  const [atualizando, setAtualizando] = useState(false)
+
+  const buscar = useCallback(async () => {
+    const r = await (pagar ? listarContasPagar() : listarContasReceber())
+    setCarregando(false)
+    setAtualizando(false)
+
+    if (!r.ok) {
+      setErro(r.message)
+      return
+    }
+
+    setErro(null)
+    setLinhas(r.dados.titulos)
+  }, [pagar])
+
+  useEffect(() => {
+    /* `async` explicito: os `setState` vem todos depois do await, nunca
+       sincronos no corpo do efeito. */
+    void (async () => {
+      await buscar()
+    })()
+  }, [buscar])
 
   const grupos = useMemo(() => {
     const abertos = linhas.filter((l) => l.status !== 'pago')
@@ -72,72 +83,28 @@ export default function ContasView({ tipo }: { tipo: 'pagar' | 'receber' }) {
 
   const soma = (lista: Linha[]) => lista.reduce((a, l) => a + (l.valor - l.baixado), 0)
 
+  /*
+   * A baixa e o estorno DIZEM que ainda nao acontecem aqui, em vez de fingir.
+   *
+   * Antes o botao chamava um `delay(800)` e respondia "baixado": o lojista
+   * confirmava, a linha ficava verde, e o saldo continuava o mesmo no dia
+   * seguinte. Um botao que nao faz nada e ruim; um que diz ter feito e pior,
+   * porque a pessoa para de cobrar.
+   *
+   * O motivo esta em `financeiro-api`: as duas rotas exigem uma escolha — de
+   * qual conta saiu, ou como o dinheiro entrou — que um `Alert` nao tem onde
+   * oferecer.
+   */
   function pedirBaixa(linha: Linha) {
-    const saldo = linha.valor - linha.baixado
-
-    async function confirmar() {
-      /* SUBSTITUIR POR: POST /financeiro/titulos/:id/baixas */
-      const r = await baixarTitulo(linha.id, saldo, saldo)
-      if (!r.ok) {
-        Alert.alert('Nao deu certo', r.error)
-        return
-      }
-      setLinhas((atual) =>
-        atual.map((l) => (l.id === linha.id ? { ...l, baixado: l.valor, status: r.status } : l)),
-      )
-    }
-
-    /* Baixa mexe em dinheiro: confirma antes, com o valor a vista.
-       A baixa parcial fica no web — no celular, digitar valor com fila
-       atras e mais risco que ajuda. */
-    Alert.alert(
-      pagar ? 'Baixar pagamento' : 'Baixar recebimento',
-      `${linha.contraparte}\n${linha.descricao}\n\n${formatMoney(saldo)}`,
-      [
-        { text: 'Voltar', style: 'cancel' },
-        {
-          text: 'Confirmar',
-          /* `void`: dispara sem esperar, e isso fica dito em vez de implicito. */
-          onPress: () => void confirmar(),
-        },
-      ],
-    )
+    Alert.alert(pagar ? 'Baixar pagamento' : 'Baixar recebimento', BAIXA_SO_NO_WEB, [
+      { text: 'Entendi' },
+    ])
+    void linha
   }
 
   function pedirEstorno(linha: Linha) {
-    async function estornar() {
-      /* SUBSTITUIR POR: DELETE /financeiro/titulos/:id/baixas/:baixaId */
-      const r = await estornarTitulo(linha.id)
-      if (!r.ok) {
-        Alert.alert('Nao deu certo', r.error)
-        return
-      }
-      setLinhas((atual) =>
-        atual.map((l) =>
-          l.id === linha.id
-            ? {
-                ...l,
-                baixado: 0,
-                status: daysUntil(l.vencimento) < 0 ? 'vencido' : 'aberto',
-              }
-            : l,
-        ),
-      )
-    }
-
-    Alert.alert(
-      'Estornar baixa',
-      `A baixa sera desfeita e o titulo volta para em aberto.\n\n${linha.contraparte}`,
-      [
-        { text: 'Voltar', style: 'cancel' },
-        {
-          text: 'Estornar',
-          style: 'destructive',
-          /* `void`: dispara sem esperar, e isso fica dito em vez de implicito. */
-          onPress: () => void estornar(),
-        },
-      ],
-    )
+    Alert.alert('Estornar baixa', ESTORNO_SO_NO_WEB, [{ text: 'Entendi' }])
+    void linha
   }
 
   const totalAberto = soma([...grupos.vencidos, ...grupos.aVencer])
@@ -149,8 +116,28 @@ export default function ContasView({ tipo }: { tipo: 'pagar' | 'receber' }) {
         subtitulo={`${formatMoney(totalAberto)} em aberto`}
       />
 
-      <ScrollView contentContainerStyle={estilos.conteudo}>
-        {linhas.length === 0 ? (
+      <ScrollView
+        contentContainerStyle={estilos.conteudo}
+        refreshControl={
+          <RefreshControl
+            refreshing={atualizando}
+            onRefresh={() => {
+              setAtualizando(true)
+              void buscar()
+            }}
+          />
+        }
+      >
+        {carregando ? (
+          <Vazio titulo="Carregando" descricao="Buscando os titulos da loja." />
+        ) : erro !== null ? (
+          <Vazio
+            titulo="Nao foi possivel carregar"
+            /* Puxar para atualizar continua valendo: no balcao o sinal cai, e
+               o caminho de tentar de novo tem de estar a mao. */
+            descricao={`${erro} Puxe para baixo para tentar de novo.`}
+          />
+        ) : linhas.length === 0 ? (
           <Vazio
             titulo={pagar ? 'Nenhuma conta a pagar' : 'Nenhuma conta a receber'}
             descricao="Lancamentos aparecem aqui conforme forem criados."

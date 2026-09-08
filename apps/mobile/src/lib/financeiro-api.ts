@@ -6,8 +6,6 @@
  *  | Funcao                | Endpoint esperado                | Disparo         |
  *  |-----------------------|----------------------------------|-----------------|
  *  | salvarTitulo          | POST/PUT /financeiro/titulos     | submit do form  |
- *  | baixarTitulo          | POST /financeiro/titulos/:id/baixas | confirmar baixa |
- *  | estornarTitulo        | DELETE /financeiro/titulos/:id/baixas/:baixaId | estorno |
  *  | salvarPlanoContas     | POST/PUT /financeiro/planos      | submit          |
  *  | salvarCustoFixo       | POST/PUT /financeiro/custos-fixos| submit          |
  *  | gerarContasDeCustosFixos | POST /financeiro/custos-fixos/gerar | botao      |
@@ -20,6 +18,7 @@
  * e conciliacao bancaria sem auditoria e chute.
  */
 
+import { chamarApi, type Resposta } from './api'
 import { contasPagar, contasReceber, planoContas, custosFixos, bancos, clientes } from './mock-data'
 import type { ContaPagar, ContaReceber, CustoFixo, PlanoContas, StatusTitulo } from './types'
 
@@ -52,13 +51,149 @@ export const TIPOS_RECEBIMENTO = [
 /* Estado das listas                                                          */
 /* -------------------------------------------------------------------------- */
 
-/** SUBSTITUIR POR: GET /financeiro/titulos?tipo=pagar */
-export function listarContasPagar(): ContaPagar[] {
+/* -------------------------------------------------------------------------- */
+/* As listas, de verdade — RF-061, RF-064, RF-066                             */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Uma conta, a pagar ou a receber.
+ *
+ * Forma comum de proposito: as duas telas sao a mesma estrutura com a
+ * contraparte trocada, e formas diferentes fariam o total significar uma coisa
+ * numa e outra na outra.
+ *
+ * Valores em REAIS. A api fala em centavos inteiros (RNF-044) e a conversao
+ * acontece aqui, na borda — deixar centavos subir faria cada tela dividir por
+ * cem no lugar que lembrasse.
+ */
+export type Titulo = {
+  id: string
+  /** Fornecedor, na conta a pagar; cliente, na a receber. */
+  contraparte: string
+  descricao: string
+  /** AAAA-MM-DD. */
+  vencimento: string
+  valor: number
+  baixado: number
+  status: StatusTitulo
+}
+
+export type ListaDeTitulos = {
+  titulos: Titulo[]
+  /** Soma do que AINDA falta, e nao do valor original. */
+  total: number
+  temVencidos: boolean
+}
+
+type GrupoDaApi<T> = { faixa: string; totalCents: number } & T
+
+type PagarDaApi = {
+  id: string
+  supplier: string
+  description: string
+  amountCents: number
+  settledAmountCents: number
+  dueDate: string
+  status: string
+}
+
+type ReceberDaApi = {
+  id: string
+  customerName: string | null
+  description: string
+  amountCents: number
+  settledAmountCents: number
+  dueDate: string
+  status: string
+}
+
+const emReais = (centavos: number) => centavos / 100
+
+/**
+ * O status da api vira o da tela.
+ *
+ * A api nao tem "vencido": ela guarda `open` e deixa a data decidir, porque
+ * vencido e uma leitura do calendario e nao um estado gravado — se fosse
+ * coluna, alguem teria de varrer o banco a meia-noite para mante-la certa.
+ * Quem pinta o vermelho e `situacaoDoTitulo`, com o vencimento em maos.
+ */
+const paraStatus = (status: string): StatusTitulo =>
+  status === 'settled' ? 'pago' : status === 'partially_settled' ? 'parcial' : 'aberto'
+
+/**
+ * As contas a pagar da loja — RF-061.
+ *
+ * A api devolve agrupado por faixa de vencimento; aqui a lista e achatada,
+ * porque a tela do celular reagrupa do seu jeito (sanfonas por situacao) e dois
+ * agrupamentos empilhados so criariam duas verdades sobre a mesma conta.
+ */
+export async function listarContasPagar(): Promise<Resposta<ListaDeTitulos>> {
+  const r = await chamarApi<{
+    grupos: GrupoDaApi<{ payables: PagarDaApi[] }>[]
+    totalCents: number
+    temVencidas: boolean
+  }>('/contas-a-pagar')
+
+  if (!r.ok) return r
+
+  return {
+    ok: true,
+    dados: {
+      titulos: r.dados.grupos.flatMap((g) =>
+        g.payables.map((p) => ({
+          id: p.id,
+          contraparte: p.supplier,
+          descricao: p.description,
+          vencimento: p.dueDate,
+          valor: emReais(p.amountCents),
+          baixado: emReais(p.settledAmountCents),
+          status: paraStatus(p.status),
+        })),
+      ),
+      total: emReais(r.dados.totalCents),
+      temVencidos: r.dados.temVencidas,
+    },
+  }
+}
+
+/** As contas a receber da loja — RF-064, RF-066. */
+export async function listarContasReceber(): Promise<Resposta<ListaDeTitulos>> {
+  const r = await chamarApi<{
+    grupos: GrupoDaApi<{ receivables: ReceberDaApi[] }>[]
+    totalCents: number
+    temVencidas: boolean
+  }>('/contas-a-receber')
+
+  if (!r.ok) return r
+
+  return {
+    ok: true,
+    dados: {
+      titulos: r.dados.grupos.flatMap((g) =>
+        g.receivables.map((rec) => ({
+          id: rec.id,
+          /* Venda sem identificar o cliente e caminho normal no balcao: o
+             rotulo diz isso em vez de deixar a linha sem contraparte. */
+          contraparte: rec.customerName ?? 'Cliente nao identificado',
+          descricao: rec.description,
+          vencimento: rec.dueDate,
+          valor: emReais(rec.amountCents),
+          baixado: emReais(rec.settledAmountCents),
+          status: paraStatus(rec.status),
+        })),
+      ),
+      total: emReais(r.dados.totalCents),
+      temVencidos: r.dados.temVencidas,
+    },
+  }
+}
+
+/** Os dados de exemplo, ainda usados pelas telas que nao tem rota. */
+export function listarContasPagarDeExemplo(): ContaPagar[] {
   return contasPagar.map((c) => ({ ...c }))
 }
 
-/** SUBSTITUIR POR: GET /financeiro/titulos?tipo=receber */
-export function listarContasReceber(): ContaReceber[] {
+export function listarContasReceberDeExemplo(): ContaReceber[] {
   return contasReceber.map((c) => ({ ...c }))
 }
 
@@ -76,44 +211,45 @@ export function listarCustosFixos(): CustoFixo[] {
 /* Baixa e estorno                                                            */
 /* -------------------------------------------------------------------------- */
 
-export type ResultadoBaixa =
-  { ok: true; status: StatusTitulo; valorBaixado: number } | { ok: false; error: string }
+/**
+ * Por que a baixa nao acontece no celular — RF-063, RF-064.
+ *
+ * As rotas existem desde a NR-029. O que falta nao e codigo: e a PERGUNTA que
+ * cada uma faz.
+ *
+ * - `POST /contas-a-pagar/:id/baixas` exige `bankAccount` — de qual conta o
+ *   dinheiro saiu. Sem isso a conciliacao bancaria nao fecha, e o campo nao tem
+ *   padrao razoavel: chutar "a primeira conta" poe a saida na conta errada, e o
+ *   erro so aparece no extrato do mes seguinte.
+ * - `POST /contas-a-receber/:id/baixas` exige `method` — como o dinheiro
+ *   entrou. Nao e a forma da venda, e a do recebimento: quem vendeu fiado pode
+ *   receber em pix, e e isso que o relatorio de caixa mostra.
+ *
+ * A tela de hoje confirma num `Alert`, que nao tem onde escolher nada. Mandar
+ * um padrao inventado seria pior que nao ter o botao: a baixa entraria com dado
+ * errado, e dado financeiro errado com cara de certo e o que ninguem consegue
+ * auditar depois.
+ *
+ * Ate esta tela ganhar a escolha, a baixa fica no web, que ja pergunta as duas
+ * coisas. O que muda agora e o botao parar de MENTIR: ele era
+ * `await delay(800)` seguido de `{ ok: true }`, e a tela respondia "baixado"
+ * enquanto o saldo continuava o mesmo no dia seguinte.
+ */
+export const BAIXA_SO_NO_WEB =
+  'A baixa precisa da conta bancaria (a pagar) ou da forma de recebimento (a receber). ' +
+  'Enquanto esta tela nao pergunta, faca a baixa pelo Ei Buddy no computador.'
 
 /**
- * SUBSTITUIR POR: POST /financeiro/titulos/:id/baixas
+ * O estorno, pelo mesmo motivo, tambem nao sai daqui.
  *
- * `valor` e o quanto foi pago/recebido agora. Quando for menor que o saldo,
- * o titulo fica "parcial" e o restante continua em aberto.
+ * `POST /baixas/:id/estorno` aponta para a BAIXA e nao para o titulo — um
+ * titulo com tres baixas nao diz sozinho qual desfazer —, e a lista de titulos
+ * nao carrega as baixas de cada um. Sem elas, "estornar" no celular seria um
+ * palpite sobre qual lancamento desfazer.
  */
-export async function baixarTitulo(
-  id: string,
-  valor: number,
-  saldo: number,
-): Promise<ResultadoBaixa> {
-  await delay(800)
-  void id
-
-  if (!Number.isFinite(valor) || valor <= 0) {
-    return { ok: false, error: 'Informe um valor maior que zero.' }
-  }
-
-  /* Tolerancia de 1 centavo para nao brigar com arredondamento. */
-  if (valor > saldo + 0.01) {
-    return { ok: false, error: 'O valor da baixa e maior que o saldo em aberto.' }
-  }
-
-  const quitou = valor >= saldo - 0.01
-  return { ok: true, status: quitou ? 'pago' : 'parcial', valorBaixado: valor }
-}
-
-/** SUBSTITUIR POR: DELETE /financeiro/titulos/:id/baixas/:baixaId */
-export async function estornarTitulo(
-  id: string,
-): Promise<{ ok: true } | { ok: false; error: string }> {
-  await delay(700)
-  void id
-  return { ok: true }
-}
+export const ESTORNO_SO_NO_WEB =
+  'O estorno aponta para uma baixa especifica, e esta tela mostra so o saldo. ' +
+  'Faca o estorno pelo Ei Buddy no computador.'
 
 /* -------------------------------------------------------------------------- */
 /* Gravacao de titulos                                                        */
