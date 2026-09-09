@@ -1,0 +1,164 @@
+/*
+ * Documentos juridicos — NR-085.
+ *
+ * Medida de linha curta (68ch) de proposito: sao paginas de texto corrido, e
+ * texto corrido em coluna de 1200px nao e lido, e varrido. Quem abre a politica
+ * de privacidade geralmente esta procurando UMA coisa, e a coluna estreita mais
+ * os titulos frequentes e o que torna a varredura possivel.
+ */
+
+.pagina {
+  padding-block: 96px 72px;
+}
+
+.corpo {
+  max-width: 68ch;
+  margin-inline: auto;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-strong, var(--accent));
+}
+
+.titulo {
+  margin: 0 0 12px;
+  font-family: var(--font-poppins), sans-serif;
+  font-size: clamp(28px, 4vw, 40px);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.atualizacao {
+  margin: 0 0 40px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.corpo h2 {
+  margin: 44px 0 12px;
+  font-family: var(--font-poppins), sans-serif;
+  font-size: 21px;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.corpo h3 {
+  margin: 28px 0 8px;
+  font-size: 16.5px;
+  font-weight: 600;
+}
+
+.corpo p,
+.corpo li {
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--text-soft, inherit);
+}
+
+.corpo p {
+  margin: 0 0 16px;
+}
+
+.corpo ul {
+  margin: 0 0 16px;
+  padding-left: 22px;
+}
+
+.corpo li {
+  margin-bottom: 8px;
+}
+
+.corpo a {
+  color: var(--accent-strong, var(--accent));
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* --- Tabela do inventario --- */
+
+/*
+ * Rola dentro do proprio container.
+ *
+ * Sem isto a tabela empurra a largura da pagina no telefone e o corpo inteiro
+ * passa a rolar na horizontal — o texto que estava sendo lido sai de lado.
+ */
+.tabelaWrap {
+  overflow-x: auto;
+  margin: 0 0 20px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.tabela {
+  width: 100%;
+  min-width: 520px;
+  border-collapse: collapse;
+  font-size: 14.5px;
+}
+
+.tabela th,
+.tabela td {
+  padding: 12px 14px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--border);
+}
+
+.tabela th {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.tabela tr:last-child td {
+  border-bottom: none;
+}
+
+.tabela code {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 13.5px;
+}
+
+.etiqueta {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--accent-soft, rgba(57, 200, 189, 0.14));
+  color: var(--accent-strong, var(--accent));
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* --- O bloco que marca o que falta decidir --- */
+
+/*
+ * Amarelo e nao vermelho: nao e erro, e pendencia declarada. E fica DENTRO do
+ * documento, no ponto exato, em vez de num aviso no topo — quem abre a pagina
+ * para conferir uma clausula precisa ver a pendencia daquela clausula, e nao um
+ * disclaimer geral que se aprende a ignorar.
+ */
+.pendente {
+  margin: 0 0 20px;
+  padding: 14px 16px;
+  border: 1px solid var(--warn, #b45309);
+  border-left-width: 3px;
+  border-radius: 8px;
+  background: var(--warn-soft, rgba(180, 83, 9, 0.08));
+}
+
+.pendente p {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.6;
+}
+
+.pendente strong {
+  font-weight: 600;
+}

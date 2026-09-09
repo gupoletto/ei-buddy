@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Poppins, Inter } from 'next/font/google'
+import AvisoDeCookies from '@/components/AvisoDeCookies'
 import ScrollRestoration from '@/components/ScrollRestoration'
 import { BRAND } from '@/content/site'
 import './globals.css'
@@ -33,6 +34,10 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
       <body>
         <ScrollRestoration />
         {children}
+        {/* No layout RAIZ, e nao so na landing: o aviso precisa alcancar quem
+            entra direto no painel por um link salvo, que e quem mais usa o
+            sistema e menos passa pela pagina inicial. */}
+        <AvisoDeCookies />
       </body>
     </html>
   )

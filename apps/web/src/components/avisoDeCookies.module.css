@@ -1,0 +1,86 @@
+/*
+ * O aviso de cookies — NR-085.
+ *
+ * Barra no rodape e nao sobreposicao central: o aviso informa, nao pede
+ * resposta, entao nao pode tampar o conteudo nem exigir interacao para a pessoa
+ * seguir lendo. Sobreposicao central e a forma dos banners que exigem clique — e
+ * a forma comunica intencao antes de o texto ser lido.
+ */
+
+.aviso {
+  position: fixed;
+  z-index: 60;
+  left: 16px;
+  right: 16px;
+  /* Respeita a barra de gestos do iOS: sem isto o botao fica sob ela. */
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  max-width: var(--container);
+  margin-inline: auto;
+  padding: 14px 18px;
+
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface, #fff);
+  box-shadow: 0 18px 40px -20px rgba(19, 23, 52, 0.35);
+}
+
+.texto {
+  flex: 1;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-soft, inherit);
+}
+
+.link {
+  color: var(--accent-strong, var(--accent));
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  white-space: nowrap;
+}
+
+.botao {
+  flex-shrink: 0;
+  /* 44px de altura minima: alvo de toque confortavel — RNF-053. */
+  min-height: 44px;
+  padding: 0 20px;
+  border: none;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent, #06312e);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.botao:hover {
+  filter: brightness(1.05);
+}
+
+.botao:focus-visible {
+  outline: 2px solid var(--accent-strong, var(--accent));
+  outline-offset: 2px;
+}
+
+/*
+ * No telefone empilha, com o botao ocupando a largura.
+ *
+ * Lado a lado, o texto fica com quatro palavras por linha e o aviso vira um
+ * bloco alto que tampa metade da tela — o oposto de informar sem atrapalhar.
+ */
+@media (max-width: 640px) {
+  .aviso {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .botao {
+    width: 100%;
+  }
+}
