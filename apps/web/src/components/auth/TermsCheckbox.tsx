@@ -7,8 +7,13 @@ import styles from './signup.module.css'
  * Aceite obrigatorio dos termos. O botao de avancar da etapa 3 fica
  * desabilitado enquanto `checked` for falso.
  *
- * Os documentos abrem em nova aba — trocar `href` pelas URLs reais quando
- * as paginas juridicas existirem.
+ * Os `href` sempre estiveram certos; o que faltava eram as PAGINAS. Ate a
+ * NR-085 os dois links davam 404, e a pessoa marcava "li e aceito" apontando
+ * para nada — um aceite que, se fosse questionado, nao teria o que exibir.
+ *
+ * As paginas existem agora. As condicoes comerciais dos termos seguem em
+ * elaboracao e estao marcadas como tal na propria pagina, em vez de escritas
+ * por quem nao pode decidi-las.
  */
 export default function TermsCheckbox({
   checked,

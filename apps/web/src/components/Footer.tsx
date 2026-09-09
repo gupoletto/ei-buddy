@@ -57,6 +57,9 @@ export default function Footer() {
           <a href="/politica-de-privacidade" target="_blank" rel="noreferrer noopener">
             Privacidade
           </a>
+          <a href="/politica-de-cookies" target="_blank" rel="noreferrer noopener">
+            Cookies
+          </a>
         </div>
       </div>
     </footer>

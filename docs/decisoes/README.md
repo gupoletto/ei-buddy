@@ -42,16 +42,18 @@ PR**, e a linha sai da tabela de abertas.
 
 ## Painel
 
-| Estado             | Qtd | Quais                                      |
-| ------------------ | --: | ------------------------------------------ |
-| 🔴 Aberta          |   8 | DEC-003, 005, 007, 009, 011, 012, 013, 015 |
-| 🟡 Em análise      |   3 | DEC-001, 006, 010                          |
-| ⚪ Adiada          |   1 | DEC-014                                    |
-| 🟢 Decidida        |   2 | DEC-002, 008                               |
-| ❓ Pergunta aberta |  12 | QST-001 a QST-012                          |
+| Estado             | Qtd | Quais                                           |
+| ------------------ | --: | ----------------------------------------------- |
+| 🔴 Aberta          |   9 | DEC-003, 005, 007, 009, 011, 012, 013, 015, 016 |
+| 🟡 Em análise      |   3 | DEC-001, 006, 010                               |
+| ⚪ Adiada          |   1 | DEC-014                                         |
+| 🟢 Decidida        |   2 | DEC-002, 008                                    |
+| ❓ Pergunta aberta |  12 | QST-001 a QST-012                               |
 
 **Bloqueando o MVP agora:** DEC-003, DEC-009.
-Essas três travam trabalho de implementação já na Sprint 1.
+Essas duas travam trabalho de implementação já na Sprint 1. A DEC-016 não trava
+código, mas trava **operação comercial**: os documentos existem e têm lacunas
+declaradas na própria página.
 
 A DEC-008 fechou — [ADR-0002](adr/0002-autenticacao-identidade-propria.md) e
 [ADR-0003](adr/0003-better-auth-como-prova-de-identidade.md).
@@ -426,6 +428,54 @@ minuto; Pix e link de pagamento ficam pendentes até a aprovação. Preserva M3 
 assumir risco regulatório de instituição de pagamento.
 
 Exige validação jurídica junto com [QST-004](#qst-004).
+
+---
+
+### DEC-016 — Revisão jurídica dos termos de uso e da política de privacidade
+
+|              |                                                                                                                                                   |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Status**   | 🔴 Aberta                                                                                                                                         |
+| **Dono**     | Fundadores + jurídico                                                                                                                             |
+| **Prazo**    | **Antes de qualquer cadastro real** — o formulário exige o aceite                                                                                 |
+| **Bloqueia** | Operação comercial · [RF-125](../produto/requisitos-funcionais.md)–128 na parte de canal de atendimento ao titular · publicação nas lojas de apps |
+
+**Contexto.** A NR-085 criou as três páginas — [termos de
+uso](../../apps/web/src/app/termos-de-uso/page.tsx), [política de
+privacidade](../../apps/web/src/app/politica-de-privacidade/page.tsx) e
+[política de cookies](../../apps/web/src/app/politica-de-cookies/page.tsx). Até
+então o formulário de cadastro exigia marcar _"li e aceito"_ com os dois links
+apontando para **404**: um aceite que, se questionado, não teria o que exibir.
+
+O que está escrito nelas é o que dá para afirmar a partir do código — quais
+tabelas existem, o que a exportação cobre, o que a anonimização preserva e por
+quê, como a sessão é guardada. **A política de cookies está completa**, porque é
+inventário de fato e é gerada a partir de
+[`lib/cookies.ts`](../../apps/web/src/lib/cookies.ts).
+
+**O que falta, e não dá para inferir de código nenhum:**
+
+| Lacuna                                       | Por que só o negócio decide                                             |
+| -------------------------------------------- | ----------------------------------------------------------------------- |
+| Razão social e CNPJ do controlador           | Depende da constituição da empresa e da [DEC-001](#dec-001) (nome)      |
+| Contato do encarregado (LGPD art. 41)        | Exige uma pessoa designada, não um endereço genérico                    |
+| Prazo de retenção após encerramento da conta | Escolha de negócio acima do mínimo fiscal, que já são 5 anos            |
+| Lista completa de operadores                 | Depende de DEC-003, 005, 006, 007 e 009 — cada fornecedor é um operador |
+| Preço, prazo de pagamento e nível de serviço | [DEC-010](#dec-010) e [DEC-006](#dec-006)                               |
+| Limite de responsabilidade, rescisão e foro  | Cláusula contratual; escrita por quem responde por ela                  |
+
+**Por que as lacunas estão visíveis na página, e não preenchidas com texto
+plausível.** Documento com cara de oficial e conteúdo inventado é pior que a
+lacuna declarada: ninguém desconfia de um documento que parece completo. No caso
+do limite de responsabilidade, seria pior ainda — prometeria ao lojista uma
+proteção que ninguém se comprometeu a dar.
+
+Cada lacuna aparece marcada no ponto exato do documento, e não num aviso geral
+no topo, que se aprende a ignorar na segunda visita.
+
+**O que esta decisão exige.** Um profissional revisar o que está escrito e
+preencher o que está marcado. O material factual já está pronto — a revisão
+parte dele, em vez de começar de uma página em branco.
 
 ---
 
