@@ -28,13 +28,13 @@ export type TaxRegime = z.infer<typeof taxRegimeSchema>
 export const certificateStatusSchema = z.enum(['missing', 'valid', 'expired', 'rejected'])
 export type CertificateStatus = z.infer<typeof certificateStatusSchema>
 
-export const asaasOnboardingStatusSchema = z.enum([
+export const paymentsOnboardingStatusSchema = z.enum([
   'not_started',
   'pending',
   'approved',
   'rejected',
 ])
-export type AsaasOnboardingStatus = z.infer<typeof asaasOnboardingStatusSchema>
+export type PaymentsOnboardingStatus = z.infer<typeof paymentsOnboardingStatusSchema>
 
 const cepSchema = z
   .string()
@@ -66,11 +66,11 @@ export const createCompanyInputSchema = z
     municipalRegistration: z.string().trim().max(20).optional(),
     taxRegime: taxRegimeSchema,
     /**
-     * Autodeclaracao. Padrao false. True nao impede o ERP; impede Focus
+     * Autodeclaracao. Padrao false. True nao impede o ERP; impede emissao fiscal
      * (RF-146). Consulta CNPJ nao descobre Hibrido.
      */
     optedReformaHibrida: z.boolean().default(false),
-    /** Aliquota do calculo da venda. Nao vai para a Focus. */
+    /** Aliquota do calculo da venda. Nao vai para o provedor fiscal. */
     taxRate: rateSchema.optional(),
     address: addressSchema,
   })
@@ -100,13 +100,13 @@ export const companyOutputSchema = z.object({
   taxRate: z.number().nullable(),
   address: addressSchema,
   cityIbgeCode: z.string().nullable(),
-  focusCompanyId: z.string().nullable(),
-  focusNfceEnabled: z.boolean(),
-  focusNfseEnabled: z.boolean(),
+  fiscalCompanyId: z.string().nullable(),
+  fiscalNfceEnabled: z.boolean(),
+  fiscalNfseEnabled: z.boolean(),
   certificateStatus: certificateStatusSchema,
   certificateExpiresAt: z.string().nullable(),
   hasNfceCsc: z.boolean(),
-  asaasOnboardingStatus: asaasOnboardingStatusSchema,
+  paymentsOnboardingStatus: paymentsOnboardingStatusSchema,
   createdAt: z.string(),
 })
 

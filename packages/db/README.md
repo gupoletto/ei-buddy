@@ -8,10 +8,11 @@ isolamento: [ADR-0001](../../docs/decisoes/adr/0001-rls-por-linha.md)
 O Postgres materializa o [modelo A–J](../../docs/arquitetura/dados.md#modelo-de-dados)
 ([catálogo físico](../../docs/arquitetura/esquema-postgresql.md)):
 cadastro, venda, nota, financeiro, agenda/CRM/suporte, assistente, assinatura
-SaaS e plataforma. Focus e Asaas são satélites (`company_focus`,
-`company_asaas`, `customer_asaas`, `payment_asaas`, `subscription_asaas`) —
-empresa sem KYC ou inelegível para nota **não** ganha colunas nulas. Sem
-PagMaxx. Sem tabela de Split ([DEC-018](../../docs/decisoes/README.md#dec-018)).
+SaaS e plataforma. Fiscal e pagamentos compartilham o satélite
+`company_integrations` (1:0..1). Ids de cliente/cobrança/assinatura no provedor
+moram em `customers`, `payments` e `subscriptions`. Empresa sem KYC ou
+inelegível para nota **não** ganha linha de provedor. Sem PagMaxx. Sem tabela
+de Split ([DEC-018](../../docs/decisoes/README.md#dec-018)).
 
 Isolamento entre **lojas** é RLS por linha. Um **usuário** pertence a uma
 empresa (`users.company_id`, nullable até `/app/empresa`) —
@@ -85,11 +86,13 @@ Depois de mudar o init: `pnpm infra:reset` (apaga volumes).
 
 Tabela `snake_case` plural · coluna `snake_case` · `id uuid` · FK `<singular>_id`
 · **dinheiro em `bigint` de centavos** · percentual `numeric(7,4)` · data/hora
-`timestamptz` em UTC com sufixo `_at` · sem `enum` nativo (migrar dói).
+`timestamptz` em UTC com sufixo `_at` · `deleted_at` em toda tabela com
+`created_at` ou `updated_at` · sem `enum` nativo (migrar dói).
 
 Todo índice de tabela de negócio **começa por `company_id`**.
 
-SQL versionado em [`migrations/0001_init.sql`](migrations/0001_init.sql).
+SQL vigente em [`migrations/0002_init.sql`](migrations/0002_init.sql)
+([`0001_init.sql`](migrations/0001_init.sql) é histórico).
 Tipos Drizzle em [`src/schema.ts`](src/schema.ts). Catálogo para leitura:
 [`esquema-postgresql.md`](../../docs/arquitetura/esquema-postgresql.md).
 

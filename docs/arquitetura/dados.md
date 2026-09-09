@@ -71,8 +71,7 @@ sem `company_users`. `users.company_id` fica nulo só entre o cadastro da conta
 e `/app/empresa` (jornada A); depois é 1:1. Staff futuro = outro `users` com o
 mesmo `company_id`.
 
-Visão lógica A–J (o Postgres já materializa estas tabelas, mais os satélites
-Focus/Asaas):
+Visão lógica A–J (o Postgres já materializa estas tabelas, mais `company_integrations`):
 
 ```mermaid
 erDiagram
@@ -86,7 +85,7 @@ erDiagram
     SALES ||--|{ SALE_ITEMS : "contem"
     SALES ||--|{ PAYMENTS : "quitada por"
     SALES ||--o{ RECEIVABLES : "gera"
-    SALES ||--o| INVOICES : "espelho Focus"
+    SALES ||--o| INVOICES : "nota"
     SALES ||--o{ INVENTORY_MOVEMENTS : "movimenta"
 
     PRODUCTS ||--o{ SALE_ITEMS : "vendido em"
@@ -105,33 +104,35 @@ erDiagram
     COMPANIES ||--o{ CONVERSATIONS : "assistente"
     CONVERSATIONS ||--|{ MESSAGES : "contem"
     CONVERSATIONS ||--o{ CONFIRMATIONS : "acao sensivel"
-    SUBSCRIPTIONS ||--o{ SUBSCRIPTION_CHARGES : "ciclos"
+    SUBSCRIPTIONS ||--o{ SUBSCRIPTION_CYCLES : "ciclos"
     COMPANIES ||--o{ AUDIT_LOGS : "registra"
 ```
 
 ### Agrupamento por módulo dono
 
-35 tabelas no Postgres deste recorte, incluindo satélites Focus/Asaas. Colunas
-e restrições: [`esquema-postgresql.md`](esquema-postgresql.md).
+30 tabelas no Postgres deste recorte. Colunas e restrições:
+[`esquema-postgresql.md`](esquema-postgresql.md).
 
-Integrações (Focus, Asaas) são **satélites 1:0..1**, não colunas em
-`companies` / `payments`.
+Integrações (fiscal, pagamentos) moram em **`company_integrations` 1:0..1**, não
+como colunas em `companies`. Artefatos de cobrança online ficam em `payments`.
+Vendor não nomeia tabela.
 
 | Grupo                  | Tabelas                                                                                                  | Módulo dono       |
 | ---------------------- | -------------------------------------------------------------------------------------------------------- | ----------------- |
-| Empresa e acesso       | `companies`, `users` (`company_id` no owner/staff), `company_focus`, `company_asaas`                     | `core` + `fiscal` |
-| Cadastros e estoque    | `customers`, `customer_asaas`, `customer_addresses`, `products` (saldo na coluna), `inventory_movements` | `core`            |
-| Venda e nota           | `sales`, `sale_items`, `payments`, `payment_asaas`, `invoices` (`kind` `nfce` \| `nfse`)                 | `core` + `fiscal` |
+| Empresa e acesso       | `companies`, `users` (`company_id` no owner/staff), `company_integrations`                                  | `core` + `fiscal` |
+| Cadastros e estoque    | `customers`, `products` (saldo na coluna), `inventory_movements`                                             | `core`            |
+| Venda e nota           | `sales`, `sale_items`, `payments`, `invoices` (`kind` `nfce` \| `nfse`)                                  | `core` + `fiscal` |
 | Financeiro             | `receivables`, `payables`, `settlements`, `ledger_accounts`                                              | `core`            |
 | Agenda / CRM / suporte | `appointments`, `crm_cards`, `support_tickets`, `ticket_messages`                                        | `core`            |
 | Assistente             | `conversations`, `messages`, `confirmations`                                                             | `agent`           |
-| Assinatura             | `subscriptions`, `subscription_asaas`, `subscription_charges`, `partners`, `coupons`                     | `billing`         |
+| Assinatura             | `subscriptions`, `subscription_cycles`, `partners`, `coupons`                                            | `billing`         |
 | Plataforma             | `audit_logs`, `idempotency_keys`, `attachments`, `outbox`, `webhook_events`                              | `core`            |
 
 **Fundido de propósito (não criar tabela):** `categories` e `suppliers` → texto em
-`products` / `payables`; `crm_comments` → `crm_cards.comments` jsonb;
+`products` / `payables`; `customer_addresses` → colunas nullable em `customers`;
+`crm_comments` → `crm_cards.comments` jsonb;
 `tool_calls` → `messages.tool_calls` jsonb; `plans` → `subscriptions.plan_code`;
-`pix_charges` / `payment_links` → `payment_asaas` (e `receivables.collection_url` depois);
+`pix_charges` / `payment_links` → colunas de provedor em `payments` (e `receivables.collection_url` depois);
 custo fixo → `payables.is_template`.
 
 **Não neste recorte:** `company_users` ([ADR-0004](../decisoes/adr/0004-usuario-uma-empresa.md)),
@@ -153,15 +154,15 @@ Origem de cada campo (lojista, Focus, Asaas, CEP) — não o tipo SQL. Tipos,
 CHECKs e índices: [`esquema-postgresql.md`](esquema-postgresql.md). Schema
 Drizzle + SQL em [`packages/db`](../../packages/db). Além das colunas abaixo,
 valem as [convenções](#convenções-de-schema) (`id`, `company_id` nas tabelas de
-negócio, `created_at` / `updated_at`).
+negócio, `created_at` / `updated_at` / `deleted_at`).
 
 Elegibilidade de emissão **não** é coluna: `isEligibleForFiscalEmission` em
 `packages/domain` ([DEC-017](../decisoes/README.md#dec-017), RF-146). ERP
-grava a empresa mesmo inelegível — **sem** linha em `company_focus`.
+grava a empresa mesmo inelegível — **sem** linha em `company_integrations`.
 
 #### `companies`
 
-Cadastro visível e regime. Sem colunas Focus/Asaas.
+Cadastro visível e regime. Sem colunas de provedor.
 
 | Coluna                                                                                  | Origem                                                                       | Vai para API?                                                                          |
 | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
@@ -179,37 +180,21 @@ Cadastro visível e regime. Sem colunas Focus/Asaas.
 `users.company_id` é nullable até `/app/empresa` (jornada A). Login por e-mail
 usa `find_login_by_email` (`SECURITY DEFINER`), não uma leitura RLS sem tenant.
 
-#### `company_focus`
+#### `company_integrations`
 
-Linha **só** quando a empresa encaminha A1/CSC/flags (elegível). Inelegível
-não tem satélite — evita dez nulos em toda empresa.
+Linha **só** quando a empresa inicia fiscal (A1/CSC/flags) **ou** KYC de
+pagamentos. Inelegível / sem KYC não tem satélite.
 
-| Coluna                                         | Origem                                          |
-| ---------------------------------------------- | ----------------------------------------------- |
-| `focus_company_id`, `focus_token_secret_ref`   | resposta `POST /v2/empresas` (segredo no cofre) |
-| `nfce_enabled`, `nfse_enabled`                 | flags que enviamos se elegível                  |
-| `certificate_status`, `certificate_expires_at` | Focus / parse na borda **sem** PFX              |
-| `has_nfce_csc`                                 | CSC foi encaminhado; **não** o valor            |
-
-#### `company_asaas`
-
-Linha **só** quando o lojista inicia o KYC (subconta não-BaaS). Sem KYC, sem
-satélite.
-
-| Coluna                                               | Origem                                           |
-| ---------------------------------------------------- | ------------------------------------------------ |
-| `onboarding_status`, `asaas_account_id`, `wallet_id` | `POST /v3/accounts` / `GET /v3/myAccount/status` |
-| `api_key_secret_ref`, `webhook_auth_secret_ref`      | cofre — nunca em claro                           |
-| `platform_customer_id`                               | `cus_` na conta-pai (SaaS)                       |
-| `estimated_monthly_income_cents`                     | `incomeValue` na criação da subconta             |
-
-#### `customer_asaas`
-
-Id do cliente na **subconta**. Linha só quando a cobrança precisa de `customer`.
-
-| Coluna              | Origem               |
-| ------------------- | -------------------- |
-| `asaas_customer_id` | `POST /v3/customers` |
+| Coluna                                                                 | Origem                                                          |
+| ---------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `fiscal_provider`, `fiscal_company_id`, `fiscal_token_secret_ref`      | slug + id/token do emitente (cofre)                             |
+| `fiscal_nfce_enabled`, `fiscal_nfse_enabled`                           | flags que enviamos se elegível                                  |
+| `fiscal_certificate_status`, `fiscal_certificate_expires_at`           | provedor fiscal / parse na borda **sem** PFX                    |
+| `fiscal_has_nfce_csc`                                                  | CSC foi encaminhado; **não** o valor                            |
+| `payments_provider`, `payments_onboarding_status`, `payments_account_id`, `payments_wallet_id` | KYC / subconta do PSP                          |
+| `payments_api_key_secret_ref`, `payments_webhook_auth_secret_ref`      | cofre — nunca em claro                                          |
+| `billing_customer_id`                                                  | cliente da mensalidade SaaS na conta-pai                        |
+| `payments_estimated_monthly_income_cents`                              | renda informada na criação da subconta                          |
 
 #### `products`
 
@@ -230,33 +215,35 @@ Ajuste: os dois ids nulos.
 **Não há** `item_lista_servico`, código municipal LC 116, CFOP nem CSOSN no
 produto. CFOP/CSOSN da NFC-e são padrão do adapter para MEI/Simples.
 
-#### `customers` e `customer_addresses`
+#### `customers`
 
-Documento, telefone e e-mail opcionais (balcão). Endereço **só** em
-`customer_addresses` quando tomador/destinatário precisa dele. Sem endereço,
-a DPS pode ir sem tomador completo — a Nacional admite.
+Documento, telefone e e-mail opcionais (balcão). Endereço no mesmo registro
+(`street` … `city_ibge_code`), todos nullable: a DPS pode ir sem tomador
+completo. Pedido LGPD anonimiza (RF-127), não apaga. Id no PSP:
+`payments_customer_id`. Lista oculta com `deleted_at`; venda antiga continua
+apontando o uuid.
 
 #### `sale_items`
 
 Snapshot `ncm` / `codigo_tributacao_nacional_iss` / `codigo_nbs` no fechamento.
 Só preenche o que o item usa (produto vs serviço).
 
-#### `payments` e `payment_asaas`
+#### `payments`
 
 `payments` tem forma e valor (`cash`, `pix`, `boleto`, `debit`, `credit`,
-`wallet`). Pix/boleto/link/cartão online ganham linha em `payment_asaas`
-(`provider_payment_id`, `billing_type`, `pix_payload` / `bank_slip_url`,
-evento). Dinheiro e maquininha **não** têm satélite.
+`wallet`). Pix/boleto/link/cartão online preenchem `provider_payment_id`,
+`pix_payload` / `bank_slip_url`, evento. Dinheiro e maquininha deixam essas
+colunas nulas. `method` é o domínio — sem `billing_type` de vendor.
 
 #### `invoices`
 
-Espelho Focus. Linha **só** quando há emissão. `kind` só `nfce` \| `nfse`. Sem
+Espelho da nota. Linha **só** quando há emissão. `kind` só `nfce` \| `nfse`. Sem
 colunas de NF-e modelo 55. `access_key` / `series` / `qr_code` preenchidos na
 NFC-e; NFS-e usa `number` e verificação no `provider_payload`.
 
 #### `webhook_events`
 
-Inbox Focus/Asaas. `UNIQUE (provider, event_id)`. `company_id` preenchido
+Inbox dos provedores. `UNIQUE (provider, event_id)`. `company_id` preenchido
 depois de casar o evento. Sem RLS no insert — a API ainda não tem tenant.
 
 ### Estados da venda
@@ -302,8 +289,11 @@ Quem persiste isso é `core` + `db` (NR-022, schema, RF-054), não `domain`.
 | Data sem hora      | `date` — só vencimento e competência                                                                             |
 | Booleano           | `is_` / `has_` — `is_active`                                                                                     |
 | Enum               | tabela de domínio ou `text` + `CHECK`; nunca `enum` nativo (migrar dói)                                          |
-| Exclusão           | `deleted_at` onde couber; **nunca** `DELETE` em venda, nota ou auditoria                                         |
+| Exclusão           | `deleted_at` em toda tabela com `created_at` ou `updated_at` (nulo = vigente); **nunca** `DELETE` em venda, nota ou auditoria |
 | Auditoria de linha | `created_at`, `updated_at`, `created_by`, `updated_by`                                                           |
+
+Fora dessa regra: `sale_items`, `confirmations`, `audit_logs` e `webhook_events`
+não têm `created_at`/`updated_at`, logo não têm `deleted_at`.
 
 **Por que `bigint` em centavos:** `numeric` seria correto mas convida a
 aritmética em JavaScript com precisão perdida na borda; `bigint` em centavos
@@ -410,7 +400,7 @@ Backup não testado não é backup. O teste mensal é requisito, não boa práti
 
 ## Documentos relacionados
 
-- [Esquema PostgreSQL](esquema-postgresql.md) — catálogo físico das 35 tabelas
+- [Esquema PostgreSQL](esquema-postgresql.md) — catálogo físico das 30 tabelas
 - [`packages/db`](../../packages/db/README.md) — implementação do schema
 - [Princípios](principios.md) — a regra de dependência que `db` respeita
 - [Segurança](seguranca.md) — como o isolamento se conecta à autorização

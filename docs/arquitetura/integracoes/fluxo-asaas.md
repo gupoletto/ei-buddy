@@ -80,7 +80,7 @@ flowchart LR
 | Conta da plataforma | Criar/listar contas de loja; cliente+assinatura SaaS; avisos da pai    |
 | Conta da loja      | Clientes da mercearia, cobranças, links, Pix/boleto, tarifas, “já aprovou?” |
 
-Guardamos em `company_asaas`: número da conta, carteira, ponteiro da chave no
+Guardamos em `company_integrations`: número da conta, carteira, ponteiro da chave no
 cofre, ponteiro da senha de aviso.
 
 ---
@@ -106,14 +106,14 @@ sequenceDiagram
     participant WH as POST /webhooks/asaas
 
     L->>W: pede para receber Pix etc. (informa faturamento estimado)
-    W->>A: grava company_asaas (pending)
+    W->>A: grava company_integrations (payments_onboarding_status=pending)
     A->>S: POST /v3/accounts (+ webhooks)
     S-->>A: id, walletId, apiKey
     A->>A: guarda a chave no cofre
     Note over S,L: e-mail de ativação
     L->>Sub: cria senha e envia documentos no Asaas
     Sub->>WH: ACCOUNT_STATUS_*
-    WH->>A: onboarding_status
+    WH->>A: payments_onboarding_status
     alt general APPROVED
         A-->>W: Pix/boleto/link/cartão liberados
     else REJECTED
@@ -159,7 +159,7 @@ sequenceDiagram
     participant P as payments
     participant S as Asaas (conta da loja)
     participant WH as POST /webhooks/asaas
-    participant DB as payment_asaas
+    participant DB as payments
 
     Q->>P: payment_id + method
     P->>S: POST /v3/customers (se ainda não houver)

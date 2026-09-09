@@ -136,7 +136,7 @@ Fica na mesa para ninguém “descobrir” depois. **Não** é o default.
 
 ## O que o código pode fazer **sem** a DEC
 
-- Guardar `company_asaas.wallet_id` (já vem na criação da conta da loja).
+- Guardar `company_integrations.payments_wallet_id` (já vem na criação da conta da loja).
 - Deixar `ASAAS_WALLET_ID` na lista de variáveis (carteira nossa) — vazio no
   computador do desenvolvedor.
 - A porta `PaymentGateway` aceita `split` opcional; o adapter real **só envia**

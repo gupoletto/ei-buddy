@@ -92,7 +92,7 @@ Split nas vendas: [DEC-018](../decisoes/README.md#dec-018) (aberta — não envi
 | `ASAAS_WALLET_ID`          |      |      | vazio                                 | `walletId` da pai — só se DEC-018 escolher Split |
 
 Chave da subconta e `authToken` do webhook por lojista **não** são env global:
-vão ao cofre, referenciados por `company_asaas`.
+vão ao cofre, referenciados por `company_integrations`.
 
 ### WhatsApp — Cloud API · [ADR-0005](../decisoes/adr/0005-whatsapp-cloud-api.md)
 

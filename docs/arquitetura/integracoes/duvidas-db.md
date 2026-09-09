@@ -1,8 +1,8 @@
 # Dúvidas do banco de dados
 
 Perguntas sobre o **schema PostgreSQL** do recorte A–J (cadastro, venda, nota,
-financeiro, CRM, assistente, assinatura e plataforma — inclusive os satélites
-Focus e Asaas).
+financeiro, CRM, assistente, assinatura e plataforma — inclusive
+`company_integrations`).
 
 Origem: lista informal (`questionamentos_db.txt`). O texto de origem vinha sem
 interrogação, pontuação e acentuação na maior parte das linhas; as perguntas
@@ -121,59 +121,47 @@ Papel de acesso: `owner` `staff` `platform_admin`.
 
 ---
 
-## `company_focus`
+## `company_integrations`
 
 ### Em que momento essa tabela será preenchida?
 
-Será preenchida com os dados que a focus nos retornar, após o CNPJ do nosso usuário ser aprovado para emissão de notas. Porque precisaremos desses dados para fazer requisições à API deles.
+Satélite **1:0..1**. A linha **só existe** quando a empresa inicia o fiscal
+(A1/CSC/flags) **ou** o KYC de pagamentos.
+
+Cadastro da empresa no ERP **não** cria esta linha. Quem só registra dinheiro
+e maquininha pode nunca preencher `payments_*`. Inelegível para nota pode nunca
+preencher `fiscal_*`.
+
+Aprovação de pagamentos (`payments_onboarding_status = approved`) vem depois,
+quando o lojista enviar documentos no PSP e for aprovado.
 
 ### Para que serve cada campo?
 
-| Coluna                   | Para quê                                                           |
-| ------------------------ | ------------------------------------------------------------------ |
-| `company_id`             | PK = a empresa. Um satélite por loja                               |
-| `focus_company_id`       | Id da empresa na Focus, resposta de `POST /v2/empresas`            |
-| `focus_token_secret_ref` | Ponteiro no cofre do token de emitente. **Nunca** o token em claro |
-| `nfce_enabled`           | Loja pediu NFC-e e é elegível                                      |
-| `nfse_enabled`           | Loja pediu NFS-e Nacional e é elegível                             |
-| `certificate_status`     | `missing`                                                          |
-| `certificate_expires_at` | Validade do A1 (parse na borda, sem guardar o PFX)                 |
-| `has_nfce_csc`           | CSC foi encaminhado. **Não** guarda o valor do CSC                 |
-| `updated_at`             | Última sincronização com a Focus                                   |
+| Coluna                                      | Para quê                                                                                                                                |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `company_id`                                | PK = a empresa. Um satélite por loja                                                                                                    |
+| `fiscal_provider`                           | Slug do emissor (`focusnfe`, …). Nulo = fiscal não iniciado                                                                             |
+| `fiscal_company_id`                         | Id do emitente no provedor fiscal                                                                                                       |
+| `fiscal_token_secret_ref`                   | Ponteiro no cofre do token de emitente. **Nunca** o token em claro                                                                      |
+| `fiscal_nfce_enabled`                       | Loja pediu NFC-e e é elegível                                                                                                           |
+| `fiscal_nfse_enabled`                       | Loja pediu NFS-e Nacional e é elegível                                                                                                  |
+| `fiscal_certificate_status`                 | Nulo = fiscal não iniciado; `missing` = ligado sem A1                                                                                   |
+| `fiscal_certificate_expires_at`             | Validade do A1 (parse na borda, sem guardar o PFX)                                                                                      |
+| `fiscal_has_nfce_csc`                       | CSC foi encaminhado. **Não** guarda o valor do CSC                                                                                      |
+| `payments_provider`                         | Slug do PSP (`asaas`, …)                                                                                                                |
+| `payments_onboarding_status`                | `not_started` … `approved` / `rejected`                                                                                                 |
+| `payments_account_id`                       | Id da **subconta** da loja                                                                                                              |
+| `payments_wallet_id`                        | Carteira da subconta. Só entra em split se [DEC-018](../../decisoes/README.md#dec-018) fechar; já gravamos para não migrar depois      |
+| `payments_api_key_secret_ref`               | Ponteiro no cofre da chave da subconta                                                                                                  |
+| `payments_webhook_auth_secret_ref`          | Ponteiro no cofre do `authToken` do webhook. Não é a chave da API                                                                       |
+| `billing_customer_id`                       | Cliente do lojista na **conta-pai** — mensalidade SaaS, não a venda da loja                                                             |
+| `payments_estimated_monthly_income_cents`   | Renda pedida no início do KYC, em centavos                                                                                              |
+| `updated_at`                                | Última sincronização                                                                                                                    |
 
-Detalhe da integração: `[focusnfe.md](focusnfe.md)`,
-`[fluxo-focus.md](fluxo-focus.md)`.
+Não confundir `payments_wallet_id` da subconta com o **saldo do cliente** (`customers.wallet_*`). São coisas diferentes.
 
----
-
-## `company_asaas`
-
-### Em que momento essa tabela será preenchida?
-
-Satélite **1:0..1**. A linha **só existe** quando o lojista inicia o KYC (Know Your Costumer) da subconta .
-
-Quem só registra dinheiro e maquininha **não** tem essa tabela. Cadastro da
-empresa no ERP **não** cria Asaas.
-
-Aprovação (`onboarding_status = approved`) vem depois, quando o usuário upar seus documentos e for aprovado pela Asaas
-
-### Para que serve cada campo?
-
-| Coluna                           | Para quê                                                                                                                                |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `company_id`                     | PK = a empresa                                                                                                                          |
-| `onboarding_status`              | `not_started`                                                                                                                           |
-| `asaas_account_id`               | Id da **subconta** da loja                                                                                                              |
-| `wallet_id`                      | Carteira Asaas da subconta. Só entra em split se [DEC-018](../../decisoes/README.md#dec-018) fechar; já gravamos para não migrar depois |
-| `api_key_secret_ref`             | Ponteiro no cofre da chave da subconta. Capturar na hora: o Asaas some com ela                                                          |
-| `webhook_auth_secret_ref`        | Ponteiro no cofre do `authToken` do webhook. Não é a chave da API                                                                       |
-| `platform_customer_id`           | `cus_` do lojista na **conta-pai** — mensalidade SaaS, não a venda da loja                                                              |
-| `estimated_monthly_income_cents` | `incomeValue` pedido no início do KYC, em centavos                                                                                      |
-| `updated_at`                     | Última sincronização                                                                                                                    |
-
-Não confundir `wallet_id` da subconta com o **saldo do cliente** (`customers.wallet_`*). São coisas diferentes.
-
-Detalhe: `[asaas.md](asaas.md)`, `[fluxo-asaas.md](fluxo-asaas.md)`.
+Detalhe da integração: `[focusnfe.md](focusnfe.md)`, `[fluxo-focus.md](fluxo-focus.md)`,
+`[asaas.md](asaas.md)`, `[fluxo-asaas.md](fluxo-asaas.md)`.
 
 ---
 
@@ -185,7 +173,12 @@ CPF ou CNPJ do **cliente da loja**. Opcional: venda de balcão não pode travar
 sem CPF (US-005). Quando informado, valida e vai para a nota (tomador) e para o
 Asaas (`cpfCnpj`).
 
-Índice `(company_id, document)` só nas linhas preenchidas.
+Índice `(company_id, document)` só nas linhas preenchidas e não arquivadas
+(`deleted_at IS NULL`).
+
+`payments_customer_id` é o id no PSP, preenchido na **primeira cobrança online**
+daquele cliente. Venda só em dinheiro/maquininha/fiado deixa nulo. `deleted_at`
+oculta da lista; pedido LGPD **anonimiza** (RF-127), não apaga.
 
 ### O que é o campo `notes`?
 
@@ -222,35 +215,17 @@ cliente cadastra (nome basta no balcão se o fluxo permitir), mas **não** receb
 
 ---
 
-## `customer_asaas`
+## `customers` — endereço
 
-### Quando essa tabela será preenchida?
+### Por que o endereço ficou em `customers`?
 
-Na **primeira cobrança Asaas** daquele cliente (`POST /v3/customers` na
-subconta). Satélite 1:0..1: id `cus_` reutilizado, porque o Asaas aceita
-cadastro duplicado.
+Nem todo cliente precisa de endereço (balcão: nome + telefone). Os campos
+(`street` … `city_ibge_code`) são **nullable**. A NFS-e Nacional admite DPS sem
+tomador completo; o PDV não pede CEP para vender pão.
 
-Venda só em dinheiro/maquininha/fiado **não** cria essa linha. Cliente de
-balcão sem documento pode ir num pagador genérico da loja ou num link em que o
-pagador preenche os dados.
-
----
-
-## `customer_addresses`
-
-### Quando essa tabela será preenchida e por que ela existe? Por que não ter esses campos em `customers`?
-
-Nem todo customer precisa fornecer seu endereço
-
-Preenchida **só** quando o cliente é tomador/destinatário de nota e precisa de endereço.
-
-A NFS-e Nacional **admite** DPS sem tomador completo. A maioria das vendas de
-balcão é nome + telefone. Endereço obrigatório em `customers` faria o PDV pedir
-CEP para vender pão.
-
-Por isso o endereço **não** mora em `customers`: quem não emite nota para aquele
-cliente não carrega oito colunas nulas. Quando precisa, a linha existe e
-espelha o mesmo formato da empresa (`street` … `city_ibge_code`).
+Quando o cliente é tomador/destinatário da nota, preenche o mesmo formato da
+empresa. CHECK impede endereço pela metade: ou o núcleo está todo nulo, ou
+rua, número, bairro, CEP, cidade e UF vêm juntos.
 
 ---
 
@@ -307,6 +282,7 @@ ALTER TABLE inventory_movements
 | `reason`         | `text NOT NULL`        |                                                    |
 | `sale_id`        | `uuid`                 | → `sales`; baixa de venda                          |
 | `purchase_id`    | `uuid`                 | entrada por compra; sem FK até existir `purchases` |
+| `deleted_at`     | `timestamptz`          | nulo = vigente                                     |
 | `created_at`     | `timestamptz NOT NULL` | sem `updated_at`                                   |
 
 - Venda: `quantity_delta` negativo, `sale_id` preenchido, `purchase_id` nulo.
@@ -326,26 +302,24 @@ Asaas, exige cliente identificado, abre recebível em aberto e mexer no saldo
 | O lojista chama                        | No banco                             |
 | -------------------------------------- | ------------------------------------ |
 | Dinheiro                               | `cash`                               |
-| Pix / boleto / link                    | `pix` / `boleto` (+ `payment_asaas`) |
+| Pix / boleto / link                    | `pix` / `boleto` (preenche `payments.provider_*`) |
 | Débito / crédito na maquininha         | `debit` / `credit` (só registro)     |
-| Cartão **online**                      | `credit` + satélite Asaas            |
+| Cartão **online**                      | `credit` + colunas de provedor em `payments` |
 | Fiado / caderninho / crediário da loja | `wallet`                             |
 
 ---
 
-## `payment_asaas`
+## `payments` (colunas de provedor)
 
-### Quando será preenchida?
+### Quando serão preenchidas?
 
-Satélite do pagamento **online**: Pix, boleto, link ou cartão no Asaas, **depois**
-da venda gravada. `POST /v3/payments` (ou payment link) na subconta.
+Na cobrança **online**: Pix, boleto, link ou cartão no PSP, **depois** da venda
+gravada. Dinheiro, maquininha e `wallet` deixam `provider_*` nulos.
 
-Dinheiro, maquininha e `wallet` **não** ganham essa linha — o Asaas nem é
-chamado.
-
-Campos úteis: `provider_payment_id`, `billing_type`, QR (`pix_payload`), PDF /
-linha digitável do boleto, `checkout_url`, evento que liquidou. PAN do cartão
-nunca entra; token vai ao cofre (`card_token_ref`).
+Campos úteis: `provider_payment_id`, QR (`pix_payload`), PDF / linha digitável
+do boleto, `checkout_url`, evento que liquidou. PAN do cartão nunca entra;
+token vai ao cofre (`card_token_ref`). `method` é o domínio — sem `billing_type`
+de vendor.
 
 ---
 
@@ -436,17 +410,16 @@ Agora com a decisão do framework do nosso agente, vou conseguir trabalhar melho
 
 ## Assinatura SaaS (`partners`, `coupons`, `subscriptions`, …)
 
-Isto é a **mensalidade do EiBuddy**, na conta-pai Asaas — não a venda da loja (`payments` / `payment_asaas`). Pacote `billing`.
+Isto é a **mensalidade do EiBuddy**, na conta-pai do billing — não a venda da loja (`payments`). Pacote `billing`.
 
 O lojista pode informar um código no signup. O código pertence a um **parceiro** (Clube X, Associação Comercial): um parceiro emite vários cupons ao longo do tempo.
 
 | Tabela                 | Papel                                                                                                                                                   |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `partners`             | Quem emite o cupom: `id`, `name` (único), `created_at`, `updated_at`. Sem `company_id` e sem RLS. Não é o partner de split PagMaxx/Asaas (DEC-018)      |
+| `partners`             | Quem emite o cupom: `id`, `name` (único enquanto vigente), `deleted_at`, `created_at`, `updated_at`. Sem `company_id` e sem RLS. Não é o partner de split PagMaxx/Asaas (DEC-018) |
 | `coupons`              | Código digitado no signup (`code` único), `partner_id` obrigatório, desconto `percent` ou `amount`, `expires_at`, `revoked_at`, `discount_cycles`, cota |
-| `subscriptions`        | Uma por empresa (`UNIQUE company_id`). `plan_code` em texto — sem tabela `plans`. `coupon_id` aponta para o cupom usado no cadastro. Estados: `trial` … |
-| `subscription_asaas`   | Satélite quando `billing` cria a recorrência Asaas (`provider_subscription_id`, próximo vencimento)                                                     |
-| `subscription_charges` | Cada ciclo: valor, vencimento, `pending` / `paid` / `failed` / `refunded`                                                                               |
+| `subscriptions`        | Uma por empresa (`UNIQUE company_id`). `plan_code` em texto — sem tabela `plans`. `coupon_id` aponta para o cupom usado no cadastro. Estados: `trial` … Ids da recorrência (`provider_subscription_id`, próximo vencimento) na mesma linha quando o billing gravar |
+| `subscription_cycles`  | Cada ciclo: valor, vencimento, `pending` / `paid` / `failed` / `refunded`                                                                               |
 
 `discount_cycles` nulo = desconto em todos os ciclos; `1` = só o primeiro mês; `3` = três primeiros. `revoked_at` nulo = vigente; preenchido = código morto sem apagar a linha (não depende só de `expires_at`).
 
@@ -536,7 +509,7 @@ banco. Retenção ≥ 5 anos ([dados.md](../dados.md#auditoria)).
 
 ### `webhook_events` — por que existe e por que continua
 
-Focus e Asaas avisam depois: nota autorizada, Pix liquidado. O recado
+Os provedores avisam depois: nota autorizada, Pix liquidado. O recado
 **chega antes** de sabermos a loja — por isso o insert **não** exige
 `company_id` nem RLS. Guardamos o envelope, casamos com a loja, preenchemos
 `company_id` e processamos. `UNIQUE (provider, event_id)` descarta o mesmo

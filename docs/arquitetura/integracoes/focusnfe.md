@@ -31,7 +31,7 @@ No primeiro recorte usamos o **token da conta plataforma** (nossa integração
 multi-CNPJ) para `POST /v2/empresas`, e o **token da empresa emitente** (devolvido
 no cadastro) para emitir NFC-e e NFS-e Nacional daquele CNPJ. Tokens de emitente
 ficam no gerenciador de segredos, referenciados por
-`company_focus.focus_token_secret_ref` — nunca no Postgres em claro, nunca no log.
+`company_integrations.fiscal_token_secret_ref` — nunca no Postgres em claro, nunca no log.
 
 `ref` da nota: alfanumérico, único por token. Usamos o `id` da nossa `invoices`
 (sem hífen) ou um prefixo estável `inv` + id compacto. NFC-e e NFS-e **não**
@@ -84,12 +84,12 @@ e NFS-e Nacional:
 | `logradouro`, `numero`, `complemento`, `bairro`, `cep`, `municipio`, `uf` | `companies.street`, `street_number`, `complement`, `neighborhood`, `postal_code`, `city`, `state`                                                         | sim                                 |
 | `email`, `telefone`                                                       | `companies`                                                                                                                                               | sim                                 |
 | `regime_tributario`                                                       | `companies.tax_regime` — **só se elegível**: `mei`→**4**, `simples_nacional`→**1**. Nunca enviamos `3` (Normal). Sublimite Focus (`2`) fora deste recorte | sim o enum nosso                    |
-| `habilita_nfce`                                                           | `true` quando o lojista pede NFC-e **e** é elegível                                                                                                       | sim `company_focus.nfce_enabled`    |
-| `habilita_nfsen_homologacao` / `habilita_nfsen_producao`                  | `true` quando o lojista pede NFS-e Nacional **e** é elegível                                                                                              | sim `company_focus.nfse_enabled`    |
+| `habilita_nfce`                                                           | `true` quando o lojista pede NFC-e **e** é elegível                                                                                                       | sim `company_integrations.fiscal_nfce_enabled`    |
+| `habilita_nfsen_homologacao` / `habilita_nfsen_producao`                  | `true` quando o lojista pede NFS-e Nacional **e** é elegível                                                                                              | sim `company_integrations.fiscal_nfse_enabled`    |
 | `arquivo_certificado_base64`                                              | upload `.pfx`/`.p12` no request                                                                                                                           | **não**                             |
 | `senha_certificado`                                                       | campo senha do upload                                                                                                                                     | **não**                             |
-| `csc_nfce_producao` / `csc_nfce_homologacao`                              | formulário Empresa                                                                                                                                        | **não** o valor; sim `has_nfce_csc` |
-| `id_token_nfce_producao` / `_homologacao`                                 | formulário Empresa                                                                                                                                        | **não** o valor; sim `has_nfce_csc` |
+| `csc_nfce_producao` / `csc_nfce_homologacao`                              | formulário Empresa                                                                                                                                        | **não** o valor; sim `fiscal_has_nfce_csc` |
+| `id_token_nfce_producao` / `_homologacao`                                 | formulário Empresa                                                                                                                                        | **não** o valor; sim `fiscal_has_nfce_csc` |
 
 O A1 **transita** no nosso backend e segue para a Focus. Resposta 422
 (senha, CNPJ, vencido) vira mensagem na tela; nada de arquivo fica gravado.
@@ -106,13 +106,13 @@ A consulta **pode sugerir** MEI vs Simples; **não** informa Híbrido.
 
 | Campo / fato Focus                                                        | Coluna / uso                                      |
 | ------------------------------------------------------------------------- | ------------------------------------------------- |
-| id da empresa na Focus                                                    | `company_focus.focus_company_id`                  |
+| id da empresa na Focus                                                    | `company_integrations.fiscal_company_id`                  |
 | token do emitente                                                         | secret ref, não coluna em claro                   |
-| certificado aceito                                                        | `company_focus.certificate_status = valid`        |
-| validade extraída pela Focus ou pelo parse na borda **sem guardar o PFX** | `company_focus.certificate_expires_at`            |
-| rejeição de A1                                                            | `certificate_status = rejected` + última mensagem |
-| `habilita_nfce` efetivo                                                   | `company_focus.nfce_enabled`                      |
-| `habilita_nfsen_*` efetivo                                                | `company_focus.nfse_enabled`                      |
+| certificado aceito                                                        | `company_integrations.fiscal_certificate_status = valid`        |
+| validade extraída pela Focus ou pelo parse na borda **sem guardar o PFX** | `company_integrations.fiscal_certificate_expires_at`            |
+| rejeição de A1                                                            | `fiscal_certificate_status = rejected` + última mensagem |
+| `habilita_nfce` efetivo                                                   | `company_integrations.fiscal_nfce_enabled`                      |
+| `habilita_nfsen_*` efetivo                                                | `company_integrations.fiscal_nfse_enabled`                      |
 
 Sem certificado `valid`, a venda fecha **sem** enfileirar nota (`not_configured`).
 NFC-e ainda exige CSC. NFS-e Nacional ainda exige código de tributação nacional

@@ -238,7 +238,7 @@ Staff, Open Finance e cofre de A1 saíram do caminho crítico.
 | RF-142 | Atualizar nome, e-mail e telefone do usuário autenticado                                                                     | US-072 | `core`      |  M  | ⬜  |
 | RF-143 | Emitir NFS-e Nacional (`POST /v2/nfsen`) a partir de uma venda fechada; gravar `kind=nfse` e aguardar autorização assíncrona | US-073 | `fiscal`    |  M  | ⬜  |
 | RF-144 | Validar código de tributação nacional (e NBS quando exigido) antes de enviar NFS-e Nacional à Focus                          | US-073 | `fiscal`    |  M  | ⬜  |
-| RF-145 | Enviar `habilita_nfsen_*` à Focus; persistir `company_focus.nfse_enabled`; não ligar `habilita_nfse` municipal               | US-073 | `fiscal`    |  M  | ⬜  |
+| RF-145 | Enviar `habilita_nfsen_*` ao provedor fiscal; persistir `company_integrations.fiscal_nfse_enabled`; não ligar `habilita_nfse` municipal               | US-073 | `fiscal`    |  M  | ⬜  |
 | RF-146 | Recusar A1, CSC, `habilita_*` e a fila de nota se a empresa não for MEI/Simples sem Híbrido (`isEligibleForFiscalEmission`)  | US-074 | `fiscal`    |  M  | ⬜  |
 
 ---

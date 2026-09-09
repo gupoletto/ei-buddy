@@ -95,13 +95,8 @@ describe('RLS por linha — RF-121, RF-122', () => {
     expect(seen).toEqual([{ id: customerA, name: 'Cliente A' }])
   })
 
-  it('nao cria company_focus ate a empresa encaminhar a Focus', async () => {
-    const rows = await admin<{ n: number }[]>`SELECT count(*)::int AS n FROM company_focus`
-    expect(rows[0]?.n).toBe(0)
-  })
-
-  it('nao cria company_asaas ate o lojista iniciar o KYC', async () => {
-    const rows = await admin<{ n: number }[]>`SELECT count(*)::int AS n FROM company_asaas`
+  it('nao cria company_integrations ate fiscal ou KYC de pagamentos', async () => {
+    const rows = await admin<{ n: number }[]>`SELECT count(*)::int AS n FROM company_integrations`
     expect(rows[0]?.n).toBe(0)
   })
 
@@ -122,8 +117,11 @@ describe('RLS por linha — RF-121, RF-122', () => {
     expect(after[0]?.company_id).toBe(companyA)
   })
 
-  it('nao cria subscription_asaas ate o billing gravar a assinatura na conta-pai', async () => {
-    const rows = await admin<{ n: number }[]>`SELECT count(*)::int AS n FROM subscription_asaas`
+  it('assinatura SaaS nao nasce com id de provedor ate o billing gravar', async () => {
+    const rows = await admin<{ n: number }[]>`
+      SELECT count(*)::int AS n FROM subscriptions
+      WHERE provider_subscription_id IS NOT NULL
+    `
     expect(rows[0]?.n).toBe(0)
   })
 

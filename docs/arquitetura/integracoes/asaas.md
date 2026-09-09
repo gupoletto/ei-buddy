@@ -61,7 +61,7 @@ flowchart LR
 | Mensalidade do ZapGestor        | Cobra na **nossa** conta Asaas, independente da conta da loja.                            |
 | Cadastro da empresa no ERP      | **Não** obriga Asaas. Quem não vai usar Pix/boleto/link/cartão opera só com registro.     |
 
-**Trava:** Pix, boleto, link e cartão só se `company_asaas.onboarding_status =
+**Trava:** Pix, boleto, link e cartão só se `company_integrations.payments_onboarding_status =
 approved` (no Asaas, `accountStatus.general = APPROVED`). Sem isso, a venda
 fecha mesmo assim — só que nesses meios o sistema recusa e aponta dinheiro /
 maquininha.
@@ -82,7 +82,7 @@ Parece o mesmo fornecedor. São **dois negócios**.
 O lojista na conta-pai é um **cliente** Asaas (`cus_`), não uma subconta. Não
 misturar os dois ids.
 
-`company_asaas.wallet_id` é o endereço da carteira da subconta — só entra em
+`company_integrations.payments_wallet_id` é o endereço da carteira da subconta — só entra em
 jogo se [DEC-018](../../decisoes/README.md#dec-018) escolher Split. Até lá
 **não** enviamos `split[]`.
 
@@ -126,7 +126,7 @@ Prefixo da chave: `$aact_hmlg_` no sandbox, `$aact_prod_` em produção.
 A chave da **conta-pai** vive em `ASAAS_API_KEY` (variável de ambiente). A chave
 da **subconta** volta em `accessToken.apiKey` quando criamos a conta
 (`POST /v3/accounts`) e vai para o **cofre**, apontada por
-`company_asaas.api_key_secret_ref` — nunca no Postgres em claro, nunca no log.
+`company_integrations.payments_api_key_secret_ref` — nunca no Postgres em claro, nunca no log.
 **Capturar na hora:** o Asaas some com a chave da resposta depois.
 
 ---
@@ -187,16 +187,16 @@ e-mail da **conta raiz** (a nossa), não para o da loja.
 
 ## Abrir a subconta — o que recebemos e gravamos
 
-Linha em `company_asaas` **só** quando o lojista começa o KYC. Loja que nunca
-pediu Pix não ganha essa tabela.
+Linha em `company_integrations` **só** quando o lojista começa o KYC (ou o fiscal).
+Loja que nunca pediu Pix não ganha `payments_*` preenchidos.
 
 | O Asaas devolve                              | Onde fica                                              |
 | -------------------------------------------- | ------------------------------------------------------ |
-| `id` da subconta                             | `company_asaas.asaas_account_id`                       |
-| `walletId` (carteira)                        | `company_asaas.wallet_id`                              |
+| `id` da subconta                             | `company_integrations.payments_account_id`                |
+| `walletId` (carteira)                        | `company_integrations.payments_wallet_id`                 |
 | `accessToken.apiKey`                         | cofre — **não** coluna em claro                        |
-| `accountStatus.general`                      | `onboarding_status` (traduzido abaixo)                 |
-| `cus_` na conta-pai (mensalidade)            | `platform_customer_id` quando o billing cadastrar      |
+| `accountStatus.general`                      | `payments_onboarding_status` (traduzido abaixo)        |
+| `cus_` na conta-pai (mensalidade)            | `billing_customer_id` quando o billing cadastrar       |
 
 Tradução do `general`:
 
@@ -216,7 +216,7 @@ aviso de “conta criada”: o POST já devolve o id na hora. O que demora é o 
 ## Cliente da loja no Asaas
 
 O Asaas exige um `customer` para gerar cobrança e **aceita cadastro duplicado**.
-Por isso reutilizamos o id em `customer_asaas`.
+Por isso reutilizamos o id em `customers.payments_customer_id`.
 
 | Campo Asaas   | De onde vem                    | Gravamos?                         |
 | ------------- | ------------------------------ | --------------------------------- |
@@ -224,7 +224,7 @@ Por isso reutilizamos o id em `customer_asaas`.
 | `cpfCnpj`     | `customers.document` se houver | sim                               |
 | `email`       | `customers.email`              | sim                               |
 | `mobilePhone` | `customers.phone`              | sim                               |
-| `id` (`cus_`) | resposta                       | `customer_asaas.asaas_customer_id` |
+| `id` (`cus_`) | resposta                       | `customers.payments_customer_id` |
 
 Venda de balcão sem cliente: cadastrar um pagador genérico da loja **ou**
 mandar um **link** (`paymentLinks`), em que o pagador preenche os dados.
@@ -238,7 +238,7 @@ A venda **já está no banco** quando isso roda. Montamos em `packages/payments`
 
 | Campo Asaas         | De onde vem                                   |
 | ------------------- | --------------------------------------------- |
-| `customer`          | `customer_asaas.asaas_customer_id`            |
+| `customer`          | `customers.payments_customer_id`              |
 | `billingType`       | `PIX` \| `BOLETO` \| `CREDIT_CARD`            |
 | `value`             | `Money` → decimal na borda                    |
 | `dueDate`           | obrigatório; no boleto é o vencimento         |
@@ -263,7 +263,7 @@ regra de produto — o contrato admite.
 ### Pix
 
 `GET /v3/payments/{id}/pixQrCode` — o copia-e-cola vai em
-`payment_asaas.pix_payload`. **Gerar o QR não é o cliente ter pago.**
+`payments.pix_payload`. **Gerar o QR não é o cliente ter pago.**
 
 ### Cartão
 
@@ -275,15 +275,15 @@ Tokenizar (`POST /v3/creditCard/tokenizeCreditCard`) e gravar só
 
 ## Cobrança da venda — o que recebemos e gravamos
 
-Só linha **online** (Pix, boleto, link, cartão) em `payment_asaas`. Dinheiro e
-maquininha **não** ganham essa tabela.
+Colunas de provedor **só** na linha online (Pix, boleto, link, cartão) em
+`payments`. Dinheiro e maquininha deixam `provider_*` nulos.
 
 | O Asaas fala                        | Coluna nossa                   |
 | ----------------------------------- | ------------------------------ |
 | `id` (`pay_…`)                      | `provider_payment_id`          |
 | `status`                            | `provider_status`              |
 | `invoiceUrl` / URL do link          | `checkout_url`                 |
-| `billingType`                       | `billing_type`                 |
+| `billingType`                       | traduzido para `payments.method` |
 | id do aviso (`evt_…`)               | `provider_event_id` (único)    |
 | copia-e-cola Pix                    | `pix_payload`                  |
 | `bankSlipUrl`                       | `bank_slip_url`                |
@@ -325,7 +325,7 @@ Detalhe em [`split-decision.md`](split-decision.md).
 ## Mensalidade (conta-pai)
 
 `packages/billing` entra com `ASAAS_API_KEY`. Cadastra o lojista como cliente
-na conta-pai (`company_asaas.platform_customer_id`) e cria
+na conta-pai (`company_integrations.billing_customer_id`) e cria
 `POST /v3/subscriptions` (Pix, boleto ou cartão, conforme o plano).
 
 **Criar a assinatura não é “já pagou”.** Os avisos `SUBSCRIPTION_*` e

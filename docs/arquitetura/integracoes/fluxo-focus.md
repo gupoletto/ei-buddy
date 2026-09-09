@@ -89,7 +89,7 @@ flowchart LR
 | Token do emitente                   | NFC-e, NFS-e Nacional, NFS-e Nacional recebidas, reenvio de hook da nota |
 | Token do emitente **ou** plataforma | `POST /v2/hooks` (gatilhos), conforme o cadastro do CNPJ                 |
 
-Guardamos `company_focus.focus_company_id` e `company_focus.focus_token_secret_ref`.
+Guardamos `company_integrations.fiscal_company_id` e `company_integrations.fiscal_token_secret_ref`.
 Os dois tokens (homologação e produção) podem viver no mesmo cofre, chaveados
 pelo ambiente.
 
@@ -128,7 +128,7 @@ sequenceDiagram
         A->>F: POST /v2/empresas
         alt 200
             F-->>A: id, token_producao, token_homologacao, certificado_valido_ate, flags
-            A->>A: grava company_focus (id, secret ref, certificate_status=valid)
+            A->>A: grava company_integrations (fiscal_company_id, secret ref, fiscal_certificate_status=valid)
             A-->>W: pronto para emitir
         else 422
             F-->>A: senha / CNPJ / A1 vencido

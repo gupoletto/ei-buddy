@@ -33,8 +33,8 @@ São **dois problemas de negócio diferentes**: aqui é a nossa receita; em
 fornecedor hoje ([Asaas](../../docs/arquitetura/integracoes/asaas.md)) e
 fornecedores diferentes amanhã, sem que um afete o outro.
 
-A identidade Asaas também é outra: `billing` autentica com `ASAAS_API_KEY` da
-**conta-pai** e cobra um `cus_` (`company_asaas.platform_customer_id`).
+A identidade do billing também é outra: `billing` autentica com a chave da
+**conta-pai** e cobra um cliente (`company_integrations.billing_customer_id`).
 `payments` usa a chave da **subconta** do lojista.
 
 ## O que a porta precisa cobrir

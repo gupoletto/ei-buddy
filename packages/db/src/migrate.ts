@@ -84,7 +84,7 @@ export async function ensureRoles(adminUrl: string): Promise<void> {
 
 export async function applyMigration(adminUrl: string): Promise<void> {
   const sql = postgres(adminUrl, { max: 1, onnotice: () => {} })
-  const file = join(dirname(fileURLToPath(import.meta.url)), '../migrations/0001_init.sql')
+  const file = join(dirname(fileURLToPath(import.meta.url)), '../migrations/0002_init.sql')
   try {
     await sql.unsafe(readFileSync(file, 'utf8'))
   } finally {
