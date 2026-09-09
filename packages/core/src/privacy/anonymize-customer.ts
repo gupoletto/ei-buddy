@@ -76,6 +76,23 @@ export async function anonymizeCustomer(
    * abriria um chamado. `notes` vai a nulo junto com os outros — e texto livre
    * do balcao, e "mora ao lado da farmacia, pede sempre pelo filho" e dado
    * pessoal tanto quanto o telefone.
+   *
+   * ## O ENDERECO entrou na NR-086, e a falta dele era um defeito
+   *
+   * Esta lista tinha cinco campos e a migration 0019 acrescentou sete colunas
+   * de endereco a `customers` — depois de este caso de uso ser escrito. O
+   * resultado: a anonimizacao respondia ao titular que os dados pessoais dele
+   * foram removidos, e deixava rua, numero, complemento, bairro, cidade, UF e
+   * CEP intactos. Endereco residencial e dado pessoal, e num pedido de exclusao
+   * ele e frequentemente o que mais importa.
+   *
+   * Isso nao apareceu em teste nenhum porque o falso de `core` nao conhece
+   * coluna: ele guarda o que a lista manda e devolve o que guardou. Quem pegou
+   * foi escrever o repositorio de verdade, que precisou olhar a tabela.
+   *
+   * A licao esta registrada em `privacidade.test.ts`: ha um teste que compara
+   * as colunas pessoais de `customers` com esta lista, para a proxima coluna
+   * nascer reprovando o PR em vez de nascer fora da anonimizacao.
    */
   const substitutes = {
     name: NOME_ANONIMIZADO,
@@ -83,6 +100,13 @@ export async function anonymizeCustomer(
     phone: null,
     email: null,
     notes: null,
+    zip_code: null,
+    street: null,
+    number: null,
+    complement: null,
+    district: null,
+    city: null,
+    state: null,
   }
 
   const contagens = await deps.subjects.anonymizeCustomer({

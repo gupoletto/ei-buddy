@@ -11,6 +11,7 @@ import {
   buildContasDeps,
   buildBaixasDeps,
   buildEstoqueDeps,
+  buildPrivacidadeDeps,
   buildSuporteDeps,
   buildRelatoriosDeps,
   getRedis,
@@ -35,6 +36,7 @@ import { registerContasRoutes } from './routes/contas.js'
 import { registerEmissaoRoutes, registerFiscalRoutes } from './routes/fiscal.js'
 import { registerEstoqueRoutes } from './routes/estoque.js'
 import { registerRelatoriosRoutes } from './routes/relatorios.js'
+import { registerPrivacidadeRoutes } from './routes/privacidade.js'
 import { registerSuporteRoutes } from './routes/suporte.js'
 import { registerSaleRoutes } from './routes/sales.js'
 
@@ -102,6 +104,7 @@ async function registrarRotas(): Promise<void> {
   registerRelatoriosRoutes(app, buildRelatoriosDeps())
   registerEstoqueRoutes(app, buildEstoqueDeps())
   registerSuporteRoutes(app, buildSuporteDeps())
+  registerPrivacidadeRoutes(app, buildPrivacidadeDeps())
   registerEmissaoRoutes(app, buildEmissaoDeps())
 
   /*

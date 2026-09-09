@@ -132,6 +132,7 @@ function cadastroEmMemoria() {
           state: c.address?.state ?? null,
         },
         createdAt: c.createdAt.toISOString(),
+        anonymizedAt: null,
       }
       clientes.push(cl)
       return cl

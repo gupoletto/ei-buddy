@@ -65,6 +65,17 @@ export const customerOutputSchema = z.object({
    */
   address: addressOutputSchema,
   createdAt: z.string(),
+  /**
+   * Quando os dados pessoais foram removidos a pedido do titular — RF-127.
+   *
+   * Nulo enquanto nao houve pedido, que e o caso da esmagadora maioria.
+   *
+   * Sai no output porque a TELA precisa saber: sem isto, a ficha de um cliente
+   * ja anonimizado ofereceria "atender pedido de exclusao" de novo, e o clique
+   * voltaria 409. Pior que o erro, o lojista poderia achar que o pedido
+   * anterior nao foi atendido.
+   */
+  anonymizedAt: z.string().nullable(),
 })
 
 export type CustomerOutput = z.infer<typeof customerOutputSchema>

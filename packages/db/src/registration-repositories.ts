@@ -245,6 +245,7 @@ type LinhaCliente = {
   city: string | null
   state: string | null
   created_at: Date
+  anonymized_at: Date | null
 }
 
 const paraCliente = (l: LinhaCliente): CustomerOutput => ({
@@ -258,6 +259,9 @@ const paraCliente = (l: LinhaCliente): CustomerOutput => ({
   walletBalanceCents: numero(l.wallet_balance_cents),
   address: paraEndereco(l),
   createdAt: l.created_at.toISOString(),
+  /* A ficha precisa disto para nao oferecer "atender pedido de exclusao" a um
+     cliente ja anonimizado — RF-127. */
+  anonymizedAt: l.anonymized_at?.toISOString() ?? null,
 })
 
 export function createCustomerRepository(sql: Sql): CustomerRepository {

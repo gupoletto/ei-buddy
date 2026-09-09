@@ -137,3 +137,103 @@
     grid-column: span 2;
   }
 }
+
+/* --- Pedido de exclusao (LGPD) — NR-086 --- */
+
+/*
+ * Separado do resto por espaco generoso, e no fim da ficha.
+ *
+ * E a operacao mais destrutiva da tela — irreversivel — e nao deve competir por
+ * atencao com o que se faz todo dia. Distancia e o controle mais barato contra
+ * clique por engano.
+ */
+.privacidade {
+  margin-top: 32px;
+}
+
+.privacidadeTexto {
+  margin: 0 0 12px;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--app-text);
+}
+
+.privacidadeSubtitulo {
+  margin: 18px 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--app-muted);
+}
+
+.privacidadeLista {
+  margin: 0 0 12px;
+  padding-left: 20px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--app-text);
+}
+
+.privacidadeLista li {
+  margin-bottom: 6px;
+}
+
+/* Amarelo e nao vermelho: nao e erro, e um aviso de que nao ha volta. */
+.privacidadeAviso {
+  margin: 0 0 14px;
+  padding: 11px 14px;
+  border: 1px solid var(--app-warn);
+  border-left-width: 3px;
+  border-radius: var(--radius-sm);
+  background: var(--app-warn-soft);
+  color: var(--app-warn);
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+.privacidadeErro {
+  margin: 0 0 14px;
+  padding: 11px 14px;
+  border: 1px solid var(--app-danger);
+  border-radius: var(--radius-sm);
+  background: var(--app-danger-soft);
+  color: var(--app-danger);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.privacidadeCampo {
+  display: grid;
+  gap: 7px;
+  margin-bottom: 14px;
+}
+
+.privacidadeCampo > span {
+  font-size: 13px;
+  color: var(--app-muted);
+}
+
+.privacidadeTextarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 11px 14px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-sm);
+  background: var(--app-field);
+  color: var(--app-text);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.privacidadeTextarea:focus {
+  outline: none;
+  border-color: var(--app-accent);
+}
+
+.privacidadeAcoes {
+  display: flex;
+  gap: 10px;
+}

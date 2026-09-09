@@ -15,6 +15,7 @@ import { Badge, Card, EmptyState, PageHeader, Stat } from '@/components/ui/UI'
 import { Button } from '@/components/ui/Button'
 import Toast from '@/components/ui/Toast'
 import { IconArrowRight, IconCalendar, IconPlus, IconReceipt } from '@/components/Icons'
+import AnonimizarCliente from './AnonimizarCliente'
 import styles from './detalhe.module.css'
 
 const TIPO_CONTATO: Record<ContatoCliente['tipo'], string> = {
@@ -348,6 +349,20 @@ export default function ClienteDetalhe({ clienteId }: { clienteId: string }) {
             </ul>
           )}
         </Card>
+      </div>
+
+      {/*
+        Atender pedido de exclusao (LGPD art. 18, VI) — NR-086.
+        No fim da ficha, e nao no topo: e a operacao mais destrutiva da tela e
+        nao deve competir por atencao com o que se faz todo dia.
+      */}
+      <div className={styles.privacidade}>
+        <AnonimizarCliente
+          clienteId={cliente.id}
+          nome={cliente.nome}
+          jaAnonimizado={cliente.anonimizadoEm !== null}
+          onAnonimizado={() => void carregar()}
+        />
       </div>
 
       {toast ? <Toast message={toast} tone="success" onClose={() => setToast(null)} /> : null}

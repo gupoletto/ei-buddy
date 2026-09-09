@@ -72,6 +72,13 @@ export { createSaleHistoryRepository } from './sale-history-repository.js'
 /* Chamados de suporte — NR-080, US-062. */
 export { createSupportRepository } from './support-repository.js'
 
+/* Exportacao completa e anonimizacao — NR-086, RF-125, RF-127, RF-128. */
+export {
+  createDataSubjectRepository,
+  createExportSource,
+  FORA_DA_EXPORTACAO,
+} from './privacy-repository.js'
+
 /* Sessao persistente e desaceleracao de login — NR-083, ADR-0002. */
 export { createLoginThrottle, createSessionIssuer } from './session-repository.js'
 

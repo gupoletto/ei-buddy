@@ -248,6 +248,14 @@ export type ClienteDaFicha = {
   limiteFiado: number
   saldoFiado: number
   endereco: EnderecoDoCliente
+  /**
+   * Quando o pedido de exclusao do titular foi atendido — RF-127.
+   *
+   * Nulo na esmagadora maioria. A ficha precisa disto para nao oferecer
+   * "atender pedido de exclusao" a quem ja foi anonimizado: o clique voltaria
+   * 409, e o lojista poderia achar que o pedido anterior nao valeu.
+   */
+  anonimizadoEm: string | null
 }
 
 type FichaDaApi = {
@@ -268,6 +276,7 @@ type FichaDaApi = {
     city: string | null
     state: string | null
   }
+  anonymizedAt: string | null
 }
 
 /**
@@ -319,6 +328,7 @@ export async function buscarCliente(id: string): Promise<Resultado<ClienteDaFich
         cidade: c.address.city,
         uf: c.address.state,
       },
+      anonimizadoEm: c.anonymizedAt,
     },
   }
 }
@@ -649,3 +659,34 @@ export async function listarClientes(opcoes: {
     },
   }
 }
+
+/* -------------------------------------------------------------------------- */
+/* Direitos do titular — NR-086, RF-127, RF-128                               */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * O comprovante da anonimizacao.
+ *
+ * Nao e um `ok`. O titular pediu EXCLUSAO e recebeu ANONIMIZACAO, e a diferenca
+ * precisa estar escrita: o comprovante lista o que foi substituido, o que ficou
+ * e por que — e e com ele que o lojista responde ao titular, e se preciso a
+ * ANPD.
+ */
+export type ComprovanteDeAnonimizacao = {
+  customerId: string
+  anonymizedAt: string
+  anonymizedBy: string
+  scrubbedFields: string[]
+  preserved: { what: string; rows: number; because: string }[]
+  deleted: { what: string; rows: number }[]
+}
+
+/** Anonimiza — irreversivel. O motivo e obrigatorio no servidor. */
+export const anonimizarCliente = (
+  clienteId: string,
+  motivo: string,
+): Promise<Resultado<ComprovanteDeAnonimizacao>> =>
+  pedir<ComprovanteDeAnonimizacao>(`/api/clientes/${encodeURIComponent(clienteId)}/anonimizacao`, {
+    method: 'POST',
+    body: JSON.stringify({ reason: motivo }),
+  })
