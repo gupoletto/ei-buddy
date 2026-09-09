@@ -145,6 +145,8 @@ export class InMemoryCustomerRepository implements CustomerRepository {
         state: customer.address?.state ?? null,
       },
       createdAt: customer.createdAt.toISOString(),
+      /* Cliente nasce sem pedido de exclusao atendido — RF-127. */
+      anonymizedAt: null,
     }
     this.registros.set(gravado.id, gravado)
     return this.semTenant(gravado)

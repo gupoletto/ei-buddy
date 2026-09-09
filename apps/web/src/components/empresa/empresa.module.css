@@ -251,3 +251,90 @@
   text-decoration: underline;
   cursor: pointer;
 }
+
+/* --- Seus dados: exportacao completa — NR-086 --- */
+
+.privacidadeTexto {
+  margin: 0 0 14px;
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: var(--app-text);
+}
+
+.privacidadeNota {
+  margin: 0 0 14px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--app-muted);
+}
+
+.privacidadeNota code,
+.privacidadeTabela code {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 12.5px;
+  word-break: break-all;
+}
+
+.privacidadeErro {
+  margin: 0 0 14px;
+  padding: 11px 14px;
+  border: 1px solid var(--app-danger);
+  border-radius: var(--radius-sm);
+  background: var(--app-danger-soft);
+  color: var(--app-danger);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.privacidadeAcoes {
+  display: flex;
+  gap: 10px;
+}
+
+.privacidadeResultado {
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid var(--app-border);
+}
+
+.privacidadeTitulo {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--app-text);
+}
+
+/*
+ * Rola dentro do proprio bloco: sao 21 colecoes, e no telefone a tabela
+ * empurraria a largura da pagina inteira.
+ */
+.privacidadeTabelaWrap {
+  overflow-x: auto;
+  margin-top: 14px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-sm);
+}
+
+.privacidadeTabela {
+  width: 100%;
+  min-width: 420px;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.privacidadeTabela th,
+.privacidadeTabela td {
+  padding: 9px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--app-border);
+}
+
+.privacidadeTabela th {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--app-muted);
+}
+
+.privacidadeTabela tr:last-child td {
+  border-bottom: none;
+}

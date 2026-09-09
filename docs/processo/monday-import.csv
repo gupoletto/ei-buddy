@@ -63,3 +63,4 @@ NR-082 — mobile: suporte,Backlog,Trilha 3 — Clientes,Done,Low,2,Backlog,NR-0
 "NR-083 — Sessão persistente e revogável, e desaceleração no banco",Backlog,Trilha 1 — Nucleo & Dados,Done,Low,3,Backlog,NR-014,,db core api,"RF-119, RF-120",docs/processo/task-ledger.md
 "NR-084 — Better Auth como provedor de identidade, em schema próprio",Backlog,Trilha 2 — Plataforma & Integracoes,Done,Low,3,Backlog,NR-083,,api db,"RF-005, RF-119, RF-120",docs/processo/task-ledger.md
 "NR-085 — Cookies, privacidade e termos: páginas e inventário com portão",Backlog,Trilha 3 — Clientes,Done,Low,2,Backlog,,,web docs,"RF-125, RNF-029",docs/processo/task-ledger.md
+NR-086 — Direitos do titular: exportação completa e anonimização ligadas,Backlog,Trilha 1 — Nucleo & Dados,Done,Low,3,Backlog,NR-031,,db api web,"RF-125, RF-127, RF-128",docs/processo/task-ledger.md

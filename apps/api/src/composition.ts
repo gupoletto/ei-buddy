@@ -13,6 +13,8 @@ import { createDefaultSaleSettings, InMemoryAuditTrail } from '@na-regua/core'
 import type { AgendaDeps } from './routes/agenda.js'
 import type { IdentityProvider, IdentityRegistrar } from '@na-regua/core'
 import type { AuthRouteDeps } from './routes/auth.js'
+import type { PrivacidadeDeps } from './routes/privacidade.js'
+import { ExportacaoEmArquivo } from './exportacao-em-arquivo.js'
 import { IdentidadeBetterAuth } from './identidade-better-auth.js'
 import { IdentidadeEmArquivo } from './identidade-em-arquivo.js'
 import { createReminderScheduler } from './reminder-scheduler.js'
@@ -27,6 +29,8 @@ import {
   createInventoryQueries,
   createInventoryUnitOfWork,
   createReportRepository,
+  createDataSubjectRepository,
+  createExportSource,
   createLoginThrottle,
   createSessionIssuer,
   createSettlementQueries,
@@ -482,6 +486,35 @@ export function buildBaixasDeps(): BaixasDeps {
   return {
     uow: createSettlementUnitOfWork(sql),
     settlements: createSettlementQueries(sql),
+    audit: new InMemoryAuditTrail(),
+  }
+}
+
+/**
+ * Direitos do titular — NR-086, RF-125, RF-127.
+ *
+ * `criarDestino` e fabrica e nao instancia: cada exportacao escreve num pacote
+ * proprio, nomeado pela empresa e pelo instante. Um destino compartilhado entre
+ * requisicoes faria duas exportacoes simultaneas escreverem no mesmo lugar — e
+ * o resultado nao seria erro, seria um pacote com dados de duas lojas dentro.
+ *
+ * O destino e o DISCO por enquanto. Producao pede armazenamento de objetos, e
+ * isso depende da DEC-009; a porta existe para essa troca ser uma linha aqui.
+ */
+export function buildPrivacidadeDeps(): PrivacidadeDeps {
+  const sql = getClient(env.DATABASE_URL)
+  return {
+    source: createExportSource(sql),
+    subjects: createDataSubjectRepository(sql),
+    criarDestino: (companyId, carimbo) => new ExportacaoEmArquivo(companyId, carimbo),
+    /*
+     * A exportacao E auditada, e a trilha ainda nao persiste — `packages/db`
+     * nao expoe repositorio de auditoria. Aqui isso pesa mais que nas outras
+     * deps: "quem baixou a base inteira, quando" e a pergunta que se faz depois
+     * de um vazamento, e hoje a resposta morre com o processo.
+     *
+     * E a lacuna mais grave que sobrou no sistema, e ela tem tarefa propria.
+     */
     audit: new InMemoryAuditTrail(),
   }
 }

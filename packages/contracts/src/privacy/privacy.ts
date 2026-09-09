@@ -32,6 +32,24 @@ export const exportCollectionSchema = z.enum([
   'accounts',
   'bank_transactions',
   'audit_log',
+  /*
+   * Estas cinco entraram na NR-086, ao escrever o repositorio que le tudo.
+   *
+   * A lista de cima tinha dezesseis nomes e parecia completa; `invoices` nao
+   * estava nela. Uma exportacao de portabilidade sem os DOCUMENTOS FISCAIS
+   * entrega um pacote que parece completo e nao tem justamente o que o lojista
+   * e obrigado a guardar por cinco anos — e ninguem descobriria pelo uso.
+   *
+   * `confereQueNadaFicouDeFora` nao pega isso: ele compara o repositorio com
+   * esta lista, e uma tabela ausente das DUAS passa. Quem pega e o teste em
+   * `packages/db/src/privacidade.test.ts`, que compara esta lista com as
+   * tabelas de negocio que existem no banco.
+   */
+  'invoices',
+  'sale_returns',
+  'sale_return_items',
+  'support_tickets',
+  'support_messages',
 ])
 
 export type ExportCollection = z.infer<typeof exportCollectionSchema>
