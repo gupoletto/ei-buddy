@@ -2,12 +2,18 @@ import type { EndRecurrenceInput } from '@na-regua/contracts'
 import { AppError } from '../app-error.js'
 import { assertCanWrite } from '../authorization.js'
 import type { ExecutionContext } from '../context.js'
-import type { AuditTrail } from '../ports/audit-trail.js'
 import type { PayableUnitOfWork } from '../ports/payable-repository.js'
 
 export type EndRecurrenceDeps = {
   readonly uow: PayableUnitOfWork
-  readonly audit: AuditTrail
+  /*
+   * Sem `audit` aqui desde a NR-087.
+   *
+   * A auditoria deste caso de uso acontece DENTRO da transacao, por
+   * `tx.record` — ver `TransactionalAuditTrail`. Manter a trilha nas
+   * dependencias faria todo construtor montar uma que ninguem usa, e o proximo
+   * leitor suporia que o caso de uso audita por ali.
+   */
 }
 
 export type EndRecurrenceResult = {
@@ -62,7 +68,7 @@ export async function endRecurrence(
       throw AppError.conflict('Esta recorrencia nao tem ocorrencias futuras para encerrar.')
     }
 
-    await deps.audit.record({
+    await tx.record({
       companyId: ctx.companyId,
       entity: 'Payable',
       entityId: input.recurrenceId,

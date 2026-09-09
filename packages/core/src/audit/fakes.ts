@@ -11,7 +11,10 @@ import type { AuditTrail, NewAuditEntry } from '../ports/audit-trail.js'
  * de somente-insercao existe quando so o banco a teria.
  */
 export class InMemoryAuditTrail implements AuditTrail {
-  private readonly entradas: (AuditEntryOutput & { readonly companyId: CompanyId })[] = []
+  /* Sem `readonly`: `desfazerAte` precisa encurtar o array. O que protege a
+     regra de somente-insercao e a PORTA nao ter metodo de apagar, e nao o
+     modificador aqui. */
+  private entradas: (AuditEntryOutput & { readonly companyId: CompanyId })[] = []
   private sequencia = 0
   /** Liga para simular a trilha indisponivel no meio da transacao. */
   falharAoGravar = false
@@ -34,6 +37,31 @@ export class InMemoryAuditTrail implements AuditTrail {
     }
     this.entradas.push(gravada)
     return gravada
+  }
+
+  /**
+   * A marca do estado atual, para o falso de unidade de trabalho desfazer.
+   *
+   * ## Isto NAO e uma brecha na regra de somente-insercao
+   *
+   * A porta `AuditTrail` continua com um metodo so, entao nenhum caso de uso
+   * alcanca isto — o tipo dele nao tem. Quem usa e o falso do banco, para
+   * simular o que o banco faz: rollback de transacao leva a trilha junto.
+   *
+   * ## E por que o falso precisa simular
+   *
+   * Porque desde a NR-087 a trilha entra na transacao do caso de uso. Um falso
+   * que guardasse a entrada mesmo depois de o rollback acontecer diria que a
+   * propriedade nao existe — e o teste passaria a aprovar exatamente o defeito
+   * que a mudanca foi feita para impedir: trilha registrando o que nao houve.
+   */
+  marcaDeTransacao(): number {
+    return this.entradas.length
+  }
+
+  /** Desfaz o que foi gravado depois da marca. So o falso do banco chama. */
+  desfazerAte(marca: number): void {
+    this.entradas.length = marca
   }
 
   /** O que a empresa do contexto enxerga. Filtra de verdade — RLS em memoria. */

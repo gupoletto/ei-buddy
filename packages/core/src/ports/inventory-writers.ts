@@ -1,5 +1,6 @@
 import type { InventoryMovementOutput, MovementKind } from '@na-regua/contracts'
 import type { CompanyId, UserId } from '../context.js'
+import type { TransactionalAuditTrail } from './audit-trail.js'
 
 /**
  * Portas do estoque — NR-023, RF-022 a RF-024.
@@ -65,7 +66,13 @@ export type NewInventoryMovement = {
  * grava-lo cabe outra venda no balcao. Ler dentro da mesma transacao e o que
  * torna o ajuste uma decisao sobre o saldo que de fato vale.
  */
-export type InventoryTransaction = {
+/*
+ * Inclui a trilha (NR-087): auditar aqui e auditar DENTRO da transacao.
+ * O motivo esta em `TransactionalAuditTrail` — fora dela, a trilha
+ * sobrevive ao rollback e passa a registrar o que nao aconteceu, e uma
+ * segunda conexao por transacao esgota o pool.
+ */
+export type InventoryTransaction = TransactionalAuditTrail & {
   readonly products: InventoryReader
 
   /**

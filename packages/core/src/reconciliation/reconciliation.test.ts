@@ -23,8 +23,9 @@ function contexto(over: Partial<ExecutionContext> = {}): ExecutionContext {
 }
 
 function cenario() {
-  const repo = new InMemoryReconciliation()
+  /* A MESMA trilha, por dentro da transacao — NR-087. */
   const audit = new InMemoryAuditTrail()
+  const repo = new InMemoryReconciliation(audit)
   return { deps: { uow: repo, queries: repo, audit }, repo, audit }
 }
 

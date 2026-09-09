@@ -5,6 +5,7 @@ import type {
   EntryKind,
 } from '@na-regua/contracts'
 import type { CompanyId, UserId } from '../context.js'
+import type { TransactionalAuditTrail } from './audit-trail.js'
 
 /**
  * Portas da conciliacao bancaria — NR-033, RF-078 a RF-080.
@@ -66,7 +67,13 @@ export type NovoLancamentoDeTransacao = {
   readonly createdAt: Date
 }
 
-export type ReconciliationTransaction = {
+/*
+ * Inclui a trilha (NR-087): auditar aqui e auditar DENTRO da transacao.
+ * O motivo esta em `TransactionalAuditTrail` — fora dela, a trilha
+ * sobrevive ao rollback e passa a registrar o que nao aconteceu, e uma
+ * segunda conexao por transacao esgota o pool.
+ */
+export type ReconciliationTransaction = TransactionalAuditTrail & {
   findTransaction(
     companyId: CompanyId,
     transactionId: string,

@@ -10,8 +10,41 @@ import { idSchema } from '../common/primitives.js'
  * cancelar, nao apagar, mas cliente e produto tem `deleted_at`). Exclusao
  * fisica nao aparece aqui porque nao acontece — se um dia acontecer, a trilha
  * nao seria o lugar de descobrir.
+ *
+ * ## Os cinco de baixo entraram na NR-087
+ *
+ * O vocabulario tinha os quatro verbos de CRUD, e cinco eventos que nao sao
+ * CRUD vinham sendo gravados como o verbo mais proximo, com o nome real
+ * escondido em `after.event`. Tres arquivos de `core` traziam o mesmo
+ * comentario admitindo a gambiarra e dizendo que crescer o vocabulario era uma
+ * migration.
+ *
+ * O preco disso nao era estetico. `session_started` gravado como
+ * `action: 'updated'` na entidade `User` faz uma consulta por "o que foi
+ * alterado neste usuario" devolver LOGINS — e quem pergunta isso esta
+ * resolvendo divergencia com um funcionario (US-061). A trilha respondia a
+ * pergunta errada.
+ *
+ * Cresceu agora porque agora e de graca: nada estava persistido — a trilha
+ * vivia em memoria ate esta tarefa. Depois do primeiro registro em producao,
+ * renomear acao vira migracao de dado.
  */
-export const auditActionSchema = z.enum(['created', 'updated', 'deleted', 'cancelled'])
+export const auditActionSchema = z.enum([
+  'created',
+  'updated',
+  'deleted',
+  'cancelled',
+  /** Convite aceito ou acesso concedido a uma loja — RF-005. */
+  'access_granted',
+  /** Dados pessoais substituidos a pedido do titular — RF-127. */
+  'anonymized',
+  /** Copia integral da base saindo do sistema — RF-125. */
+  'data_export',
+  /** Entrada na loja — RF-119. */
+  'session_started',
+  /** Saida, por clique ou por revogacao — RF-119. */
+  'session_ended',
+])
 
 export type AuditAction = z.infer<typeof auditActionSchema>
 

@@ -50,8 +50,8 @@ consome. A porta é declarada pelo núcleo; a seta aponta para dentro
 
 |                               | Tarefas | Dias |
 | ----------------------------- | ------: | ---: |
-| Total                         |      65 |  177 |
-| ✅ Concluídas                 |      55 |  142 |
+| Total                         |      66 |  180 |
+| ✅ Concluídas                 |      56 |  145 |
 | 🚧 Bloqueadas por decisão     |       9 |   33 |
 | 🚧 Bloqueadas por dependência |       1 |    2 |
 | ⬜ A fazer, pode começar hoje |       0 |    0 |
@@ -194,6 +194,7 @@ Objetivo: operar o ERP por mensagem e cobrar a mensalidade.
 | NR-084 | Better Auth como provedor de identidade, em schema próprio      |   🟠   | `api` `db`              |   3 | NR-083 | —                        | RF-005, RF-119, RF-120 |   ✅   |
 | NR-085 | Cookies, privacidade e termos: páginas e inventário com portão  |   🟢   | `web` `docs`            |   2 | —      | —                        | RF-125, RNF-029        |   ✅   |
 | NR-086 | Direitos do titular: exportação completa e anonimização ligadas |   🔵   | `db` `api` `web`        |   3 | NR-031 | —                        | RF-125, RF-127, RF-128 |   ✅   |
+| NR-087 | Trilha de auditoria persistente, e dentro da transação          |   🔵   | `db` `core` `api`       |   3 | NR-025 | —                        | RF-123, RF-124, US-061 |   ✅   |
 
 ---
 
@@ -312,12 +313,12 @@ passou a ser retrabalho: trocar os tokens quando a marca fechar.
 
 | Trilha                          | Tarefas | Dias | Observação                                       |
 | ------------------------------- | ------: | ---: | ------------------------------------------------ |
-| 🔵 1 — Núcleo & Dados           |      22 |   56 | é o gargalo; a fila dela segue em NR-023         |
+| 🔵 1 — Núcleo & Dados           |      23 |   59 | é o gargalo; a fila dela segue em NR-023         |
 | 🟠 2 — Plataforma & Integrações |      26 |   72 | a mais carregada e a mais bloqueada (9 decisões) |
 | 🟢 3 — Clientes                 |      16 |   45 | depende de schema, mas já não está bloqueada     |
 | Compartilhada                   |       1 |    4 | documentação (NR-002)                            |
 
-Somando: **177 dias-desenvolvedor** em 65 tarefas. Com 3 pessoas, isso é cerca
+Somando: **180 dias-desenvolvedor** em 66 tarefas. Com 3 pessoas, isso é cerca
 de 11 semanas de trabalho — desde que nada fique bloqueado, o que não é o caso
 hoje.
 

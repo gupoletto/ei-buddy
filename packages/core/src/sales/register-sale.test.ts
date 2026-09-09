@@ -1,3 +1,4 @@
+import { InMemoryAuditTrail } from '../audit/fakes.js'
 import type { CreateSaleInput, Role } from '@na-regua/contracts'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { isAppError } from '../app-error.js'
@@ -44,7 +45,7 @@ function venda(sobrescreve: Partial<CreateSaleInput> = {}): CreateSaleInput {
 }
 
 beforeEach(() => {
-  unitOfWork = new InMemoryUnitOfWork()
+  unitOfWork = new InMemoryUnitOfWork(new InMemoryAuditTrail())
   unitOfWork.adicionarProduto(EMPRESA, CAFE)
 })
 

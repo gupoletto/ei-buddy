@@ -1,3 +1,4 @@
+import { InMemoryAuditTrail } from '../audit/fakes.js'
 import type { MovementKind } from '@na-regua/contracts'
 import type { CardFeeTable, DiscountPolicy, TaxRules } from '@na-regua/domain'
 import type { CompanyId, UserId } from '../context.js'
@@ -47,6 +48,17 @@ export class InMemoryUnitOfWork implements UnitOfWork {
   /** Liga para simular falha no meio da transacao, depois de gravar a venda. */
   falharDepoisDeGravar = false
 
+  /*
+   * A trilha vem de FORA, e o parametro e obrigatorio de proposito.
+   *
+   * Em producao a unidade de trabalho e a trilha compartilham a conexao: a
+   * entrada da auditoria entra na mesma transacao do que ela registra
+   * (NR-087). Aqui o falso reflete isso compartilhando a INSTANCIA — e exigir
+   * o parametro impede o erro de construir dois e nao entender por que a
+   * assercao do teste nao acha a entrada.
+   */
+  constructor(readonly trilha: InMemoryAuditTrail) {}
+
   adicionarProduto(companyId: CompanyId, produto: SaleProductSnapshot): void {
     this.produtos.set(produto.id, { ...produto, companyId })
     this.estoque.set(produto.id, produto.stockQuantity)
@@ -54,6 +66,10 @@ export class InMemoryUnitOfWork implements UnitOfWork {
 
   async transaction<T>(companyId: CompanyId, fn: (tx: SaleTransaction) => Promise<T>): Promise<T> {
     /* Fotografia do estado antes de abrir: e o que o rollback restaura. */
+    /* A trilha faz parte da transacao desde a NR-087: rollback leva a entrada
+       da auditoria junto. Sem isto o falso aprovaria uma trilha que registra o
+       que nao aconteceu. */
+    const trilhaAntes = this.trilha.marcaDeTransacao()
     const vendasAntes = [...this.vendas]
     const estoqueAntes = new Map(this.estoque)
     const movimentosAntes = [...this.movimentos]
@@ -62,6 +78,7 @@ export class InMemoryUnitOfWork implements UnitOfWork {
     try {
       return await fn(this.escopo(companyId))
     } catch (erro) {
+      this.trilha.desfazerAte(trilhaAntes)
       this.vendas.length = 0
       this.vendas.push(...vendasAntes)
       this.estoque.clear()
@@ -75,6 +92,9 @@ export class InMemoryUnitOfWork implements UnitOfWork {
 
   private escopo(companyId: CompanyId): SaleTransaction {
     return {
+      /* A trilha entra NA transacao — NR-087. Ver `TransactionalAuditTrail`. */
+      record: (entrada) => this.trilha.record(entrada),
+
       products: {
         findManyByIds: async (ids) =>
           ids

@@ -9,7 +9,7 @@
  * fronteiras na CI barra o PR — e com razao.
  */
 import { randomUUID } from 'node:crypto'
-import { createDefaultSaleSettings, InMemoryAuditTrail } from '@na-regua/core'
+import { createDefaultSaleSettings } from '@na-regua/core'
 import type { AgendaDeps } from './routes/agenda.js'
 import type { IdentityProvider, IdentityRegistrar } from '@na-regua/core'
 import type { AuthRouteDeps } from './routes/auth.js'
@@ -29,6 +29,7 @@ import {
   createInventoryQueries,
   createInventoryUnitOfWork,
   createReportRepository,
+  createAuditTrail,
   createDataSubjectRepository,
   createExportSource,
   createLoginThrottle,
@@ -260,7 +261,7 @@ export function buildAuthDeps(): AuthRouteDeps {
      * so muda esta linha. Mas nao e trilha de verdade, e por isso entra na
      * mesma guarda de producao.
      */
-    audit: new InMemoryAuditTrail(),
+    audit: createAuditTrail(sql),
   }
 }
 
@@ -365,7 +366,7 @@ export function buildCadastroDeps(): CadastroDeps {
      * que era exatamente o que acontecia antes.
      */
     uow: createInventoryUnitOfWork(sql),
-    audit: new InMemoryAuditTrail(),
+    audit: createAuditTrail(sql),
   }
 }
 
@@ -411,14 +412,25 @@ export function buildAgendaDeps(): AgendaDeps {
 export function buildConciliacaoDeps(): ConciliacaoDeps {
   const sql = getClient(env.DATABASE_URL)
   const queries = createReconciliationQueries(sql)
-  /* Mesma pendencia das outras: `db` nao expoe repositorio de auditoria. */
-  const audit = new InMemoryAuditTrail()
+  /*
+   * A trilha no POSTGRES — NR-087.
+   *
+   * Era `InMemoryAuditTrail` aqui e em seis outros builders: toda venda, baixa,
+   * convite, anonimizacao e exportacao era registrada num `Map` que morria com
+   * o processo. "Quem baixou a base inteira, e quando" — a pergunta de depois
+   * de um vazamento — nao tinha resposta.
+   *
+   * Esta e a trilha de FORA da transacao. A conciliacao em si audita por
+   * dentro, com `tx.record`, e por isso `ConciliacaoDeps` deixou de pedir uma:
+   * quem sobrou aqui e a IMPORTACAO de extrato, que registra um arquivo ja
+   * lido.
+   */
+  const audit = createAuditTrail(sql)
 
   return {
     uow: createReconciliationUnitOfWork(sql),
     queries,
     listQueries: queries,
-    audit,
     import: {
       parser: createFileStatementReader(),
       transactions: createBankTransactionWriter(sql),
@@ -453,7 +465,6 @@ export function buildEstoqueDeps(): EstoqueDeps {
     products: createInventoryQueries(sql).products,
     uow: createInventoryUnitOfWork(sql),
     historico: createInventoryHistory(sql),
-    audit: new InMemoryAuditTrail(),
   }
 }
 
@@ -486,7 +497,6 @@ export function buildBaixasDeps(): BaixasDeps {
   return {
     uow: createSettlementUnitOfWork(sql),
     settlements: createSettlementQueries(sql),
-    audit: new InMemoryAuditTrail(),
   }
 }
 
@@ -515,7 +525,7 @@ export function buildPrivacidadeDeps(): PrivacidadeDeps {
      *
      * E a lacuna mais grave que sobrou no sistema, e ela tem tarefa propria.
      */
-    audit: new InMemoryAuditTrail(),
+    audit: createAuditTrail(sql),
   }
 }
 
@@ -525,7 +535,7 @@ export function buildContabilidadeDeps(): ContabilidadeDeps {
   return {
     accounts: createChartOfAccountsRepository(sql),
     /* Mesma pendencia das outras: `db` nao expoe repositorio de auditoria. */
-    audit: new InMemoryAuditTrail(),
+    audit: createAuditTrail(sql),
   }
 }
 
@@ -605,6 +615,5 @@ export function buildContasDeps(): ContasDeps {
     ids: { next: () => randomUUID() },
     /* Mesma pendencia da autenticacao: `db` nao expoe repositorio de
        auditoria, entao a trilha do lancamento fica em memoria. */
-    audit: new InMemoryAuditTrail(),
   }
 }

@@ -83,7 +83,7 @@ export async function reverseSettlement(
       await tx.adjustCustomerBalance(ctx.companyId, titulo.customerId!, baixa.amountCents)
     }
 
-    await deps.audit.record({
+    await tx.record({
       companyId: ctx.companyId,
       entity: ehPagar ? 'Payable' : 'Receivable',
       entityId: titulo.id,

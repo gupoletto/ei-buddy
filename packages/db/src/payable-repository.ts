@@ -1,3 +1,4 @@
+import { gravarTrilha } from './audit-repository.js'
 import type { PayableOutput } from '@na-regua/contracts'
 import type {
   NewPayable,
@@ -76,6 +77,15 @@ const paraSaida = (l: Linha): PayableOutput => ({
 
 function escopo(tx: TransactionSql): PayableTransaction {
   return {
+    /*
+     * A trilha entra NA transacao — NR-087.
+     *
+     * O INSERT mora em `gravarTrilha`, e nao aqui: duas copias dele
+     * divergiriam no primeiro campo novo, e a errada seria a que ninguem le.
+     * Fora da transacao, a entrada sobreviveria ao rollback e a trilha passaria
+     * a registrar o que nao aconteceu — ver `TransactionalAuditTrail`.
+     */
+    record: (entrada) => gravarTrilha(tx, entrada),
     /**
      * As ocorrencias de uma vez.
      *

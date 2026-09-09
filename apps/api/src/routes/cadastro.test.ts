@@ -169,7 +169,7 @@ function cadastroEmMemoria() {
           ),
   }
 
-  const inventario = new InMemoryInventory()
+  const inventario = new InMemoryInventory(new InMemoryAuditTrail())
 
   const products: ProductRepository = {
     /* O catalogo do balcao (RF-019). Imita o LIMITE e a ORDEM do repositorio de

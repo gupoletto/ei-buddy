@@ -22,8 +22,11 @@ function contexto(over: Partial<ExecutionContext> = {}): ExecutionContext {
 }
 
 function cenario() {
-  const uow = new InMemorySettlements()
+  /* A MESMA trilha entra na unidade de trabalho: desde a NR-087 a auditoria
+     das baixas acontece DENTRO da transacao, entao ela precisa ser a instancia
+     que o teste inspeciona. Duas instancias e o teste procurando na vazia. */
   const audit = new InMemoryAuditTrail()
+  const uow = new InMemorySettlements(audit)
   uow.adicionarTitulo('empresa-1', 'payable', {
     id: 'pay-1',
     amountCents: 10_000,

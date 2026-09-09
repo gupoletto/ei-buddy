@@ -1,6 +1,7 @@
 import type { CardBrand, PaymentMethod } from '@na-regua/contracts'
 import type { CardFeeTable, DiscountPolicy, TaxRules } from '@na-regua/domain'
 import type { CompanyId, UserId } from '../context.js'
+import type { TransactionalAuditTrail } from './audit-trail.js'
 
 /**
  * Portas da escrita da venda — NR-022, RNF-046.
@@ -162,7 +163,13 @@ export type StockMovementOrigin = {
  * pela metade — nem estoque baixado sem venda, nem recebivel de venda que nao
  * existe (RNF-046).
  */
-export type SaleTransaction = {
+/*
+ * Inclui a trilha (NR-087): auditar aqui e auditar DENTRO da transacao.
+ * O motivo esta em `TransactionalAuditTrail` — fora dela, a trilha
+ * sobrevive ao rollback e passa a registrar o que nao aconteceu, e uma
+ * segunda conexao por transacao esgota o pool.
+ */
+export type SaleTransaction = TransactionalAuditTrail & {
   readonly products: SaleProductReader
 
   /**

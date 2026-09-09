@@ -111,11 +111,14 @@ async function registra(
     companyId: ctx.companyId,
     entity: 'User',
     entityId: userId,
-    action: 'created',
+    /* `access_granted` entrou no vocabulario na NR-087. Antes era `created`
+       com o nome real em `after.event` — e uma consulta por "usuarios criados"
+       devolvia tambem quem so ganhou acesso a mais uma loja. */
+    action: 'access_granted',
     actorId: ctx.userId,
     channel: ctx.channel,
     occurredAt: ctx.now,
     before: null,
-    after: { event: 'access_granted', role: input.role, userCreated: created },
+    after: { role: input.role, userCreated: created },
   })
 }

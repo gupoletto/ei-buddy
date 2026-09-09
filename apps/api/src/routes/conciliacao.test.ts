@@ -75,8 +75,9 @@ const LIDO_OK: StatementParseResult = {
 }
 
 async function buildApp(principal: AuthenticatedPrincipal | null = PRINCIPAL) {
-  const repo = new InMemoryReconciliation()
+  /* A MESMA trilha por dentro da transacao — NR-087. */
   const audit = new InMemoryAuditTrail()
+  const repo = new InMemoryReconciliation(audit)
   const leitor = leitorQueDevolve(LIDO_OK)
   const escritor = escritorEmMemoria()
 
@@ -84,7 +85,6 @@ async function buildApp(principal: AuthenticatedPrincipal | null = PRINCIPAL) {
     uow: repo,
     queries: repo,
     listQueries: repo,
-    audit,
     import: { parser: leitor.parser, transactions: escritor.writer, audit },
   }
 
@@ -171,7 +171,7 @@ describe('importar extrato — RF-076, RF-077', () => {
   })
 
   it('traduz arquivo recusado para 400 com a linha', async () => {
-    const repo = new InMemoryReconciliation()
+    const repo = new InMemoryReconciliation(new InMemoryAuditTrail())
     const escritor = escritorEmMemoria()
     const leitor = leitorQueDevolve({
       outcome: 'rejected',
@@ -190,7 +190,6 @@ describe('importar extrato — RF-076, RF-077', () => {
       uow: repo,
       queries: repo,
       listQueries: repo,
-      audit: new InMemoryAuditTrail(),
       import: {
         parser: leitor.parser,
         transactions: escritor.writer,

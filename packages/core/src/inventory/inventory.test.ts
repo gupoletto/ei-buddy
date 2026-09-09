@@ -40,15 +40,23 @@ const GRANEL: InventoryProductSnapshot = {
   minStock: null,
 }
 
-function estoqueCom(...produtos: InventoryProductSnapshot[]) {
-  const inv = new InMemoryInventory()
+/*
+ * A trilha vem de fora e entra na unidade de trabalho.
+ *
+ * Desde a NR-087 o ajuste audita DENTRO da propria transacao (`tx.record`), e
+ * a trilha e a do escopo — nao mais uma nas dependencias. Quem quer inspecionar
+ * le `inv.trilha`, que e a instancia em que o ajuste de fato escreve.
+ */
+function estoqueCom(...produtos: InventoryProductSnapshot[]): InMemoryInventory {
+  const inv = new InMemoryInventory(new InMemoryAuditTrail())
   for (const p of produtos) inv.adicionarProduto('empresa-1', p)
   return inv
 }
 
-/** A trilha e obrigatoria — RF-123. Quem quer inspecionar passa a sua. */
-function deps(inv: InMemoryInventory, audit: InMemoryAuditTrail = new InMemoryAuditTrail()) {
-  return { uow: inv, audit }
+/* `AdjustStockDeps` perdeu o campo `audit` na NR-087: a trilha nao passa mais
+   por aqui. Ver `TransactionalAuditTrail`. */
+function deps(inv: InMemoryInventory) {
+  return { uow: inv }
 }
 
 // ---------------------------------------------------------------------------
@@ -338,9 +346,10 @@ describe('autorizacao por papel', () => {
 describe('trilha de auditoria — RF-123', () => {
   it('o ajuste deixa autor, canal, data e antes/depois na trilha', async () => {
     const inv = estoqueCom(ARROZ)
-    const audit = new InMemoryAuditTrail()
+    /* A trilha em que o ajuste de fato escreve: a do escopo da transacao. */
+    const audit = inv.trilha
 
-    await adjustStock(deps(inv, audit), contexto({ userId: 'joana' }), {
+    await adjustStock(deps(inv), contexto({ userId: 'joana' }), {
       productId: 'prod-arroz',
       countedQuantity: 18,
       reason: 'Quebra',
@@ -358,9 +367,9 @@ describe('trilha de auditoria — RF-123', () => {
      distinguindo — e a promessa de que app e WhatsApp fazem a mesma coisa. */
   it('o mesmo ajuste pelo WhatsApp registra o canal, e nada mais muda', async () => {
     const inv = estoqueCom(ARROZ)
-    const audit = new InMemoryAuditTrail()
+    const audit = inv.trilha
 
-    await adjustStock(deps(inv, audit), contexto({ channel: 'whatsapp' }), {
+    await adjustStock(deps(inv), contexto({ channel: 'whatsapp' }), {
       productId: 'prod-arroz',
       countedQuantity: 18,
       reason: 'Quebra',
@@ -371,9 +380,9 @@ describe('trilha de auditoria — RF-123', () => {
 
   it('recusa nao deixa trilha — nao houve alteracao para registrar', async () => {
     const inv = estoqueCom(GRANEL)
-    const audit = new InMemoryAuditTrail()
+    const audit = inv.trilha
 
-    await adjustStock(deps(inv, audit), contexto(), {
+    await adjustStock(deps(inv), contexto(), {
       productId: 'prod-granel',
       countedQuantity: 10,
       reason: 'Tentando controlar',
@@ -386,11 +395,11 @@ describe('trilha de auditoria — RF-123', () => {
      ou nao entram. */
   it('trilha indisponivel desfaz a mudanca de saldo', async () => {
     const inv = estoqueCom(ARROZ)
-    const audit = new InMemoryAuditTrail()
+    const audit = inv.trilha
     audit.falharAoGravar = true
 
     await expect(
-      adjustStock(deps(inv, audit), contexto(), {
+      adjustStock(deps(inv), contexto(), {
         productId: 'prod-arroz',
         countedQuantity: 18,
         reason: 'Quebra',

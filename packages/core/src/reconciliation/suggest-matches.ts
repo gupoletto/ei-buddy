@@ -1,6 +1,5 @@
 import type { BankTransactionDirection, EntryKind, SuggestMatchesInput } from '@na-regua/contracts'
 import { AppError } from '../app-error.js'
-import type { AuditTrail } from '../ports/audit-trail.js'
 import type { ExecutionContext } from '../context.js'
 import type {
   LancamentoConciliavel,
@@ -11,7 +10,14 @@ import type {
 export type ReconciliationDeps = {
   readonly uow: ReconciliationUnitOfWork
   readonly queries: ReconciliationQueries
-  readonly audit: AuditTrail
+  /*
+   * Sem `audit` aqui desde a NR-087.
+   *
+   * A auditoria deste caso de uso acontece DENTRO da transacao, por
+   * `tx.record` — ver `TransactionalAuditTrail`. Manter a trilha nas
+   * dependencias faria todo construtor montar uma que ninguem usa, e o proximo
+   * leitor suporia que o caso de uso audita por ali.
+   */
 }
 
 /**

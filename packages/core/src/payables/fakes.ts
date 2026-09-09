@@ -1,3 +1,4 @@
+import { InMemoryAuditTrail } from '../audit/fakes.js'
 import type { PayableOutput } from '@na-regua/contracts'
 import type { CompanyId, UserId } from '../context.js'
 import type {
@@ -29,6 +30,17 @@ export class InMemoryPayables implements PayableUnitOfWork, PayableQueries, IdGe
   /** Liga para simular falha depois de gravar as ocorrencias. */
   falharDepoisDeGravar = false
 
+  /*
+   * A trilha vem de FORA, e o parametro e obrigatorio de proposito.
+   *
+   * Em producao a unidade de trabalho e a trilha compartilham a conexao: a
+   * entrada da auditoria entra na mesma transacao do que ela registra
+   * (NR-087). Aqui o falso reflete isso compartilhando a INSTANCIA — e exigir
+   * o parametro impede o erro de construir dois e nao entender por que a
+   * assercao do teste nao acha a entrada.
+   */
+  constructor(readonly trilha: InMemoryAuditTrail) {}
+
   /** Ids previsiveis: o teste precisa saber o que vai sair para afirmar algo. */
   next(): string {
     this.sequenciaId += 1
@@ -51,12 +63,17 @@ export class InMemoryPayables implements PayableUnitOfWork, PayableQueries, IdGe
     companyId: CompanyId,
     fn: (tx: PayableTransaction) => Promise<T>,
   ): Promise<T> {
+    /* A trilha faz parte da transacao desde a NR-087: rollback leva a entrada
+       da auditoria junto. Sem isto o falso aprovaria uma trilha que registra o
+       que nao aconteceu. */
+    const trilhaAntes = this.trilha.marcaDeTransacao()
     const antes = [...this.contas]
     const sequenciaAntes = this.sequencia
 
     try {
       return await fn(this.escopo(companyId))
     } catch (erro) {
+      this.trilha.desfazerAte(trilhaAntes)
       this.contas.length = 0
       this.contas.push(...antes)
       this.sequencia = sequenciaAntes
@@ -70,6 +87,9 @@ export class InMemoryPayables implements PayableUnitOfWork, PayableQueries, IdGe
      vazamento entre lojas. */
   private escopo(_companyId: CompanyId): PayableTransaction {
     return {
+      /* A trilha entra NA transacao — NR-087. Ver `TransactionalAuditTrail`. */
+      record: (entrada) => this.trilha.record(entrada),
+
       insertMany: async (novas: readonly NewPayable[]) => {
         const gravadas = novas.map((n) => {
           this.sequencia += 1
