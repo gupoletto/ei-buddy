@@ -181,10 +181,11 @@ export interface InvoiceIssuer {
 export function createFocusNfeIssuer(config: FocusConfig): InvoiceIssuer
 ```
 
-Isso vale ouro agora: [DEC-003](../decisoes/README.md#dec-003) a
-[DEC-006](../decisoes/README.md#dec-006) — os quatro provedores externos — ainda
-estão em aberto. **A porta pode ser escrita e testada hoje**, com um adapter
-falso, e o provedor real entra depois sem tocar em `core`.
+Isso vale ouro agora: [DEC-003](../decisoes/README.md#dec-003) e
+[DEC-005](../decisoes/README.md#dec-005) ainda estão em aberto; o PSP já é
+Asaas ([ADR-0004](../decisoes/adr/0004-asaas.md)). **A porta pode ser escrita e
+testada hoje**, com um adapter falso, e o provedor real entra depois sem tocar
+em `core`.
 
 ### 4. `contracts` é o contrato único
 

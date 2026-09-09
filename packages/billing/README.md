@@ -2,7 +2,7 @@
 
 Adapter de assinatura SaaS — a **nossa** mensalidade.
 
-**Estado:** 🔴 não implementado · 🚧 bloqueado por [DEC-010](../../docs/decisoes/README.md#dec-010) · `NR-063`
+**Estado:** 🔴 não implementado · ⬜ provedor Asaas decidido ([ADR-0004](../../docs/decisoes/adr/0004-asaas.md)) · `NR-063` na fila da `NR-044`
 
 ## Responsabilidade
 

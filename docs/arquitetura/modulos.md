@@ -84,14 +84,14 @@ flowchart TB
 Cada um implementa uma **porta declarada por `core`** e isola um provedor
 externo ainda não escolhido.
 
-| Módulo              | Porta que implementa                                | Provedor                                                                  | Decisão                                  | Trilha | Doc                                         |
-| ------------------- | --------------------------------------------------- | ------------------------------------------------------------------------- | ---------------------------------------- | ------ | ------------------------------------------- |
-| `packages/agent`    | Runtime do assistente: tools, memória, confirmações | LLM                                                                       | [DEC-007](../decisoes/README.md#dec-007) | 🟠 2   | [README](../../packages/agent/README.md)    |
-| `packages/fiscal`   | `InvoiceIssuer`                                     | NFC-e / NFS-e                                                             | [DEC-004](../decisoes/README.md#dec-004) | 🟠 2   | [README](../../packages/fiscal/README.md)   |
-| `packages/whatsapp` | `MessageSender`                                     | WhatsApp                                                                  | [DEC-003](../decisoes/README.md#dec-003) | 🟠 2   | [README](../../packages/whatsapp/README.md) |
-| `packages/banking`  | `BankStatementProvider`                             | Open Finance                                                              | [DEC-005](../decisoes/README.md#dec-005) | 🟠 2   | [README](../../packages/banking/README.md)  |
-| `packages/billing`  | `SubscriptionProvider`                              | Cobrança SaaS (PagMaxx `/subscriptions`)                                  | [DEC-010](../decisoes/README.md#dec-010) | 🟠 2   | [README](../../packages/billing/README.md)  |
-| `packages/payments` | `PaymentGateway`                                    | PSP — Pix, link de pagamento, estorno ([PagMaxx](integracoes/pagmaxx.md)) | [DEC-006](../decisoes/README.md#dec-006) | 🟠 2   | [README](../../packages/payments/README.md) |
+| Módulo              | Porta que implementa                                | Provedor                                                        | Decisão                                   | Trilha | Doc                                         |
+| ------------------- | --------------------------------------------------- | --------------------------------------------------------------- | ----------------------------------------- | ------ | ------------------------------------------- |
+| `packages/agent`    | Runtime do assistente: tools, memória, confirmações | LLM                                                             | [DEC-007](../decisoes/README.md#dec-007)  | 🟠 2   | [README](../../packages/agent/README.md)    |
+| `packages/fiscal`   | `InvoiceIssuer`                                     | NFC-e / NFS-e                                                   | [DEC-004](../decisoes/README.md#dec-004)  | 🟠 2   | [README](../../packages/fiscal/README.md)   |
+| `packages/whatsapp` | `MessageSender`                                     | WhatsApp                                                        | [DEC-003](../decisoes/README.md#dec-003)  | 🟠 2   | [README](../../packages/whatsapp/README.md) |
+| `packages/banking`  | `BankStatementProvider`                             | Open Finance                                                    | [DEC-005](../decisoes/README.md#dec-005)  | 🟠 2   | [README](../../packages/banking/README.md)  |
+| `packages/billing`  | `SubscriptionProvider`                              | Cobrança SaaS (Asaas `/v3/subscriptions` na conta-pai)          | [ADR-0004](../decisoes/adr/0004-asaas.md) | 🟠 2   | [README](../../packages/billing/README.md)  |
+| `packages/payments` | `PaymentGateway`                                    | PSP — Pix, boleto, link, cartão ([Asaas](integracoes/asaas.md)) | [ADR-0004](../decisoes/adr/0004-asaas.md) | 🟠 2   | [README](../../packages/payments/README.md) |
 
 ### Interface
 

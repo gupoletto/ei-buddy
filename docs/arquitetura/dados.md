@@ -59,6 +59,14 @@ E um teste automatizado, rodando na CI, que tenta ler dados de outro
 `company_id` e **precisa falhar** — a verificação de
 [RNF-021](../produto/requisitos-nao-funcionais.md).
 
+O satélite de credenciais fiscais que **já roda** é
+`company_fiscal_credentials` (NR-042). O catálogo alvo com Asaas une fiscal e
+pagamentos numa `company_integrations` 1:0..1 — fotografado em
+[`db_0909.sql`](db_0909.sql) e descrito em
+[`esquema-postgresql.md`](esquema-postgresql.md). Isso ainda **não** é
+migration: entra depois, sem reescrever o que já está em
+`packages/db/src/migrations/`.
+
 ## Modelo de dados
 
 Visão lógica. Não é o schema final — o schema nasce em `packages/db`
