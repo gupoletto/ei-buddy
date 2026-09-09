@@ -3,13 +3,19 @@ import { ocorrenciasDaRecorrencia } from '@na-regua/domain'
 import { AppError } from '../app-error.js'
 import { assertCanWrite } from '../authorization.js'
 import type { ExecutionContext } from '../context.js'
-import type { AuditTrail } from '../ports/audit-trail.js'
 import type { IdGenerator, NewPayable, PayableUnitOfWork } from '../ports/payable-repository.js'
 
 export type CreatePayableDeps = {
   readonly uow: PayableUnitOfWork
   readonly ids: IdGenerator
-  readonly audit: AuditTrail
+  /*
+   * Sem `audit` aqui desde a NR-087.
+   *
+   * A auditoria deste caso de uso acontece DENTRO da transacao, por
+   * `tx.record` — ver `TransactionalAuditTrail`. Manter a trilha nas
+   * dependencias faria todo construtor montar uma que ninguem usa, e o proximo
+   * leitor suporia que o caso de uso audita por ali.
+   */
 }
 
 /**
@@ -73,7 +79,7 @@ export async function createPayable(
 
     /* Uma entrada para o lancamento inteiro, e nao uma por ocorrencia: doze
        linhas identicas na trilha escondem as que importam. */
-    await deps.audit.record({
+    await tx.record({
       companyId: ctx.companyId,
       entity: 'Payable',
       entityId: recurrenceId ?? gravadas[0]!.id,

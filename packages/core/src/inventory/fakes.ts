@@ -1,3 +1,4 @@
+import { InMemoryAuditTrail } from '../audit/fakes.js'
 import type { InventoryMovementOutput } from '@na-regua/contracts'
 import type { CompanyId } from '../context.js'
 import type {
@@ -31,6 +32,17 @@ export class InMemoryInventory implements InventoryUnitOfWork {
   /** Liga para simular falha depois de gravar o saldo, antes do movimento. */
   falharAoGravarMovimento = false
 
+  /*
+   * A trilha vem de FORA, e o parametro e obrigatorio de proposito.
+   *
+   * Em producao a unidade de trabalho e a trilha compartilham a conexao: a
+   * entrada da auditoria entra na mesma transacao do que ela registra
+   * (NR-087). Aqui o falso reflete isso compartilhando a INSTANCIA — e exigir
+   * o parametro impede o erro de construir dois e nao entender por que a
+   * assercao do teste nao acha a entrada.
+   */
+  constructor(readonly trilha: InMemoryAuditTrail) {}
+
   adicionarProduto(companyId: CompanyId, produto: InventoryProductSnapshot): void {
     this.produtos.set(produto.id, { ...produto, companyId })
   }
@@ -56,6 +68,10 @@ export class InMemoryInventory implements InventoryUnitOfWork {
     fn: (tx: InventoryTransaction) => Promise<T>,
   ): Promise<T> {
     /* Fotografia antes de abrir: e o que o rollback restaura. */
+    /* A trilha faz parte da transacao desde a NR-087: rollback leva a entrada
+       da auditoria junto. Sem isto o falso aprovaria uma trilha que registra o
+       que nao aconteceu. */
+    const trilhaAntes = this.trilha.marcaDeTransacao()
     const produtosAntes = new Map(this.produtos)
     const movimentosAntes = [...this.movimentos]
     const sequenciaAntes = this.sequencia
@@ -63,6 +79,7 @@ export class InMemoryInventory implements InventoryUnitOfWork {
     try {
       return await fn(this.escopo(companyId))
     } catch (erro) {
+      this.trilha.desfazerAte(trilhaAntes)
       this.produtos.clear()
       for (const [k, v] of produtosAntes) this.produtos.set(k, v)
       this.movimentos.length = 0
@@ -74,6 +91,9 @@ export class InMemoryInventory implements InventoryUnitOfWork {
 
   private escopo(companyId: CompanyId): InventoryTransaction {
     return {
+      /* A trilha entra NA transacao — NR-087. Ver `TransactionalAuditTrail`. */
+      record: (entrada) => this.trilha.record(entrada),
+
       products: this.products,
 
       setStock: async (productId, quantity) => {

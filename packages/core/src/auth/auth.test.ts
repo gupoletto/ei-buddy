@@ -137,7 +137,7 @@ describe('login — RF-119', () => {
 
     const [entrada] = audit.daEmpresa('empresa-1')
     expect(entrada!.entityId).toBe(usuario.id)
-    expect((entrada!.after as Record<string, unknown>).event).toBe('session_started')
+    expect(entrada!.action).toBe('session_started')
   })
 
   /* Sem empresa escolhida nao existe empresa sob a qual gravar, e inventar uma
@@ -463,7 +463,11 @@ describe('sair — RF-119', () => {
     const eventos = audit.daEmpresa('empresa-1')
     /* Entrada e saida: o login ja registrou a primeira. */
     expect(eventos).toHaveLength(2)
-    expect(eventos.at(-1)?.after).toMatchObject({ event: 'session_ended' })
+    /* O verbo mora em `action` desde a NR-087. Antes era `updated` com o nome
+       real escondido em `after.event` — e "o que foi alterado neste usuario"
+       devolvia logins. */
+    expect(eventos.at(-1)?.action).toBe('session_ended')
+    expect(eventos.at(-1)?.after).toMatchObject({ requestId: 'req-1' })
   })
 
   /*
@@ -585,7 +589,8 @@ describe('convidar usuario — RF-005', () => {
 
     const [entrada] = audit.daEmpresa('empresa-1')
     expect(entrada!.entityId).toBe(r.userId)
-    expect(entrada!.after).toEqual({ event: 'access_granted', role: 'staff', userCreated: true })
+    expect(entrada!.action).toBe('access_granted')
+    expect(entrada!.after).toEqual({ role: 'staff', userCreated: true })
     /* A trilha e imutavel (RF-124) e a exclusao da LGPD nao alcanca o que nao
        pode ser apagado. Contato pessoal ali seria copia intocavel. */
     expect(JSON.stringify(entrada!.after)).not.toContain('novo@x.com')

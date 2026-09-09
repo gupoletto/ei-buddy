@@ -11,6 +11,7 @@ import type { ExecutionContext } from '../context.js'
 import type {
   BankTransactionSnapshot,
   LancamentoConciliavel,
+  ReconciliationTransaction,
 } from '../ports/reconciliation-repository.js'
 import type { ReconciliationDeps } from './suggest-matches.js'
 
@@ -74,7 +75,7 @@ export async function reconcile(
       throw AppError.conflict('Esta transacao acabou de ser conciliada. Recarregue a tela.')
     }
 
-    await registra(deps, ctx, transacao, input.entryKind, lancamento.id, 'updated', {
+    await registra(tx, ctx, transacao, input.entryKind, lancamento.id, 'updated', {
       reconciledWith: lancamento.id,
       amountCents: transacao.amountCents,
     })
@@ -133,7 +134,7 @@ export async function createEntryFromTransaction(
       throw AppError.conflict('Esta transacao acabou de ser conciliada. Recarregue a tela.')
     }
 
-    await registra(deps, ctx, transacao, entryKind, criado.id, 'created', {
+    await registra(tx, ctx, transacao, entryKind, criado.id, 'created', {
       counterparty: input.counterparty,
       description: input.description,
       amountCents: transacao.amountCents,
@@ -175,7 +176,7 @@ export async function undoReconciliation(
     await tx.unlink(ctx.companyId, transacao.id)
 
     await registra(
-      deps,
+      tx,
       ctx,
       transacao,
       transacao.reconciledEntryKind!,
@@ -245,7 +246,14 @@ function reais(centavos: number): string {
  * `BankTransaction` responderia a pergunta que ninguem faz.
  */
 async function registra(
-  deps: ReconciliationDeps,
+  /*
+   * Recebe o ESCOPO da transacao, e nao as dependencias — NR-087.
+   *
+   * Era `deps`, e a trilha era gravada fora da transacao que ela registra: uma
+   * conciliacao desfeita no commit deixava na trilha uma conciliacao que nunca
+   * houve. Ver `TransactionalAuditTrail`.
+   */
+  tx: ReconciliationTransaction,
   ctx: ExecutionContext,
   transacao: BankTransactionSnapshot,
   entryKind: EntryKind,
@@ -253,7 +261,7 @@ async function registra(
   action: 'created' | 'updated' | 'cancelled',
   after: Record<string, unknown>,
 ): Promise<void> {
-  await deps.audit.record({
+  await tx.record({
     companyId: ctx.companyId,
     entity: entryKind === 'payable' ? 'Payable' : 'Receivable',
     entityId: entryId,

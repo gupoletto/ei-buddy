@@ -33,7 +33,12 @@ function conta(over: Partial<CreatePayableInput> = {}): CreatePayableInput {
   }
 }
 
-function deps(pag = new InMemoryPayables(), audit = new InMemoryAuditTrail()) {
+/*
+ * A trilha nasce primeiro e entra na unidade de trabalho: desde a NR-087 a
+ * auditoria acontece DENTRO da transacao (ver `TransactionalAuditTrail`), e
+ * duas instancias fariam o teste procurar na vazia.
+ */
+function deps(audit = new InMemoryAuditTrail(), pag = new InMemoryPayables(audit)) {
   return { uow: pag, ids: pag, audit, pag }
 }
 
@@ -353,7 +358,7 @@ describe('autorizacao por papel', () => {
 describe('trilha de auditoria — RF-123', () => {
   it('o lancamento deixa uma entrada, nao uma por ocorrencia', async () => {
     const audit = new InMemoryAuditTrail()
-    const d = deps(new InMemoryPayables(), audit)
+    const d = deps(audit)
 
     await createPayable(
       d,
@@ -368,7 +373,7 @@ describe('trilha de auditoria — RF-123', () => {
 
   it('encerrar a recorrencia tambem deixa rastro', async () => {
     const audit = new InMemoryAuditTrail()
-    const d = deps(new InMemoryPayables(), audit)
+    const d = deps(audit)
     await createPayable(
       d,
       contexto(),

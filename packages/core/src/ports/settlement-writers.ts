@@ -1,5 +1,6 @@
 import type { PaymentMethod, SettlementOutput } from '@na-regua/contracts'
 import type { CompanyId, UserId } from '../context.js'
+import type { TransactionalAuditTrail } from './audit-trail.js'
 
 /**
  * Portas da baixa e do estorno — NR-029, RF-059, RF-060, RF-066, RF-067.
@@ -44,7 +45,13 @@ export type NewSettlement = {
   readonly createdAt: Date
 }
 
-export type SettlementTransaction = {
+/*
+ * Inclui a trilha (NR-087): auditar aqui e auditar DENTRO da transacao.
+ * O motivo esta em `TransactionalAuditTrail` — fora dela, a trilha
+ * sobrevive ao rollback e passa a registrar o que nao aconteceu, e uma
+ * segunda conexao por transacao esgota o pool.
+ */
+export type SettlementTransaction = TransactionalAuditTrail & {
   findPayable(companyId: CompanyId, id: string): Promise<TituloSnapshot | undefined>
   findReceivable(companyId: CompanyId, id: string): Promise<TituloSnapshot | undefined>
   findSettlement(companyId: CompanyId, id: string): Promise<SettlementOutput | undefined>

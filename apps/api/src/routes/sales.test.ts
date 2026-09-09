@@ -64,6 +64,19 @@ function unitOfWorkEmMemoria() {
   const uow: UnitOfWork = {
     transaction: async (_companyId, fn) => {
       const tx: SaleTransaction = {
+        /* A trilha entra na transacao desde a NR-087. Aqui ela nao e
+           inspecionada: quem testa a ROTA testa status e corpo. */
+        record: async (entrada) => ({
+          id: 'aud-1',
+          entity: entrada.entity,
+          entityId: entrada.entityId,
+          action: entrada.action,
+          actorId: entrada.actorId,
+          channel: entrada.channel,
+          occurredAt: entrada.occurredAt.toISOString(),
+          before: entrada.before,
+          after: entrada.after,
+        }),
         products: {
           findManyByIds: async (ids) =>
             ids.map((id) => ({

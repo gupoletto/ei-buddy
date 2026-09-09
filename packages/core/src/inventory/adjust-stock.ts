@@ -2,7 +2,6 @@ import type { AdjustStockInput, InventoryMovementOutput } from '@na-regua/contra
 import { AppError } from '../app-error.js'
 import { assertCanWrite } from '../authorization.js'
 import type { ExecutionContext } from '../context.js'
-import type { AuditTrail } from '../ports/audit-trail.js'
 import type { InventoryUnitOfWork } from '../ports/inventory-writers.js'
 
 export type AdjustStockDeps = {
@@ -15,7 +14,14 @@ export type AdjustStockDeps = {
    * dependencia opcional aqui seria a trilha que some justamente quando quem
    * montou o grafo esqueceu dela.
    */
-  readonly audit: AuditTrail
+  /*
+   * Sem `audit` aqui desde a NR-087.
+   *
+   * A auditoria deste caso de uso acontece DENTRO da transacao, por
+   * `tx.record` — ver `TransactionalAuditTrail`. Manter a trilha nas
+   * dependencias faria todo construtor montar uma que ninguem usa, e o proximo
+   * leitor suporia que o caso de uso audita por ali.
+   */
 }
 
 /**
@@ -74,7 +80,7 @@ export async function adjustStock(
 
     /* Dentro da transacao: saldo mudado sem trilha e a trilha mentindo. Se a
        gravacao falhar, o rollback leva o saldo junto. */
-    await deps.audit.record({
+    await tx.record({
       companyId: ctx.companyId,
       entity: 'Product',
       entityId: input.productId,

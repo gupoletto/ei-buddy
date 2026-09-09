@@ -72,6 +72,9 @@ export { createSaleHistoryRepository } from './sale-history-repository.js'
 /* Chamados de suporte — NR-080, US-062. */
 export { createSupportRepository } from './support-repository.js'
 
+/* Trilha de auditoria — NR-087, RF-123, RF-124, US-061. */
+export { createAuditTrail, gravarTrilha } from './audit-repository.js'
+
 /* Exportacao completa e anonimizacao — NR-086, RF-125, RF-127, RF-128. */
 export {
   createDataSubjectRepository,

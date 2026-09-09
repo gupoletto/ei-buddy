@@ -133,7 +133,8 @@ describe('exportar tudo — RF-125', () => {
 
     const [entrada] = audit.daEmpresa(EMPRESA)
     expect(entrada!.actorId).toBe('usr-1')
-    expect(entrada!.after).toMatchObject({ event: 'data_export', totalRows: 10 })
+    expect(entrada!.action).toBe('data_export')
+    expect(entrada!.after).toMatchObject({ totalRows: 10 })
   })
 
   describe('quem pode', () => {
@@ -321,7 +322,8 @@ describe('a auditoria da anonimizacao — RF-127', () => {
     expect(entrada!.entityId).toBe(alvo.id)
     expect(entrada!.actorId).toBe('usr-1')
     expect(entrada!.occurredAt).toBe(AGORA.toISOString())
-    expect(entrada!.after).toMatchObject({ event: 'anonymized', reason: pedido.reason })
+    expect(entrada!.action).toBe('anonymized')
+    expect(entrada!.after).toMatchObject({ reason: pedido.reason })
   })
 
   /*

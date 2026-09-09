@@ -198,12 +198,12 @@ async function registra(
     companyId: ctx.companyId,
     entity: 'Customer',
     entityId: customerId,
-    action: 'updated',
+    action: 'anonymized',
     actorId: ctx.userId,
     channel: ctx.channel,
     occurredAt: ctx.now,
     /* Ver acima: guardar o antes seria preservar o que se pediu para excluir. */
     before: null,
-    after: { event: 'anonymized', reason: input.reason },
+    after: { reason: input.reason },
   })
 }

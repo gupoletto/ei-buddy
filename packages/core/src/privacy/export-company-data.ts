@@ -110,20 +110,18 @@ export async function exportCompanyData(
     entity: 'Company',
     entityId: ctx.companyId,
     /*
-     * `created`, e nao `exported`: o vocabulario da trilha
-     * (`auditActionSchema`) tem quatro verbos de CRUD, e o CHECK da migration
-     * 0007 impoe os mesmos quatro. Evento que nao e CRUD — exportacao, entrada
-     * na sessao, concessao de acesso — vai como o verbo mais proximo, com o
-     * nome real em `after.event`. Ja sao tres call sites assim; o vocabulario
-     * precisa crescer, e isso e uma migration.
+     * `data_export`, e o verbo entrou no vocabulario na NR-087.
+     *
+     * Antes era `created` com o nome real escondido em `after.event`, porque o
+     * enum tinha so os quatro de CRUD. O comentario que estava aqui dizia que
+     * o vocabulario precisava crescer e que isso era uma migration — foi feita.
      */
-    action: 'created',
+    action: 'data_export',
     actorId: ctx.userId,
     channel: ctx.channel,
     occurredAt: ctx.now,
     before: null,
     after: {
-      event: 'data_export',
       location,
       totalRows: colecoes.reduce((s, c) => s + c.rows, 0),
     },

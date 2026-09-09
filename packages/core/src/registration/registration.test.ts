@@ -682,7 +682,7 @@ describe('importacao de catalogo — NR-072, US-008', () => {
    */
   function cenario() {
     const produtos = new InMemoryProductRepository()
-    const inventario = new InMemoryInventory()
+    const inventario = new InMemoryInventory(new InMemoryAuditTrail())
 
     const products: ProductRepository = {
       create: async (p) => {

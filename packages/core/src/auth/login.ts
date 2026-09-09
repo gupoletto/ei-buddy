@@ -235,12 +235,12 @@ export async function logout(
     companyId: sessao.companyId,
     entity: 'User',
     entityId: sessao.userId,
-    action: 'updated',
+    action: 'session_ended',
     actorId: sessao.userId,
     channel: meta.channel,
     occurredAt: meta.now,
     before: null,
-    after: { event: 'session_ended', requestId: meta.requestId },
+    after: { requestId: meta.requestId },
   })
 }
 
@@ -325,11 +325,11 @@ async function registraEntrada(
     companyId,
     entity: 'User',
     entityId: userId,
-    action: 'updated',
+    action: 'session_started',
     actorId: userId,
     channel: meta.channel,
     occurredAt: meta.now,
     before: null,
-    after: { event: 'session_started', requestId: meta.requestId },
+    after: { requestId: meta.requestId },
   })
 }

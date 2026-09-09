@@ -37,7 +37,29 @@ export type AuditTrail = {
  * - Registrar que alguem consultou um relatorio nao precisa de transacao
  *   nenhuma.
  *
- * Quem implementa decide se sao o mesmo objeto; quem chama declara qual das
- * duas precisa, e a assinatura passa a dizer isso em vez de deixar implicito.
+ * ## Na NR-087 este tipo deixou de ser so uma intencao
+ *
+ * Ele existia como apelido de `AuditTrail` e nada o usava: os seis casos de
+ * uso que auditam dentro da propria transacao chamavam `deps.audit.record`,
+ * que e a trilha de fora. Com a trilha em memoria isso nao tinha efeito
+ * visivel — o `Map` nao sabe o que e transacao.
+ *
+ * Com a trilha no banco, teria dois efeitos, e nenhum e sutil:
+ *
+ * 1. **Trava o banco.** O pool tem 10 conexoes. Dez transacoes simultaneas,
+ *    cada uma pedindo uma segunda conexao para a trilha, esperam por uma
+ *    decima primeira que nao existe.
+ *
+ * 2. **A trilha passa a mentir.** Gravada fora, ela sobrevive ao rollback do
+ *    que registra: o estorno falha no commit e fica na trilha um estorno que
+ *    nunca aconteceu. Trilha que registra o que nao houve nao resolve
+ *    divergencia nenhuma, que e exatamente a US-061.
+ *
+ * Por isso os cinco escopos de transacao (`SaleTransaction`,
+ * `InventoryTransaction`, `PayableTransaction`, `ReconciliationTransaction` e
+ * `SettlementTransaction`) INCLUEM este tipo. O caso de uso chama
+ * `tx.record(...)` quando esta dentro de uma transacao e
+ * `deps.audit.record(...)` quando nao esta — e agora a assinatura diz qual dos
+ * dois, em vez de deixar implicito.
  */
 export type TransactionalAuditTrail = AuditTrail

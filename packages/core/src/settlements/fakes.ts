@@ -1,3 +1,4 @@
+import { InMemoryAuditTrail } from '../audit/fakes.js'
 import type { PaymentMethod, SettlementOutput } from '@na-regua/contracts'
 import type { CompanyId } from '../context.js'
 import type {
@@ -27,6 +28,17 @@ export class InMemorySettlements implements SettlementUnitOfWork {
   private sequencia = 0
   /** Liga para simular falha depois de gravar a linha da baixa. */
   falharDepoisDaBaixa = false
+
+  /*
+   * A trilha vem de FORA, e o parametro e obrigatorio de proposito.
+   *
+   * Em producao a unidade de trabalho e a trilha compartilham a conexao: a
+   * entrada da auditoria entra na mesma transacao do que ela registra
+   * (NR-087). Aqui o falso reflete isso compartilhando a INSTANCIA — e exigir
+   * o parametro impede o erro de construir dois e nao entender por que a
+   * assercao do teste nao acha a entrada.
+   */
+  constructor(readonly trilha: InMemoryAuditTrail) {}
 
   adicionarTitulo(
     companyId: CompanyId,
@@ -64,6 +76,10 @@ export class InMemorySettlements implements SettlementUnitOfWork {
     _companyId: CompanyId,
     fn: (tx: SettlementTransaction) => Promise<T>,
   ): Promise<T> {
+    /* A trilha faz parte da transacao desde a NR-087: rollback leva a entrada
+       da auditoria junto. Sem isto o falso aprovaria uma trilha que registra o
+       que nao aconteceu. */
+    const trilhaAntes = this.trilha.marcaDeTransacao()
     const titulosAntes = [...this.titulos]
     const baixasAntes = [...this.baixas]
     const saldosAntes = new Map(this.saldos)
@@ -72,6 +88,7 @@ export class InMemorySettlements implements SettlementUnitOfWork {
     try {
       return await fn(this.escopo())
     } catch (erro) {
+      this.trilha.desfazerAte(trilhaAntes)
       this.titulos = titulosAntes
       this.baixas = baixasAntes
       this.saldos = saldosAntes
@@ -90,6 +107,9 @@ export class InMemorySettlements implements SettlementUnitOfWork {
 
   private escopo(): SettlementTransaction {
     return {
+      /* A trilha entra NA transacao — NR-087. Ver `TransactionalAuditTrail`. */
+      record: (entrada) => this.trilha.record(entrada),
+
       findPayable: async (empresa, id) => this.acharTitulo(empresa, 'payable', id),
       findReceivable: async (empresa, id) => this.acharTitulo(empresa, 'receivable', id),
 

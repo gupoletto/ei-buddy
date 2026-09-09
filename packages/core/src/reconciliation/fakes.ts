@@ -1,3 +1,4 @@
+import { InMemoryAuditTrail } from '../audit/fakes.js'
 import type {
   BankTransactionDirection,
   BankTransactionListItem,
@@ -35,6 +36,17 @@ export class InMemoryReconciliation implements ReconciliationUnitOfWork, Reconci
   private transacoes: TransacaoGuardada[] = []
   private lancamentos: LancamentoGuardado[] = []
   private sequencia = 0
+
+  /*
+   * A trilha vem de FORA, e o parametro e obrigatorio de proposito.
+   *
+   * Em producao a unidade de trabalho e a trilha compartilham a conexao: a
+   * entrada da auditoria entra na mesma transacao do que ela registra
+   * (NR-087). Aqui o falso reflete isso compartilhando a INSTANCIA — e exigir
+   * o parametro impede o erro de construir dois e nao entender por que a
+   * assercao do teste nao acha a entrada.
+   */
+  constructor(readonly trilha: InMemoryAuditTrail) {}
 
   /** Liga para simular outra aba conciliando entre a leitura e a escrita. */
   conciliadaPorOutro = false
@@ -168,12 +180,17 @@ export class InMemoryReconciliation implements ReconciliationUnitOfWork, Reconci
   ): Promise<T> {
     /* Copia antes e restaura na falha: o teste da RNF-046 precisa que o falso
        desfaca, senao ele provaria o rollback do nada. */
+    /* A trilha faz parte da transacao desde a NR-087: rollback leva a entrada
+       da auditoria junto. Sem isto o falso aprovaria uma trilha que registra o
+       que nao aconteceu. */
+    const trilhaAntes = this.trilha.marcaDeTransacao()
     const antesT = [...this.transacoes]
     const antesL = [...this.lancamentos]
 
     try {
       return await fn(this.escopo())
     } catch (erro) {
+      this.trilha.desfazerAte(trilhaAntes)
       this.transacoes = antesT
       this.lancamentos = antesL
       throw erro
@@ -188,6 +205,9 @@ export class InMemoryReconciliation implements ReconciliationUnitOfWork, Reconci
    */
   private escopo(): ReconciliationTransaction {
     return {
+      /* A trilha entra NA transacao — NR-087. Ver `TransactionalAuditTrail`. */
+      record: (entrada) => this.trilha.record(entrada),
+
       findTransaction: async (empresa, id) =>
         this.transacoes.find((t) => t.companyId === empresa && t.id === id),
 

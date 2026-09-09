@@ -1,5 +1,6 @@
 import type { PayableOutput, PayableStatus } from '@na-regua/contracts'
 import type { CompanyId, UserId } from '../context.js'
+import type { TransactionalAuditTrail } from './audit-trail.js'
 
 /**
  * Portas das contas a pagar — NR-028, RF-055 a RF-062.
@@ -31,7 +32,13 @@ export type PayableFilter = {
   readonly status?: readonly PayableStatus[]
 }
 
-export type PayableTransaction = {
+/*
+ * Inclui a trilha (NR-087): auditar aqui e auditar DENTRO da transacao.
+ * O motivo esta em `TransactionalAuditTrail` — fora dela, a trilha
+ * sobrevive ao rollback e passa a registrar o que nao aconteceu, e uma
+ * segunda conexao por transacao esgota o pool.
+ */
+export type PayableTransaction = TransactionalAuditTrail & {
   /** As ocorrencias de uma vez — atomicidade da recorrencia. */
   insertMany(contas: readonly NewPayable[]): Promise<readonly PayableOutput[]>
 
