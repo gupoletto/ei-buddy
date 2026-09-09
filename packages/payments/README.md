@@ -2,7 +2,7 @@
 
 Adapter de PSP — o dinheiro do **lojista**.
 
-**Estado:** 🟡 porta e adapter falso prontos (`NR-043`) · 🚧 adapter PagMaxx bloqueado por [DEC-006](../../docs/decisoes/README.md#dec-006) e [DEC-015](../../docs/decisoes/README.md#dec-015) (`NR-044`)
+**Estado:** 🟡 porta e adapter falso prontos (`NR-043`) · ⬜ adapter Asaas liberado (`NR-044`) — [ADR-0004](../../docs/decisoes/adr/0004-asaas.md), [ADR-0005](../../docs/decisoes/adr/0005-subconta-asaas-nao-baas.md)
 
 ## Responsabilidade
 

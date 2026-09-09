@@ -246,17 +246,17 @@ Quem implementa o quê. Base para a divisão de trilhas em
 
 ## Requisitos bloqueados por decisão em aberto
 
-| Decisão                                                    | Requisitos bloqueados                          |
-| ---------------------------------------------------------- | ---------------------------------------------- |
-| [DEC-003](../decisoes/README.md#dec-003) provedor WhatsApp | RF-015, RF-016, RF-048, RF-068, RF-094, RF-095 |
-| [DEC-004](../decisoes/README.md#dec-004) provedor fiscal   | RF-045 a RF-054                                |
-| [DEC-005](../decisoes/README.md#dec-005) Open Finance      | RF-074, RF-075                                 |
-| [DEC-006](../decisoes/README.md#dec-006) PSP / tarifas     | RF-007, RF-038, RF-063                         |
-| [DEC-007](../decisoes/README.md#dec-007) LLM e recuperação | RF-096 a RF-109                                |
-| [DEC-008](../decisoes/README.md#dec-008) autenticação      | RF-005, RF-119, RF-120                         |
-| [DEC-010](../decisoes/README.md#dec-010) cobrança SaaS     | RF-110 a RF-118                                |
-| [DEC-011](../decisoes/README.md#dec-011) memória do agente | RF-105, RF-106                                 |
-| [DEC-012](../decisoes/README.md#dec-012) usuários e cupons | RF-114, RF-115                                 |
+| Decisão                                                    | Requisitos bloqueados                                  |
+| ---------------------------------------------------------- | ------------------------------------------------------ |
+| [DEC-003](../decisoes/README.md#dec-003) provedor WhatsApp | RF-015, RF-016, RF-048, RF-068, RF-094, RF-095         |
+| [DEC-004](../decisoes/README.md#dec-004) provedor fiscal   | RF-045 a RF-054                                        |
+| [DEC-005](../decisoes/README.md#dec-005) Open Finance      | RF-074, RF-075                                         |
+| [DEC-006](../decisoes/README.md#dec-006) PSP ✅ Asaas      | — (NR-044 pode começar)                                |
+| [DEC-007](../decisoes/README.md#dec-007) LLM e recuperação | RF-096 a RF-109                                        |
+| [DEC-008](../decisoes/README.md#dec-008) autenticação      | RF-005, RF-119, RF-120                                 |
+| [DEC-010](../decisoes/README.md#dec-010) cobrança SaaS ✅  | preço/trial → [QST-002](../decisoes/README.md#qst-002) |
+| [DEC-011](../decisoes/README.md#dec-011) memória do agente | RF-105, RF-106                                         |
+| [DEC-012](../decisoes/README.md#dec-012) usuários e cupons | RF-114, RF-115                                         |
 
 Um requisito bloqueado **pode** ter sua interface e seus testes escritos antes
 da decisão — é exatamente para isso que servem as portas dos adapters. O que não

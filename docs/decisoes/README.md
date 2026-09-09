@@ -44,11 +44,11 @@ PR**, e a linha sai da tabela de abertas.
 
 | Estado             | Qtd | Quais                                           |
 | ------------------ | --: | ----------------------------------------------- |
-| 🔴 Aberta          |   9 | DEC-003, 005, 007, 009, 011, 012, 013, 015, 016 |
-| 🟡 Em análise      |   3 | DEC-001, 006, 010                               |
+| 🔴 Aberta          |   9 | DEC-003, 005, 007, 009, 011, 012, 013, 016, 018 |
+| 🟡 Em análise      |   1 | DEC-001                                         |
 | ⚪ Adiada          |   1 | DEC-014                                         |
-| 🟢 Decidida        |   2 | DEC-002, 008                                    |
-| ❓ Pergunta aberta |  12 | QST-001 a QST-012                               |
+| 🟢 Decidida        |   5 | DEC-002, 006, 008, 010, 015                     |
+| ❓ Pergunta aberta |  10 | QST-001 a QST-008, QST-011, QST-012             |
 
 **Bloqueando o MVP agora:** DEC-003, DEC-009.
 Essas duas travam trabalho de implementação já na Sprint 1. A DEC-016 não trava
@@ -217,32 +217,6 @@ mesma porta `BankStatementProvider`.
 
 ---
 
-### DEC-006 — PSP / adquirente
-
-|              |                                                                                     |
-| ------------ | ----------------------------------------------------------------------------------- |
-| **Status**   | 🟡 Em análise — candidato avaliado                                                  |
-| **Dono**     | Produto + Trilha 2                                                                  |
-| **Prazo**    | Sprint 2                                                                            |
-| **Bloqueia** | `packages/payments` · [RF-007](../produto/requisitos-funcionais.md), RF-038, RF-063 |
-
-**Candidato: PagMaxx.** Avaliação completa em
-[`integracoes/pagmaxx.md`](../arquitetura/integracoes/pagmaxx.md).
-
-**Resumo.** Cobre Pix, link de pagamento, cartão online, tokenização, 3DS,
-estorno, simulação de taxa e assinaturas, com webhooks bem projetados
-(HMAC-SHA256 sobre corpo bruto, id de evento para idempotência, reentrega 5×).
-
-**A ressalva que importa:** **não há API de captura presencial.** O cartão do
-balcão continua na maquininha da lojista; o sistema registra a venda e calcula a
-tarifa por tabela configurada. Isso não invalida a escolha — encaixa bem na
-metade conversacional do produto — mas precisa estar claro antes de assinar.
-
-**Pendências antes de fechar:** [QST-009](#qst-009), [QST-010](#qst-010),
-[QST-012](#qst-012) e [DEC-015](#dec-015).
-
----
-
 ### DEC-007 — Modelo de LLM e mecanismo de recuperação de informação
 
 |              |                                                                                                                                |
@@ -294,40 +268,6 @@ um time sem pessoa dedicada a infra · reversão de deploy em ≤ 10 min.
 **Recomendação preliminar.** PaaS com Postgres gerenciado. Três desenvolvedores
 sem SRE não devem operar Kubernetes — o custo aparece em indisponibilidade, não
 na fatura.
-
----
-
-### DEC-010 — Cobrança de mensalidade, inadimplência e bloqueio
-
-|              |                                                                                                                                                |
-| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**   | 🟡 Em análise — candidato avaliado                                                                                                             |
-| **Dono**     | Produto                                                                                                                                        |
-| **Prazo**    | Sprint 3                                                                                                                                       |
-| **Bloqueia** | `packages/billing` · [RF-110 a RF-118](../produto/requisitos-funcionais.md) · [E12](../produto/user-stories.md#e12--assinatura--cobrança-saas) |
-
-**Contexto.** Herdada da apresentação: como cobrar, como avisar da inadimplência,
-qual a regra de bloqueio.
-
-**Provedor.** `/subscriptions/*` da
-[PagMaxx](../arquitetura/integracoes/pagmaxx.md) cobre recorrência em cartão e
-Pix, com ciclos numerados, `external_reference` próprio e histórico de cobranças
-— suficiente para E12 sem um segundo fornecedor.
-
-**Ainda em aberto (produto, não técnico):**
-
-| Ponto      | Pergunta                                                                   |
-| ---------- | -------------------------------------------------------------------------- |
-| Preço      | Quanto custa a mensalidade e quantos planos existem? → [QST-002](#qst-002) |
-| Trial      | Quantos dias e com quais limites?                                          |
-| Tolerância | Quantos dias entre o vencimento e a restrição?                             |
-| Restrição  | Confirmado que restringe **escrita** mantendo leitura e exportação?        |
-
-**Recomendação.** Manter o estado `Restrita` como desenhado em
-[`fluxos.md`](../arquitetura/fluxos.md#assinatura-e-bloqueio-por-inadimplência):
-bloquear escrita, **nunca** leitura nem exportação. Sequestrar dado para forçar
-pagamento contradiz o princípio 5 da [visão](../produto/visao.md#princípios-de-produto)
-e transforma inadimplente em detrator.
 
 ---
 
@@ -403,34 +343,6 @@ Pré-MVP usa **tag única `v0.x.y`** no monorepo. Quando os deploys de `api`,
 
 ---
 
-### DEC-015 — Modelo de conta no PSP: uma por lojista vs. split na conta da plataforma
-
-|              |                                                                                                                                             |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**   | 🔴 Aberta                                                                                                                                   |
-| **Dono**     | Produto + jurídico                                                                                                                          |
-| **Prazo**    | Antes de fechar contrato com o PSP                                                                                                          |
-| **Bloqueia** | `packages/payments` · onboarding ([E1](../produto/user-stories.md#e1--onboarding--empresa)) · [M3](../produto/visao.md#métricas-de-sucesso) |
-
-**Contexto.** Descoberto na avaliação da
-[PagMaxx](../arquitetura/integracoes/pagmaxx.md#5-uma-conta-pagmaxx-por-lojista--atrito-de-onboarding):
-_"cada estabelecimento opera com suas próprias credenciais"_, com credenciamento
-por envio de documentos e aprovação humana.
-
-| Opção                            | Prós                                                                      | Contras                                                                                              |
-| -------------------------------- | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| **Conta por lojista**            | Dinheiro vai direto ao lojista; responsabilidade regulatória fica com ele | KYC com aprovação humana no onboarding — atrito contra [M3](../produto/visao.md#métricas-de-sucesso) |
-| **Split na conta da plataforma** | Onboarding quase instantâneo                                              | O dinheiro passa por nós — muda a natureza regulatória do negócio e exige análise jurídica           |
-
-**Recomendação.** Conta por lojista, com o credenciamento **fora do caminho
-crítico** do onboarding: a lojista vende, registra e emite nota desde o primeiro
-minuto; Pix e link de pagamento ficam pendentes até a aprovação. Preserva M3 sem
-assumir risco regulatório de instituição de pagamento.
-
-Exige validação jurídica junto com [QST-004](#qst-004).
-
----
-
 ### DEC-016 — Revisão jurídica dos termos de uso e da política de privacidade
 
 |              |                                                                                                                                                   |
@@ -455,14 +367,14 @@ inventário de fato e é gerada a partir de
 
 **O que falta, e não dá para inferir de código nenhum:**
 
-| Lacuna                                       | Por que só o negócio decide                                             |
-| -------------------------------------------- | ----------------------------------------------------------------------- |
-| Razão social e CNPJ do controlador           | Depende da constituição da empresa e da [DEC-001](#dec-001) (nome)      |
-| Contato do encarregado (LGPD art. 41)        | Exige uma pessoa designada, não um endereço genérico                    |
-| Prazo de retenção após encerramento da conta | Escolha de negócio acima do mínimo fiscal, que já são 5 anos            |
-| Lista completa de operadores                 | Depende de DEC-003, 005, 006, 007 e 009 — cada fornecedor é um operador |
-| Preço, prazo de pagamento e nível de serviço | [DEC-010](#dec-010) e [DEC-006](#dec-006)                               |
-| Limite de responsabilidade, rescisão e foro  | Cláusula contratual; escrita por quem responde por ela                  |
+| Lacuna                                       | Por que só o negócio decide                                                         |
+| -------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Razão social e CNPJ do controlador           | Depende da constituição da empresa e da [DEC-001](#dec-001) (nome)                  |
+| Contato do encarregado (LGPD art. 41)        | Exige uma pessoa designada, não um endereço genérico                                |
+| Prazo de retenção após encerramento da conta | Escolha de negócio acima do mínimo fiscal, que já são 5 anos                        |
+| Lista completa de operadores                 | Asaas já é operador ([ADR-0004](adr/0004-asaas.md)); faltam DEC-003, 005, 007 e 009 |
+| Preço, prazo de pagamento e nível de serviço | [QST-002](#qst-002) — o provedor já é Asaas ([ADR-0004](adr/0004-asaas.md))         |
+| Limite de responsabilidade, rescisão e foro  | Cláusula contratual; escrita por quem responde por ela                              |
 
 **Por que as lacunas estão visíveis na página, e não preenchidas com texto
 plausível.** Documento com cara de oficial e conteúdo inventado é pior que a
@@ -479,25 +391,45 @@ parte dele, em vez de começar de uma página em branco.
 
 ---
 
+### DEC-018 — Split nas vendas Asaas
+
+|              |                                                                                                         |
+| ------------ | ------------------------------------------------------------------------------------------------------- |
+| **Status**   | 🔴 Aberta                                                                                               |
+| **Dono**     | Produto + jurídico                                                                                      |
+| **Prazo**    | Antes de enviar `split[]` em produção (não bloqueia o adapter falso nem o Pix)                          |
+| **Bloqueia** | Take-rate por venda — não bloqueia Pix, boleto, link nem cartão da [NR-044](../processo/task-ledger.md) |
+
+**Pergunta.** A plataforma tira uma fatia de cada venda Asaas, ou só cobra a
+mensalidade na conta-pai?
+
+Insumo: [`split-decision.md`](../arquitetura/integracoes/split-decision.md)
+(opções A sem Split, B split na subconta, C cobrança na pai).
+
+Não reabre [ADR-0005](adr/0005-subconta-asaas-nao-baas.md) (não-BaaS vs BaaS).
+Quando fechar: ADR nova e o mesmo PR atualiza o adapter.
+
+---
+
 ## Perguntas em aberto
 
 Resolvem-se com informação, não com escolha. Uma pergunta respondida vira
 atualização de documento — e às vezes abre uma `DEC`.
 
-| ID                              | Pergunta                                                                                                                  | Para quem            | Por que importa                                                                                                                                                    | Prazo             |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------- |
-| <a id="qst-001"></a>**QST-001** | Quantos lojistas se espera nos primeiros 12 meses?                                                                        | Produto              | Dimensiona [RNF-016/017](../produto/requisitos-nao-funcionais.md) e o custo de [DEC-009](#dec-009)                                                                 | Sprint 1          |
-| <a id="qst-002"></a>**QST-002** | Qual o preço da mensalidade e quantos planos?                                                                             | Produto              | [RNF-072](../produto/requisitos-nao-funcionais.md) e [RNF-074](../produto/requisitos-nao-funcionais.md) são percentuais dela — sem o valor, não há como verificar  | Sprint 1          |
-| <a id="qst-003"></a>**QST-003** | Existe lojista-piloto comprometido em usar o MVP?                                                                         | Produto              | Sem piloto não há como validar o [critério de saída do MVP](../produto/escopo-mvp.md#critérios-de-saída-do-mvp)                                                    | Sprint 1          |
-| <a id="qst-004"></a>**QST-004** | Quem é controlador e quem é operador de dados na LGPD?                                                                    | Jurídico             | Define quem responde por vazamento e o que vai no contrato — ver [`seguranca.md`](../arquitetura/seguranca.md#lgpd)                                                | Sprint 2          |
-| <a id="qst-005"></a>**QST-005** | Qual contador valida o formato de exportação?                                                                             | Produto              | [RF-087](../produto/requisitos-funcionais.md) sem validação real vira retrabalho                                                                                   | Sprint 4          |
-| <a id="qst-006"></a>**QST-006** | As [personas](../produto/personas.md) foram validadas com lojistas reais?                                                 | Produto              | Hoje são inferência a partir da apresentação comercial                                                                                                             | Sprint 2          |
-| <a id="qst-007"></a>**QST-007** | As metas [M1–M7](../produto/visao.md#métricas-de-sucesso) são realistas?                                                  | Produto              | São hipóteses; meta errada leva a decisão errada                                                                                                                   | Sprint 2          |
-| <a id="qst-008"></a>**QST-008** | Os alvos numéricos dos [RNFs](../produto/requisitos-nao-funcionais.md) batem com o aparelho e a internet do público-alvo? | Produto + Trilha 3   | Calibrados por estimativa, não por medição                                                                                                                         | Sprint 3          |
-| <a id="qst-009"></a>**QST-009** | A PagMaxx pode estender o escopo da API Key para Pix, links e assinaturas?                                                | PagMaxx              | Hoje essas rotas exigem guardar **e-mail e senha** da conta — ver [a ressalva](../arquitetura/integracoes/pagmaxx.md#3-autenticação-server-to-server-é-incompleta) | Antes do contrato |
-| <a id="qst-010"></a>**QST-010** | A PagMaxx tem ou terá API de captura presencial (maquininha, TEF, tap-on-phone)?                                          | PagMaxx              | Mudaria completamente o desenho do PDV — ver [a lacuna](../arquitetura/integracoes/pagmaxx.md#a-lacuna-não-há-api-de-venda-presencial)                             | Antes do contrato |
-| <a id="qst-011"></a>**QST-011** | ProComércio é a marca guarda-chuva e este ERP é uma das soluções dela, ou é o nome do próprio ERP?                        | Produto / fundadores | Resolve [DEC-001](#dec-001) e define qual das 5 paletas derivadas o produto usa                                                                                    | Sprint 1          |
-| <a id="qst-012"></a>**QST-012** | Já existe conta PagMaxx ativa e acesso ao ambiente de homologação?                                                        | Produto              | Sem homologação não há como testar `packages/payments`                                                                                                             | Sprint 2          |
+| ID                              | Pergunta                                                                                                                   | Para quem            | Por que importa                                                                                                                                                   | Prazo      |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| <a id="qst-001"></a>**QST-001** | Quantos lojistas se espera nos primeiros 12 meses?                                                                         | Produto              | Dimensiona [RNF-016/017](../produto/requisitos-nao-funcionais.md) e o custo de [DEC-009](#dec-009)                                                                | Sprint 1   |
+| <a id="qst-002"></a>**QST-002** | Qual o preço da mensalidade e quantos planos?                                                                              | Produto              | [RNF-072](../produto/requisitos-nao-funcionais.md) e [RNF-074](../produto/requisitos-nao-funcionais.md) são percentuais dela — sem o valor, não há como verificar | Sprint 1   |
+| <a id="qst-003"></a>**QST-003** | Existe lojista-piloto comprometido em usar o MVP?                                                                          | Produto              | Sem piloto não há como validar o [critério de saída do MVP](../produto/escopo-mvp.md#critérios-de-saída-do-mvp)                                                   | Sprint 1   |
+| <a id="qst-004"></a>**QST-004** | Quem é controlador e quem é operador de dados na LGPD?                                                                     | Jurídico             | Define quem responde por vazamento e o que vai no contrato — ver [`seguranca.md`](../arquitetura/seguranca.md#lgpd)                                               | Sprint 2   |
+| <a id="qst-005"></a>**QST-005** | Qual contador valida o formato de exportação?                                                                              | Produto              | [RF-087](../produto/requisitos-funcionais.md) sem validação real vira retrabalho                                                                                  | Sprint 4   |
+| <a id="qst-006"></a>**QST-006** | As [personas](../produto/personas.md) foram validadas com lojistas reais?                                                  | Produto              | Hoje são inferência a partir da apresentação comercial                                                                                                            | Sprint 2   |
+| <a id="qst-007"></a>**QST-007** | As metas [M1–M7](../produto/visao.md#métricas-de-sucesso) são realistas?                                                   | Produto              | São hipóteses; meta errada leva a decisão errada                                                                                                                  | Sprint 2   |
+| <a id="qst-008"></a>**QST-008** | Os alvos numéricos dos [RNFs](../produto/requisitos-nao-funcionais.md) batem com o aparelho e a internet do público-alvo?  | Produto + Trilha 3   | Calibrados por estimativa, não por medição                                                                                                                        | Sprint 3   |
+| <a id="qst-009"></a>**QST-009** | ~~A PagMaxx pode estender o escopo da API Key?~~ Respondida: Asaas autentica por API Key ([ADR-0004](adr/0004-asaas.md))   | —                    | Encerrada com a troca de PSP                                                                                                                                      | Respondida |
+| <a id="qst-010"></a>**QST-010** | ~~A PagMaxx tem API de captura presencial?~~ Respondida: Asaas também não; PDV só registra ([ADR-0004](adr/0004-asaas.md)) | —                    | Encerrada — o desenho do PDV não muda                                                                                                                             | Respondida |
+| <a id="qst-011"></a>**QST-011** | ProComércio é a marca guarda-chuva e este ERP é uma das soluções dela, ou é o nome do próprio ERP?                         | Produto / fundadores | Resolve [DEC-001](#dec-001) e define qual das 5 paletas derivadas o produto usa                                                                                   | Sprint 1   |
+| <a id="qst-012"></a>**QST-012** | Já existe conta Asaas de sandbox e acesso para testar `packages/payments`?                                                 | Produto              | Sem sandbox não há como ligar o adapter da [NR-044](../processo/task-ledger.md)                                                                                   | Sprint 2   |
 
 ---
 
@@ -506,10 +438,13 @@ atualização de documento — e às vezes abre uma `DEC`.
 Fechadas viram ADR em [`adr/`](adr/). A âncora `DEC-xxx` permanece para os
 links que já apontam para cá.
 
-| ADR                                                     | Decisão                                               | Data       |
-| ------------------------------------------------------- | ----------------------------------------------------- | ---------- |
-| [ADR-0001](adr/0001-rls-por-linha.md)                   | Isolamento multi-tenant por RLS por linha             | 2026-09-01 |
-| [ADR-0002](adr/0002-autenticacao-identidade-propria.md) | Identidade e autorização próprias, prova terceirizada | 2026-09-03 |
+| ADR                                                          | Decisão                                                          | Data       |
+| ------------------------------------------------------------ | ---------------------------------------------------------------- | ---------- |
+| [ADR-0001](adr/0001-rls-por-linha.md)                        | Isolamento multi-tenant por RLS por linha                        | 2026-09-01 |
+| [ADR-0002](adr/0002-autenticacao-identidade-propria.md)      | Identidade e autorização próprias, prova terceirizada            | 2026-09-03 |
+| [ADR-0003](adr/0003-better-auth-como-prova-de-identidade.md) | Better Auth como prova de identidade, em schema próprio          | 2026-09-08 |
+| [ADR-0004](adr/0004-asaas.md)                                | Asaas como PSP das vendas e da assinatura SaaS                   | 2026-09-04 |
+| [ADR-0005](adr/0005-subconta-asaas-nao-baas.md)              | Subconta Asaas não-BaaS por lojista; KYC fora do caminho crítico | 2026-09-04 |
 
 ### <a id="dec-002"></a>DEC-002 — Estratégia multi-tenant
 
@@ -544,6 +479,42 @@ de usabilidade.
 Escolher entre provedor gerenciado e biblioteca auto-hospedada depende da
 [DEC-009](#dec-009) e **não bloqueia código**: as duas implementam a mesma
 porta.
+
+### <a id="dec-006"></a>DEC-006 — PSP / adquirente
+
+|             |                                              |
+| ----------- | -------------------------------------------- |
+| **Status**  | 🟢 Decidida — [ADR-0004](adr/0004-asaas.md)  |
+| **Escolha** | Asaas para Pix, boleto, link e cartão online |
+| **Data**    | 2026-09-04                                   |
+
+Dinheiro e maquininha: só registro. Sem TEF no recorte.
+Contrato: [`integracoes/asaas.md`](../arquitetura/integracoes/asaas.md).
+A avaliação anterior da PagMaxx fica em
+[`pagmaxx.md`](../arquitetura/integracoes/pagmaxx.md).
+
+### <a id="dec-010"></a>DEC-010 — Cobrança de mensalidade (provedor)
+
+|             |                                             |
+| ----------- | ------------------------------------------- |
+| **Status**  | 🟢 Decidida — [ADR-0004](adr/0004-asaas.md) |
+| **Escolha** | Asaas `/v3/subscriptions` na conta-pai      |
+| **Data**    | 2026-09-04                                  |
+
+Preço, trial e tolerância de inadimplência continuam pergunta de produto →
+[QST-002](#qst-002). Estado `Restrita`: bloquear escrita, nunca leitura nem
+exportação
+([`fluxos.md`](../arquitetura/fluxos.md#assinatura-e-bloqueio-por-inadimplência)).
+
+### <a id="dec-015"></a>DEC-015 — Modelo de conta no PSP
+
+|             |                                                                  |
+| ----------- | ---------------------------------------------------------------- |
+| **Status**  | 🟢 Decidida — [ADR-0005](adr/0005-subconta-asaas-nao-baas.md)    |
+| **Escolha** | Subconta Asaas não-BaaS por lojista; KYC fora do caminho crítico |
+| **Data**    | 2026-09-04                                                       |
+
+Split por venda (take-rate) **não** entra aqui — [DEC-018](#dec-018).
 
 ## Documentos relacionados
 

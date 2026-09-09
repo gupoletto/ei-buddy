@@ -52,9 +52,9 @@ consome. A porta é declarada pelo núcleo; a seta aponta para dentro
 | ----------------------------- | ------: | ---: |
 | Total                         |      66 |  180 |
 | ✅ Concluídas                 |      56 |  145 |
-| 🚧 Bloqueadas por decisão     |       9 |   33 |
+| 🚧 Bloqueadas por decisão     |       7 |   25 |
 | 🚧 Bloqueadas por dependência |       1 |    2 |
-| ⬜ A fazer, pode começar hoje |       0 |    0 |
+| ⬜ A fazer, pode começar hoje |       2 |    8 |
 
 > **Números conferidos contra a `main` em 2026-09-08**, não estimados: cada
 > ✅ tem commit mesclado com `Refs: NR-xxx` no histórico. O NR-012 é a
@@ -79,10 +79,13 @@ NR-022, NR-023), a agenda no schema (NR-035) e a trilha de auditoria
 (NR-025) e as contas a pagar com baixa e estorno (NR-028, NR-029) os
 consumidores de fila (NR-041) e o plano de contas com DRE (NR-032).
 
-Dos **35 dias que faltam, nenhum pode começar hoje**: as 10 tarefas restantes
-estão atrás de uma decisão de negócio (9) ou de outra tarefa que está (1). A
-linha ⬜ do painel é zero, e isso não é folga — é fila parada esperando
-resposta. As decisões em aberto estão em
+Dos **35 dias que faltam, 8 podem começar hoje**: a [DEC-006](../decisoes/README.md#dec-006)
+e a [DEC-015](../decisoes/README.md#dec-015) fecharam com Asaas
+([ADR-0004](../decisoes/adr/0004-asaas.md),
+[ADR-0005](../decisoes/adr/0005-subconta-asaas-nao-baas.md)), e a
+[DEC-010](../decisoes/README.md#dec-010) fechou o provedor da mensalidade no
+mesmo lugar. Sobram 27 dias atrás de decisão (25) ou de dependência (2). As
+decisões em aberto estão em
 [Bloqueios por decisão](#bloqueios-por-decisão).
 
 ---
@@ -137,18 +140,18 @@ Objetivo: registrar uma venda de ponta a ponta pelo aplicativo.
 
 Objetivo: emitir NFC-e e controlar contas a pagar e receber.
 
-| ID     | Tarefa                                                                 | Trilha | Módulo            | Est | Dep    | Bloq             | US/RF                  | Status |
-| ------ | ---------------------------------------------------------------------- | :----: | ----------------- | --: | ------ | ---------------- | ---------------------- | :----: |
-| NR-028 | `core`: contas a pagar e a receber, com recorrência                    |   🔵   | `core`            |   3 | NR-020 | —                | RF-055–067             |   ✅   |
-| NR-029 | `core`: baixa, baixa parcial e estorno                                 |   🔵   | `core`            |   2 | NR-028 | —                | RF-059, RF-066, RF-067 |   ✅   |
-| NR-040 | `fiscal`: porta `InvoiceIssuer` + adapter falso                        |   🟠   | `fiscal` `core`   |   2 | NR-005 | —                | RF-045                 |   ✅   |
-| NR-041 | `worker`: consumidores de fila (emissão, mensagem, cobrança)           |   🟠   | `worker`          |   3 | NR-040 | —                | RNF-004, RF-130        |   ✅   |
-| NR-042 | `fiscal`: adapter real, contingência e guarda de XML                   |   🟠   | `fiscal`          |   5 | NR-040 | —                | RF-045–054             |   ✅   |
-| NR-043 | `payments`: porta `PaymentGateway` + adapter falso                     |   🟠   | `payments` `core` |   2 | NR-005 | —                | RF-063                 |   ✅   |
-| NR-044 | `payments`: adapter PagMaxx — Pix, link de pagamento, webhook com HMAC |   🟠   | `payments`        |   4 | NR-043 | DEC-006, DEC-015 | RF-034, RF-068         |   🚧   |
-| NR-073 | `mobile`: pagamento, resumo com líquido e margem                       |   🟢   | `mobile`          |   3 | NR-071 | —                | US-018–020             |   ✅   |
-| NR-074 | `web`: contas a pagar e a receber                                      |   🟢   | `web`             |   4 | NR-029 | —                | E6, E7                 |   ✅   |
-| NR-081 | Baixa e estorno de título ligados de verdade, no web e no mobile       |   🟢   | `web` `mobile`    |   3 | NR-074 | —                | RF-059, RF-066, RF-067 |   ✅   |
+| ID     | Tarefa                                                                | Trilha | Módulo            | Est | Dep    | Bloq | US/RF                  | Status |
+| ------ | --------------------------------------------------------------------- | :----: | ----------------- | --: | ------ | ---- | ---------------------- | :----: |
+| NR-028 | `core`: contas a pagar e a receber, com recorrência                   |   🔵   | `core`            |   3 | NR-020 | —    | RF-055–067             |   ✅   |
+| NR-029 | `core`: baixa, baixa parcial e estorno                                |   🔵   | `core`            |   2 | NR-028 | —    | RF-059, RF-066, RF-067 |   ✅   |
+| NR-040 | `fiscal`: porta `InvoiceIssuer` + adapter falso                       |   🟠   | `fiscal` `core`   |   2 | NR-005 | —    | RF-045                 |   ✅   |
+| NR-041 | `worker`: consumidores de fila (emissão, mensagem, cobrança)          |   🟠   | `worker`          |   3 | NR-040 | —    | RNF-004, RF-130        |   ✅   |
+| NR-042 | `fiscal`: adapter real, contingência e guarda de XML                  |   🟠   | `fiscal`          |   5 | NR-040 | —    | RF-045–054             |   ✅   |
+| NR-043 | `payments`: porta `PaymentGateway` + adapter falso                    |   🟠   | `payments` `core` |   2 | NR-005 | —    | RF-063                 |   ✅   |
+| NR-044 | `payments`: adapter Asaas — Pix, boleto, link, cartão online, webhook |   🟠   | `payments`        |   4 | NR-043 | —    | RF-034, RF-068         |   ⬜   |
+| NR-073 | `mobile`: pagamento, resumo com líquido e margem                      |   🟢   | `mobile`          |   3 | NR-071 | —    | US-018–020             |   ✅   |
+| NR-074 | `web`: contas a pagar e a receber                                     |   🟢   | `web`             |   4 | NR-029 | —    | E6, E7                 |   ✅   |
+| NR-081 | Baixa e estorno de título ligados de verdade, no web e no mobile      |   🟢   | `web` `mobile`    |   3 | NR-074 | —    | RF-059, RF-066, RF-067 |   ✅   |
 
 ## Sprint 4 — WhatsApp e assinatura
 
@@ -162,7 +165,7 @@ Objetivo: operar o ERP por mensagem e cobrar a mensalidade.
 | NR-060 | `agent`: runtime com tools geradas de `contracts`             |   🟠   | `agent`           |   5 | NR-046, NR-005 | **DEC-007**      | RF-096–102, 108, 109   |   🚧   |
 | NR-061 | `agent`: confirmação de ação sensível, com expiração          |   🟠   | `agent`           |   2 | NR-060         | NR-060 → DEC-007 | RF-103, RF-104         |   🚧   |
 | NR-062 | `agent`: contexto de conversa isolado por empresa             |   🟠   | `agent`           |   3 | NR-060         | **DEC-011**      | RF-105, RF-106         |   🚧   |
-| NR-063 | `billing`: assinatura, trial, inadimplência e estado restrito |   🟠   | `billing`         |   4 | NR-044         | **DEC-010**      | RF-110–118             |   🚧   |
+| NR-063 | `billing`: assinatura, trial, inadimplência e estado restrito |   🟠   | `billing`         |   4 | NR-044         | —                | RF-110–118             |   ⬜   |
 | NR-075 | `web`: planos, assinatura e cupom                             |   🟢   | `web`             |   3 | NR-063         | DEC-012          | E12                    |   🚧   |
 
 ## Sprint 5 — Bancos e relatórios
@@ -178,23 +181,23 @@ Objetivo: operar o ERP por mensagem e cobrar a mensalidade.
 
 ## Backlog
 
-| ID     | Tarefa                                                          | Trilha | Módulo                  | Est | Dep    | Bloq                     | US/RF                  | Status |
-| ------ | --------------------------------------------------------------- | :----: | ----------------------- | --: | ------ | ------------------------ | ---------------------- | :----: |
-| NR-016 | `CHANGELOG` gerado dos commits + processo de release            |   🟠   | `repo`                  |   1 | —      | —                        | —                      |   ✅   |
-| NR-034 | `core`: agenda e lembretes                                      |   🔵   | `core`                  |   2 | —      | —                        | RF-089–093             |   ✅   |
-| NR-035 | `db`: schema de agenda (`appointments`)                         |   🔵   | `db`                    |   1 | NR-008 | —                        | RF-089, RF-090         |   ✅   |
-| NR-036 | `api`: rotas de agenda                                          |   🟠   | `api`                   |   1 | NR-035 | —                        | RF-089–093             |   ✅   |
-| NR-037 | `db`: repositórios da venda e trilha de estoque                 |   🔵   | `db`                    |   2 | NR-020 | —                        | RF-024, RNF-046        |   ✅   |
-| NR-049 | E2E do caminho crítico (3 fluxos)                               |   🟠   | `repo`                  |   3 | NR-071 | **DEC-003**, **DEC-006** | RNF-068                |   🚧   |
-| NR-078 | `mobile`: agenda                                                |   🟢   | `mobile`                |   2 | NR-036 | —                        | US-043–045             |   ✅   |
-| NR-079 | `web`: conteúdo real da landing                                 |   🟢   | `web`                   |   1 | —      | —                        | —                      |   ✅   |
-| NR-080 | Suporte: schema, casos de uso, rotas e web                      |   🔵   | `db` `core` `api` `web` |   3 | NR-008 | —                        | US-062                 |   ✅   |
-| NR-082 | `mobile`: suporte                                               |   🟢   | `mobile`                |   2 | NR-080 | —                        | US-062                 |   ✅   |
-| NR-083 | Sessão persistente e revogável, e desaceleração no banco        |   🔵   | `db` `core` `api`       |   3 | NR-014 | —                        | RF-119, RF-120         |   ✅   |
-| NR-084 | Better Auth como provedor de identidade, em schema próprio      |   🟠   | `api` `db`              |   3 | NR-083 | —                        | RF-005, RF-119, RF-120 |   ✅   |
-| NR-085 | Cookies, privacidade e termos: páginas e inventário com portão  |   🟢   | `web` `docs`            |   2 | —      | —                        | RF-125, RNF-029        |   ✅   |
-| NR-086 | Direitos do titular: exportação completa e anonimização ligadas |   🔵   | `db` `api` `web`        |   3 | NR-031 | —                        | RF-125, RF-127, RF-128 |   ✅   |
-| NR-087 | Trilha de auditoria persistente, e dentro da transação          |   🔵   | `db` `core` `api`       |   3 | NR-025 | —                        | RF-123, RF-124, US-061 |   ✅   |
+| ID     | Tarefa                                                          | Trilha | Módulo                  | Est | Dep    | Bloq        | US/RF                  | Status |
+| ------ | --------------------------------------------------------------- | :----: | ----------------------- | --: | ------ | ----------- | ---------------------- | :----: |
+| NR-016 | `CHANGELOG` gerado dos commits + processo de release            |   🟠   | `repo`                  |   1 | —      | —           | —                      |   ✅   |
+| NR-034 | `core`: agenda e lembretes                                      |   🔵   | `core`                  |   2 | —      | —           | RF-089–093             |   ✅   |
+| NR-035 | `db`: schema de agenda (`appointments`)                         |   🔵   | `db`                    |   1 | NR-008 | —           | RF-089, RF-090         |   ✅   |
+| NR-036 | `api`: rotas de agenda                                          |   🟠   | `api`                   |   1 | NR-035 | —           | RF-089–093             |   ✅   |
+| NR-037 | `db`: repositórios da venda e trilha de estoque                 |   🔵   | `db`                    |   2 | NR-020 | —           | RF-024, RNF-046        |   ✅   |
+| NR-049 | E2E do caminho crítico (3 fluxos)                               |   🟠   | `repo`                  |   3 | NR-071 | **DEC-003** | RNF-068                |   🚧   |
+| NR-078 | `mobile`: agenda                                                |   🟢   | `mobile`                |   2 | NR-036 | —           | US-043–045             |   ✅   |
+| NR-079 | `web`: conteúdo real da landing                                 |   🟢   | `web`                   |   1 | —      | —           | —                      |   ✅   |
+| NR-080 | Suporte: schema, casos de uso, rotas e web                      |   🔵   | `db` `core` `api` `web` |   3 | NR-008 | —           | US-062                 |   ✅   |
+| NR-082 | `mobile`: suporte                                               |   🟢   | `mobile`                |   2 | NR-080 | —           | US-062                 |   ✅   |
+| NR-083 | Sessão persistente e revogável, e desaceleração no banco        |   🔵   | `db` `core` `api`       |   3 | NR-014 | —           | RF-119, RF-120         |   ✅   |
+| NR-084 | Better Auth como provedor de identidade, em schema próprio      |   🟠   | `api` `db`              |   3 | NR-083 | —           | RF-005, RF-119, RF-120 |   ✅   |
+| NR-085 | Cookies, privacidade e termos: páginas e inventário com portão  |   🟢   | `web` `docs`            |   2 | —      | —           | RF-125, RNF-029        |   ✅   |
+| NR-086 | Direitos do titular: exportação completa e anonimização ligadas |   🔵   | `db` `api` `web`        |   3 | NR-031 | —           | RF-125, RF-127, RF-128 |   ✅   |
+| NR-087 | Trilha de auditoria persistente, e dentro da transação          |   🔵   | `db` `core` `api`       |   3 | NR-025 | —           | RF-123, RF-124, US-061 |   ✅   |
 
 ---
 
@@ -256,39 +259,37 @@ esses repositórios, e uma rota ligada a um _fake_ não é uma rota.
 
 ## Bloqueios por decisão
 
-| Decisão                                                                                          | Diretas       | Em cascata | Dias parados |
-| ------------------------------------------------------------------------------------------------ | ------------- | ---------: | -----------: |
-| [DEC-007](../decisoes/README.md#dec-007) LLM                                                     | NR-060        |          1 |            7 |
-| [DEC-004](../decisoes/README.md#dec-004) fiscal ✅                                               | — (NR-042 ✅) |          — |            0 |
-| [DEC-003](../decisoes/README.md#dec-003) WhatsApp                                                | NR-046        |          — |            4 |
-| [DEC-010](../decisoes/README.md#dec-010) cobrança                                                | NR-063        |          — |            4 |
-| [DEC-006](../decisoes/README.md#dec-006)/[DEC-015](../decisoes/README.md#dec-015) PSP            | NR-044        |          — |            4 |
-| [DEC-005](../decisoes/README.md#dec-005) Open Finance                                            | NR-048        |          — |            4 |
-| [DEC-003](../decisoes/README.md#dec-003)/[DEC-006](../decisoes/README.md#dec-006) fluxo 3 do E2E | NR-049        |          — |            3 |
-| [DEC-009](../decisoes/README.md#dec-009) hospedagem                                              | NR-015        |          — |            3 |
-| [DEC-011](../decisoes/README.md#dec-011) contexto da conversa                                    | NR-062        |          — |            3 |
-| [DEC-012](../decisoes/README.md#dec-012) usuário e cupons                                        | NR-075        |          — |            3 |
-| [DEC-001](../decisoes/README.md#dec-001) nome/marca                                              | — (NR-011 ✅) |          — |            0 |
+| Decisão                                                                                  | Diretas       | Em cascata | Dias parados |
+| ---------------------------------------------------------------------------------------- | ------------- | ---------: | -----------: |
+| [DEC-007](../decisoes/README.md#dec-007) LLM                                             | NR-060        |          1 |            7 |
+| [DEC-004](../decisoes/README.md#dec-004) fiscal ✅                                       | — (NR-042 ✅) |          — |            0 |
+| [DEC-003](../decisoes/README.md#dec-003) WhatsApp                                        | NR-046        |          — |            4 |
+| [DEC-010](../decisoes/README.md#dec-010) cobrança ✅                                     | — (NR-063 ⬜) |          — |            0 |
+| [DEC-006](../decisoes/README.md#dec-006)/[DEC-015](../decisoes/README.md#dec-015) PSP ✅ | — (NR-044 ⬜) |          — |            0 |
+| [DEC-005](../decisoes/README.md#dec-005) Open Finance                                    | NR-048        |          — |            4 |
+| [DEC-003](../decisoes/README.md#dec-003) fluxo 3 do E2E                                  | NR-049        |          — |            3 |
+| [DEC-009](../decisoes/README.md#dec-009) hospedagem                                      | NR-015        |          — |            3 |
+| [DEC-011](../decisoes/README.md#dec-011) contexto da conversa                            | NR-062        |          — |            3 |
+| [DEC-012](../decisoes/README.md#dec-012) usuário e cupons                                | NR-075        |          — |            3 |
+| [DEC-001](../decisoes/README.md#dec-001) nome/marca                                      | — (NR-011 ✅) |          — |            0 |
 
 > **Bloqueio de tarefa não é bloqueio de trabalho.** Quebrando as tarefas na
 > costura da porta — como a NR-042 fez de fato com a DEC-004 — cerca de 19 dos
-> 35 dias voltam ao quadro sem decidir nada. Ver
+> 27 dias voltam ao quadro sem decidir nada. Ver
 > [destravar-os-bloqueios.md](destravar-os-bloqueios.md).
 
-**Os 35 dias-desenvolvedor que restam estão TODOS bloqueados** — 33 por decisão
-e 2 por dependência de tarefa que também está bloqueada. A coluna "⬜ a fazer"
-zerou: não sobrou nenhuma tarefa que dê para começar hoje.
+**Dos 35 dias-desenvolvedor que restam, 8 estão liberados** — NR-044 (adapter
+Asaas) e NR-063 (billing, na fila atrás da NR-044). Os outros 27 continuam
+atrás de decisão (25) ou de dependência (2).
 
-Isso inverte a estratégia dos últimos meses. Enquanto havia trabalho liberado,
-valia decidir _em paralelo_; agora decidir é a única coisa que destrava
-qualquer coisa. As duas de maior alcance são a
-[DEC-003](../decisoes/README.md#dec-003) (WhatsApp) e a
-[DEC-007](../decisoes/README.md#dec-007) (LLM): juntas seguram 14 dias e o
+As duas de maior alcance que ainda travam são a
+[DEC-003](../decisoes/README.md#dec-003) (WhatsApp + fluxo 3 do E2E, 7 dias) e a
+[DEC-007](../decisoes/README.md#dec-007) (LLM, 7 dias): juntas seguram o
 assistente inteiro, que é a promessa central do produto.
 
 Cada tarefa é contada **uma vez**, na decisão que aparece na sua própria coluna
 `Bloq`. Uma tarefa pode estar atrás de mais de uma: NR-075 espera a DEC-012 e,
-via NR-063, também a DEC-010 — somar as duas contaria o mesmo dia duas vezes.
+via NR-063, o adapter de cobrança — somar as duas contaria o mesmo dia duas vezes.
 
 **Nenhuma decisão restante domina como a DEC-002 dominava.** A maior é a
 [DEC-007](../decisoes/README.md#dec-007), com 7 dias. O bloqueio continua
@@ -311,12 +312,12 @@ passou a ser retrabalho: trocar os tokens quando a marca fechar.
 
 ## Carga por trilha
 
-| Trilha                          | Tarefas | Dias | Observação                                       |
-| ------------------------------- | ------: | ---: | ------------------------------------------------ |
-| 🔵 1 — Núcleo & Dados           |      23 |   59 | é o gargalo; a fila dela segue em NR-023         |
-| 🟠 2 — Plataforma & Integrações |      26 |   72 | a mais carregada e a mais bloqueada (9 decisões) |
-| 🟢 3 — Clientes                 |      16 |   45 | depende de schema, mas já não está bloqueada     |
-| Compartilhada                   |       1 |    4 | documentação (NR-002)                            |
+| Trilha                          | Tarefas | Dias | Observação                                     |
+| ------------------------------- | ------: | ---: | ---------------------------------------------- |
+| 🔵 1 — Núcleo & Dados           |      23 |   59 | é o gargalo; a fila dela segue em NR-023       |
+| 🟠 2 — Plataforma & Integrações |      26 |   72 | a mais carregada; Asaas fechou 3 decisões dela |
+| 🟢 3 — Clientes                 |      16 |   45 | depende de schema, mas já não está bloqueada   |
+| Compartilhada                   |       1 |    4 | documentação (NR-002)                          |
 
 Somando: **180 dias-desenvolvedor** em 66 tarefas. Com 3 pessoas, isso é cerca
 de 11 semanas de trabalho — desde que nada fique bloqueado, o que não é o caso

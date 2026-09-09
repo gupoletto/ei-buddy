@@ -3,8 +3,8 @@
  * declarada por `core`: cobranca Pix, link de pagamento, estorno, cotacao de
  * tarifas e leitura de webhook.
  *
- * O provedor real ainda nao foi decidido (DEC-006 e DEC-015) e o adapter
- * PagMaxx entra com a NR-044. O que existe hoje e o falso —
+ * O provedor e o Asaas (ADR-0004, ADR-0005). O adapter real e a NR-044.
+ * O que existe hoje e o falso —
  * `PAYMENTS_PROVIDER=fake` — que satisfaz a porta inteira e **reproduz as
  * armadilhas documentadas do provedor**, porque falso que nao as reproduz nao
  * protege de nenhuma delas.

@@ -1,5 +1,11 @@
 # PagMaxx — gateway de pagamento
 
+> **Histórico.** A [DEC-006](../../decisoes/README.md#dec-006) e a
+> [DEC-010](../../decisoes/README.md#dec-010) fecharam com Asaas
+> ([ADR-0004](../../decisoes/adr/0004-asaas.md)). Este arquivo é a avaliação
+> que ficou para trás. Contrato vigente:
+> [`asaas.md`](asaas.md).
+
 Avaliação da [documentação da API](../../assets/pagmaxx-api.md) (132 páginas,
 portal de 24/08/2026) e desenho da integração.
 
