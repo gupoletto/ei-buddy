@@ -14,9 +14,9 @@
     "clean": "rm -rf dist .turbo",
     "lint": "eslint src"
   },
-  "dependencies": {},
   "devDependencies": {
+    "@types/node": "^26.4.1",
     "typescript": "^6.0.3",
-    "vitest": "^3.2.6"
+    "vitest": "^4.1.11"
   }
 }
