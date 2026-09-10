@@ -245,6 +245,13 @@
   border-radius: var(--radius);
 }
 
+.emptyMascote {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  margin-bottom: 4px;
+}
+
 .emptyTitle {
   font-family: var(--font-display);
   font-size: 16px;

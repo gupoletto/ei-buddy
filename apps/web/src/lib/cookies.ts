@@ -107,6 +107,16 @@ export const ARMAZENAMENTO_LOCAL: readonly ArmazenamentoLocal[] = [
     duracao: 'Ate voce limpar os dados do navegador',
   },
   {
+    chave: 'nr:som',
+    /* Mesma razao do tema: nasce de um clique seu (o botao de alto-falante no
+       painel), e guarda-la e o que evita o bipe e a confirmacao de venda
+       voltarem a tocar a cada visita depois de voce desligar. */
+    categoria: 'preferencia',
+    finalidade:
+      'Lembrar se voce desligou o som do painel (bipe do leitor de codigo de barras e confirmacao de venda fechada).',
+    duracao: 'Ate voce limpar os dados do navegador',
+  },
+  {
     chave: 'demo:subscription-status',
     categoria: 'essencial',
     finalidade:

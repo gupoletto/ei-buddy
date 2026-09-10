@@ -1,0 +1,53 @@
+.skeleton {
+  display: block;
+  flex: none;
+  background: linear-gradient(
+    90deg,
+    var(--app-field) 25%,
+    var(--app-field-hover) 37%,
+    var(--app-field) 63%
+  );
+  background-size: 400% 100%;
+  animation: skeletonBrilho 1.4s ease infinite;
+}
+
+@keyframes skeletonBrilho {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.linhas {
+  display: grid;
+  gap: 14px;
+  padding: 4px 0;
+}
+
+.linha {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.linhaTexto {
+  display: grid;
+  gap: 8px;
+  flex: 1;
+}
+
+.cartoes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 14px;
+}
+
+.cartao {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+}

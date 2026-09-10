@@ -18,6 +18,7 @@ import {
 import { formatMoney } from '@/lib/format'
 import { maskCPF, maskPhone, validateCPF } from '@/lib/validation'
 import { Card, EmptyState, PageHeader } from '@/components/ui/UI'
+import { SkeletonLinhas } from '@/components/ui/Skeleton'
 import { Button, ButtonLink } from '@/components/ui/Button'
 import Toast from '@/components/ui/Toast'
 import { Spinner } from '@/components/auth/Fields'
@@ -291,7 +292,7 @@ function EtapaCliente({
         </label>
 
         {carregando ? (
-          <EmptyState title="Carregando" description="Buscando os clientes da loja." />
+          <SkeletonLinhas />
         ) : erro !== null ? (
           <EmptyState
             title="Não foi possível buscar"

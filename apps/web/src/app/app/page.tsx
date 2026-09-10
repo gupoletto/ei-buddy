@@ -144,6 +144,7 @@ export default async function VisaoGeralPage() {
             <EmptyState
               title="Nenhuma venda ainda"
               description="A primeira venda aparece aqui assim que você fechar o caixa."
+              mascote
             />
           ) : (
             <ul className={styles.rows}>

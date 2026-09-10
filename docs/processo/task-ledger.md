@@ -50,8 +50,8 @@ consome. A porta é declarada pelo núcleo; a seta aponta para dentro
 
 |                               | Tarefas | Dias |
 | ----------------------------- | ------: | ---: |
-| Total                         |      78 |  201 |
-| ✅ Concluídas                 |      68 |  166 |
+| Total                         |      79 |  202 |
+| ✅ Concluídas                 |      69 |  167 |
 | 🚧 Bloqueadas por decisão     |       7 |   25 |
 | 🚧 Bloqueadas por dependência |       1 |    2 |
 | ⬜ A fazer, pode começar hoje |       2 |    8 |
@@ -214,6 +214,7 @@ voltam a ⬜.
 | NR-097 | `web` + `mobile`: vocabulário e campos (venda, suporte, endereço, categoria)            |   🟢   | `web` `mobile`   |   2 | NR-096                                 | —    | US-014–019, US-062         |   ✅   |
 | NR-098 | Merge do baseline na `main` e `infra:reset` no setup                                    |   🟠   | `repo` `infra`   |   1 | NR-095, NR-096, NR-097                 | —    | RNF-048                    |   ✅   |
 | NR-099 | Tema claro do painel: alternancia com persistencia e paridade AA de contraste           |   🟢   | `web` `ui`       |   1 | —                                      | —    | RNF-055                    |   ✅   |
+| NR-100 | Polish do painel: som e animacao na venda fechada, skeleton e mascote nos vazios        |   🟢   | `web`            |   1 | —                                      | —    | RNF-055                    |   ✅   |
 
 ---
 
@@ -331,10 +332,10 @@ passou a ser retrabalho: trocar os tokens quando a marca fechar.
 | ------------------------------- | ------: | ---: | ---------------------------------------------- |
 | 🔵 1 — Núcleo & Dados           |      30 |   73 | catálogo 0909 (NR-089–095) mesclado            |
 | 🟠 2 — Plataforma & Integrações |      28 |   75 | a mais carregada; Asaas fechou 3 decisões dela |
-| 🟢 3 — Clientes                 |      18 |   48 | vocabulário 0909 na web/mobile (NR-097)        |
+| 🟢 3 — Clientes                 |      19 |   49 | vocabulário 0909 na web/mobile (NR-097)        |
 | Compartilhada                   |       2 |    5 | documentação (NR-002, NR-088)                  |
 
-Somando: **201 dias-desenvolvedor** em 78 tarefas. Com 3 pessoas, isso é cerca
+Somando: **202 dias-desenvolvedor** em 79 tarefas. Com 3 pessoas, isso é cerca
 de 13 semanas de trabalho — desde que nada fique bloqueado, o que não é o caso
 hoje.
 

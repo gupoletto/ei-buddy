@@ -16,6 +16,7 @@ import {
 import type { StatusTitulo } from '@/lib/types'
 import { daysUntil, describeDueDate, formatDate, formatMoney, mesDeHoje } from '@/lib/format'
 import { Badge, Card, EmptyState, PageHeader, Stat } from '@/components/ui/UI'
+import { SkeletonLinhas } from '@/components/ui/Skeleton'
 import { Button } from '@/components/ui/Button'
 import Toast from '@/components/ui/Toast'
 import { IconFilter, IconPlus, IconUpload } from '@/components/Icons'
@@ -428,7 +429,7 @@ export default function ContasView({ tipo }: { tipo: 'pagar' | 'receber' }) {
 
         {/* --- Lista --- */}
         {carregando ? (
-          <EmptyState title="Carregando contas" description="Buscando os titulos em aberto." />
+          <SkeletonLinhas />
         ) : erroCarga !== null ? (
           <EmptyState
             title="Não deu para carregar as contas"
@@ -440,32 +441,29 @@ export default function ContasView({ tipo }: { tipo: 'pagar' | 'receber' }) {
             }
           />
         ) : filtradas.length === 0 ? (
-          <EmptyState
-            title={
-              linhas.length === 0
-                ? pagar
-                  ? 'Nenhuma conta a pagar'
-                  : 'Nenhuma conta a receber'
-                : 'Nenhum título encontrado'
-            }
-            description={
-              linhas.length === 0
-                ? 'Lance o primeiro título para acompanhar vencimentos e baixas.'
-                : 'Nenhum resultado para estes filtros.'
-            }
-            action={
-              linhas.length === 0 ? (
+          linhas.length === 0 ? (
+            <EmptyState
+              title={pagar ? 'Nenhuma conta a pagar' : 'Nenhuma conta a receber'}
+              description="Lance o primeiro título para acompanhar vencimentos e baixas."
+              mascote
+              action={
                 <Button onClick={() => setLancando(true)}>
                   <IconPlus size={17} />
                   Novo lancamento
                 </Button>
-              ) : (
+              }
+            />
+          ) : (
+            <EmptyState
+              title="Nenhum título encontrado"
+              description="Nenhum resultado para estes filtros."
+              action={
                 <Button variant="secondary" onClick={limparFiltros}>
                   Limpar filtros
                 </Button>
-              )
-            }
-          />
+              }
+            />
+          )
         ) : (
           <ul className={styles.titulos}>
             {filtradas.map((l) => {

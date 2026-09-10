@@ -364,3 +364,25 @@ export function IconMoon({ size = 24, className }: IconProps) {
     </svg>
   )
 }
+
+/** Som ligado: alto-falante com ondas. */
+export function IconSom({ size = 24, className }: IconProps) {
+  return (
+    <svg {...svgProps(size, className)}>
+      <path d="M4 9.5h3.2L11 6v12l-3.8-3.5H4v-5Z" />
+      <path d="M15 9a4 4 0 0 1 0 6" />
+      <path d="M17.3 6.7a7.5 7.5 0 0 1 0 10.6" />
+    </svg>
+  )
+}
+
+/** Som desligado: alto-falante com um X. */
+export function IconSomMudo({ size = 24, className }: IconProps) {
+  return (
+    <svg {...svgProps(size, className)}>
+      <path d="M4 9.5h3.2L11 6v12l-3.8-3.5H4v-5Z" />
+      <path d="M15.5 10 19 13.5" />
+      <path d="M19 10 15.5 13.5" />
+    </svg>
+  )
+}

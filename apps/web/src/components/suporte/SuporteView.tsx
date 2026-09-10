@@ -11,6 +11,7 @@ import {
 } from '@/lib/suporte-api'
 import { formatDate } from '@/lib/format'
 import { Badge, Card, EmptyState, PageHeader, Stat } from '@/components/ui/UI'
+import { SkeletonLinhas } from '@/components/ui/Skeleton'
 import { Button } from '@/components/ui/Button'
 import Toast from '@/components/ui/Toast'
 import { Spinner } from '@/components/auth/Fields'
@@ -95,7 +96,7 @@ export default function SuporteView() {
           lojista abrir um chamado repetido achando que o anterior sumiu.
         */}
         {carregando ? (
-          <EmptyState title="Carregando seus chamados" description="Um instante." />
+          <SkeletonLinhas />
         ) : erroCarga !== null ? (
           <EmptyState
             title="Não deu para carregar os chamados"
@@ -117,6 +118,7 @@ export default function SuporteView() {
           <EmptyState
             title="Nenhum chamado por aqui"
             description="Se algo não funcionou como esperado, abra um chamado. O time responde por aqui mesmo e você acompanha tudo nesta tela."
+            mascote
             action={
               <Button onClick={() => setCriando(true)}>
                 <IconPlus size={16} />

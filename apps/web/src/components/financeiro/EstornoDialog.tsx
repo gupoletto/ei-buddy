@@ -11,6 +11,7 @@ import {
 import { formatDate, formatMoney } from '@/lib/format'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/UI'
+import { SkeletonLinhas } from '@/components/ui/Skeleton'
 import { Spinner } from '@/components/auth/Fields'
 import { IconClose } from '@/components/Icons'
 import styles from './financeiro.module.css'
@@ -173,7 +174,7 @@ export default function EstornoDialog({
         </div>
 
         {baixas === null ? (
-          <EmptyState title="Carregando o histórico" description="Buscando as baixas do título." />
+          <SkeletonLinhas />
         ) : erroCarga !== null ? (
           <EmptyState title="Não deu para carregar as baixas" description={erroCarga} />
         ) : baixas.length === 0 ? (

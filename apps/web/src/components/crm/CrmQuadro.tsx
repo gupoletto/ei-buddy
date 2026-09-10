@@ -166,20 +166,23 @@ export default function CrmQuadro() {
         </div>
 
         {filtrados.length === 0 ? (
-          <EmptyState
-            title={cards.length === 0 ? 'Nada no CRM ainda' : 'Nenhum card com estes filtros'}
-            description={
-              cards.length === 0
-                ? 'Pendências e contatos lançados na tela de Clientes aparecem aqui automaticamente. Você também pode lançar direto por esta tela.'
-                : 'Ajuste os filtros para ver outros cards.'
-            }
-            action={
-              cards.length === 0 ? (
+          cards.length === 0 ? (
+            <EmptyState
+              title="Nada no CRM ainda"
+              description="Pendências e contatos lançados na tela de Clientes aparecem aqui automaticamente. Você também pode lançar direto por esta tela."
+              mascote
+              action={
                 <Button onClick={() => setCriando(true)}>
                   <IconPlus size={16} />
                   Lançar a primeira
                 </Button>
-              ) : (
+              }
+            />
+          ) : (
+            <EmptyState
+              title="Nenhum card com estes filtros"
+              description="Ajuste os filtros para ver outros cards."
+              action={
                 <Button
                   variant="secondary"
                   onClick={() => {
@@ -190,9 +193,9 @@ export default function CrmQuadro() {
                 >
                   Limpar filtros
                 </Button>
-              )
-            }
-          />
+              }
+            />
+          )
         ) : visao === 'quadro' ? (
           /* ============ Quadro Kanban ============ */
           <div className={styles.quadro}>

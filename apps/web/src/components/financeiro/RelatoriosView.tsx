@@ -12,6 +12,7 @@ import {
 import { formatMoney } from '@/lib/format'
 import { Button } from '@/components/ui/Button'
 import { Card, EmptyState, Field, Input, PageHeader } from '@/components/ui/UI'
+import { SkeletonLinhas } from '@/components/ui/Skeleton'
 import styles from './relatorios.module.css'
 
 /**
@@ -169,7 +170,7 @@ export default function RelatoriosView() {
         ) : null}
 
         {carregando ? (
-          <EmptyState title="Montando os relatorios" description="Somando as vendas do periodo." />
+          <SkeletonLinhas />
         ) : erro !== null ? (
           <EmptyState
             title="Não deu para montar os relatórios"

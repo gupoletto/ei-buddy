@@ -13,6 +13,7 @@ import PaymentOverdueBanner from '../billing/PaymentOverdueBanner'
 import PaymentRequiredModal from '../billing/PaymentRequiredModal'
 import { useSubscription } from '../billing/SubscriptionProvider'
 import ThemeToggle from './ThemeToggle'
+import SomToggle from './SomToggle'
 import {
   IconBag,
   IconBank,
@@ -311,6 +312,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
           <div className={styles.topActions}>
             <ThemeToggle />
+            <SomToggle />
 
             {/*
               O ponto so acende quando HA aviso.

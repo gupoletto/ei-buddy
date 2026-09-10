@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/auth/Fields'
 import { IconBarcode, IconClose } from '@/components/Icons'
+import { tocarBipe } from '@/lib/som'
 import styles from './leitor.module.css'
 
 /**
@@ -88,6 +89,11 @@ export default function LeitorCodigoBarras({
           try {
             const encontrados = await detector.detect(videoRef.current)
             if (encontrados.length > 0 && encontrados[0].rawValue) {
+              /* Bipe e vibracao curta: a mesma confirmacao de uma leitora de
+                 mercado de verdade — sem isso, nada avisa que capturou antes
+                 do modal fechar. */
+              tocarBipe()
+              if (navigator.vibrate) navigator.vibrate(60)
               onDetectar(encontrados[0].rawValue)
               onClose()
             }
