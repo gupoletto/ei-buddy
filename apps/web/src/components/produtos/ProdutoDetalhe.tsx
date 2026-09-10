@@ -26,10 +26,10 @@ import styles from './detalhe.module.css'
  * venda. A tela traduz para quem le, sem perder a distincao.
  */
 const CAUSA: Record<CausaDoMovimento, string> = {
-  adjustment: 'Ajuste de inventario',
+  adjustment: 'Ajuste de inventário',
   sale: 'Venda',
   sale_cancelled: 'Venda cancelada',
-  sale_returned: 'Devolucao',
+  sale_returned: 'Devolução',
 }
 
 export default function ProdutoDetalhe({ produtoId }: { produtoId: string }) {
@@ -122,7 +122,7 @@ export default function ProdutoDetalhe({ produtoId }: { produtoId: string }) {
         <Card>
           <EmptyState
             title="Nao foi possivel abrir a ficha"
-            description={erro ?? 'Este produto nao existe ou nao e da sua loja.'}
+            description={erro ?? 'Este produto não existe ou não é da sua loja.'}
             action={
               <Link href="/app/produtos" className={styles.verMais}>
                 Voltar ao catalogo
@@ -156,7 +156,7 @@ export default function ProdutoDetalhe({ produtoId }: { produtoId: string }) {
         <Stat
           label="Estoque atual"
           value={`${produto.estoque} ${produto.unidade}`}
-          hint={`minimo ${produto.estoqueMinimo} ${produto.unidade}`}
+          hint={`mínimo ${produto.estoqueMinimo} ${produto.unidade}`}
           tone={nivel === 'normal' ? 'positive' : 'warning'}
         />
         <Stat label="Preco de venda" value={formatMoney(produto.precoVenda)} />
@@ -223,8 +223,8 @@ export default function ProdutoDetalhe({ produtoId }: { produtoId: string }) {
         {/* --- Ajuste manual --- */}
         <Card title="Ajustar estoque">
           <p className={styles.ajusteNota}>
-            Use para corrigir a quantidade apos contagem, avaria ou perda. Informe o que existe de
-            fato na prateleira — a diferenca quem calcula e o sistema. O motivo fica registrado na
+            Use para corrigir a quantidade após contagem, avaria ou perda. Informe o que existe de
+            fato na prateleira — a diferença quem calcula é o sistema. O motivo fica registrado na
             trilha, e e o que permite entender depois por que o saldo mudou sem venda nem compra.
           </p>
 
@@ -267,7 +267,7 @@ export default function ProdutoDetalhe({ produtoId }: { produtoId: string }) {
           {movimentos.length === 0 ? (
             <EmptyState
               title="Nenhuma movimentacao ainda"
-              description="Baixas por venda, devolucoes e ajustes manuais aparecem aqui."
+              description="Baixas por venda, devoluções e ajustes manuais aparecem aqui."
             />
           ) : (
             <>

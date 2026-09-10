@@ -33,9 +33,9 @@ const delay = (ms: number) => new Promise((r) => setTimeout(r, ms))
 export type ColunaId = 'afazer' | 'andamento' | 'concluido'
 
 export const COLUNAS: { id: ColunaId; titulo: string; descricao: string }[] = [
-  { id: 'afazer', titulo: 'A fazer', descricao: 'Entrou e ainda nao foi tratado' },
-  { id: 'andamento', titulo: 'Em andamento', descricao: 'Alguem esta cuidando' },
-  { id: 'concluido', titulo: 'Concluido', descricao: 'Resolvido' },
+  { id: 'afazer', titulo: 'A fazer', descricao: 'Entrou e ainda não foi tratado' },
+  { id: 'andamento', titulo: 'Em andamento', descricao: 'Alguém está cuidando' },
+  { id: 'concluido', titulo: 'Concluído', descricao: 'Resolvido' },
 ]
 
 export type TipoCard = 'pendencia' | 'contato'
@@ -64,7 +64,7 @@ export type CardCrm = {
 }
 
 export const ROTULO_ORIGEM: Record<OrigemCard, string> = {
-  clientes: 'Lancado em Clientes',
+  clientes: 'Lançado em Clientes',
   financeiro: 'Veio do Financeiro',
   crm: 'Criado no CRM',
 }
@@ -108,7 +108,7 @@ export function listarCards(): CardCrm[] {
         cards.push({
           id: `crm-pd-${pendencia.id}`,
           titulo: `Cobrar ${pendencia.referente}`,
-          descricao: `Titulo vencido de ${cliente.nome}`,
+          descricao: `Título vencido de ${cliente.nome}`,
           tipo: 'pendencia',
           coluna: 'afazer',
           clienteId: cliente.id,
@@ -127,7 +127,7 @@ export function listarCards(): CardCrm[] {
     {
       id: 'crm-1',
       titulo: 'Retomar contato com quem sumiu',
-      descricao: 'Clientes sem comprar ha mais de 60 dias — mandar catalogo.',
+      descricao: 'Clientes sem comprar há mais de 60 dias — mandar catálogo.',
       tipo: 'contato',
       coluna: 'andamento',
       clienteId: 'cli-5',
@@ -140,7 +140,7 @@ export function listarCards(): CardCrm[] {
           id: 'cm-1',
           autor: 'Marina Alves',
           data: '2026-08-22',
-          texto: 'Mandei o catalogo de agosto. Aguardando resposta.',
+          texto: 'Mandei o catálogo de agosto. Aguardando resposta.',
         },
       ],
     },
@@ -197,7 +197,7 @@ export async function criarCard(
 ): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
   await delay(700)
 
-  if (!dados.titulo.trim()) return { ok: false, error: 'Informe o titulo.' }
+  if (!dados.titulo.trim()) return { ok: false, error: 'Informe o título.' }
   if (!dados.clienteNome.trim()) return { ok: false, error: 'Escolha o cliente.' }
 
   return { ok: true, id: `crm-${Date.now()}` }
@@ -219,7 +219,7 @@ export async function comentarCard(
   await delay(500)
   void id
 
-  if (!texto.trim()) return { ok: false, error: 'Escreva o comentario.' }
+  if (!texto.trim()) return { ok: false, error: 'Escreva o comentário.' }
 
   return {
     ok: true,

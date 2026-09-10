@@ -194,7 +194,7 @@ export default function BaixaModal({
                   valorCents > 0 && restanteCents > 0
                     ? `Restam ${formatMoney(restanteCents / 100)} em aberto`
                     : valorCents > 0 && restanteCents === 0
-                      ? 'Este valor quita o titulo'
+                      ? 'Este valor quita o título'
                       : undefined
                 }
                 placeholder="0,00"
@@ -225,10 +225,10 @@ export default function BaixaModal({
             </View>
 
             <Campo
-              rotulo={pagar ? 'Data da saida' : 'Data da entrada'}
+              rotulo={pagar ? 'Data da saída' : 'Data da entrada'}
               valor={dataBr}
               onChange={(v) => setDataBr(mascaraDeData(v))}
-              erro={dataBr.length === 10 && dataIso === null ? 'Data invalida.' : null}
+              erro={dataBr.length === 10 && dataIso === null ? 'Data inválida.' : null}
               placeholder="dd/mm/aaaa"
               tipoTeclado="numeric"
               editavel={!processando}

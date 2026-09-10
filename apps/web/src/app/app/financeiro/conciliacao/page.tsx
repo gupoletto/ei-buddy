@@ -3,8 +3,8 @@ import { BRAND } from '@/content/site'
 import ConciliacaoView from '@/components/financeiro/ConciliacaoView'
 
 export const metadata: Metadata = {
-  title: `Conciliacao bancaria — ${BRAND}`,
-  description: 'Confira o extrato do banco contra os lancamentos.',
+  title: `Conciliação bancária — ${BRAND}`,
+  description: 'Confira o extrato do banco contra os lançamentos.',
 }
 
 export default function ConciliacaoPage() {

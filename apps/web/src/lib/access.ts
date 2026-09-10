@@ -46,7 +46,7 @@ export const ACOES_LIBERADAS = [
 export const ACOES_BLOQUEADAS = [
   'Registrar novas vendas e emitir nota fiscal',
   'Cadastrar ou editar clientes e produtos',
-  'Lancar e dar baixa em contas',
+  'Lançar e dar baixa em contas',
   'Usar o assistente e gerar relatorios',
 ]
 

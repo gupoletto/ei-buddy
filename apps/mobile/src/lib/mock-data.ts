@@ -26,7 +26,7 @@ export const empresa: Empresa = {
   cnpj: '12.345.678/0001-90',
   inscricaoEstadual: '907.123.456.789',
   inscricaoMunicipal: '1.234.567-8',
-  ramoAtividade: 'Comercio varejista de alimentos',
+  ramoAtividade: 'Comércio varejista de alimentos',
   ddd: '41',
   celular: '99876-5432',
   email: 'contato@solnascente.com.br',
@@ -95,7 +95,7 @@ export const clientes: Cliente[] = [
       cep: '81530-000',
       logradouro: 'Rua Prof. Algacyr Munhoz',
       numero: '45',
-      bairro: 'Jardim das Americas',
+      bairro: 'Jardim das Américas',
       cidade: 'Curitiba',
       uf: 'PR',
     },
@@ -132,7 +132,7 @@ export const clientes: Cliente[] = [
     celular: '99222-9900',
     endereco: {
       cep: '80440-000',
-      logradouro: 'Rua Comendador Araujo',
+      logradouro: 'Rua Comendador Araújo',
       numero: '310',
       bairro: 'Centro',
       cidade: 'Curitiba',
@@ -148,11 +148,11 @@ export const produtos: Produto[] = [
   {
     id: 'prod-1',
     codigo: 'CAF500',
-    descricao: 'Cafe torrado e moido 500g',
+    descricao: 'Café torrado e moído 500g',
     ean: '7891000315507',
     ncm: '0901.21.00',
     categoria: 'Mercearia',
-    fornecedor: 'Torrefacao Aurora',
+    fornecedor: 'Torrefação Aurora',
     precoCusto: 14.2,
     precoVenda: 21.9,
     estoque: 4,
@@ -162,7 +162,7 @@ export const produtos: Produto[] = [
   {
     id: 'prod-2',
     codigo: 'ACU1KG',
-    descricao: 'Acucar mascavo 1kg',
+    descricao: 'Açúcar mascavo 1kg',
     ean: '7896002301459',
     ncm: '1701.13.00',
     categoria: 'Mercearia',
@@ -179,8 +179,8 @@ export const produtos: Produto[] = [
     descricao: 'Leite integral 1L',
     ean: '7891000053508',
     ncm: '0401.20.10',
-    categoria: 'Laticinios',
-    fornecedor: 'Laticinios Campo Verde',
+    categoria: 'Laticínios',
+    fornecedor: 'Laticínios Campo Verde',
     precoCusto: 3.8,
     precoVenda: 5.99,
     estoque: 6,
@@ -194,7 +194,7 @@ export const produtos: Produto[] = [
     ean: '7891234000112',
     ncm: '4823.20.90',
     categoria: 'Utilidades',
-    fornecedor: 'Torrefacao Aurora',
+    fornecedor: 'Torrefação Aurora',
     precoCusto: 5.1,
     precoVenda: 8.9,
     estoque: 9,
@@ -241,7 +241,7 @@ export const vendas: Venda[] = [
     itens: [
       {
         produtoId: 'prod-1',
-        descricao: 'Cafe torrado e moido 500g',
+        descricao: 'Café torrado e moído 500g',
         quantidade: 2,
         precoUnitario: 21.9,
         desconto: 0,
@@ -255,7 +255,7 @@ export const vendas: Venda[] = [
       },
       {
         produtoId: 'prod-2',
-        descricao: 'Acucar mascavo 1kg',
+        descricao: 'Açúcar mascavo 1kg',
         quantidade: 3,
         precoUnitario: 12.9,
         desconto: 4.5,
@@ -375,7 +375,7 @@ export const bancos: Banco[] = [
   },
   {
     id: 'bco-3',
-    nome: 'Caixa Economica',
+    nome: 'Caixa Econômica',
     agencia: '4321',
     conta: '00123-7',
     saldo: 2310.0,
@@ -387,7 +387,7 @@ export const bancos: Banco[] = [
 export const planoContas: PlanoContas[] = [
   { id: 'pc-1', nome: 'Fornecedores', tipo: 'despesa', gastoMes: 18420.0 },
   { id: 'pc-2', nome: 'Aluguel', tipo: 'despesa', gastoMes: 3800.0 },
-  { id: 'pc-3', nome: 'Energia e agua', tipo: 'despesa', gastoMes: 1042.3 },
+  { id: 'pc-3', nome: 'Energia e água', tipo: 'despesa', gastoMes: 1042.3 },
   { id: 'pc-4', nome: 'Folha de pagamento', tipo: 'despesa', gastoMes: 9600.0 },
   { id: 'pc-5', nome: 'Marketing', tipo: 'despesa', gastoMes: 780.0 },
   { id: 'pc-6', nome: 'Vendas de mercadoria', tipo: 'receita', gastoMes: 64200.0 },
@@ -406,9 +406,9 @@ export const custosFixos: CustoFixo[] = [
   },
   {
     id: 'cf-2',
-    nome: 'Energia eletrica',
+    nome: 'Energia elétrica',
     planoContasId: 'pc-3',
-    planoContasNome: 'Energia e agua',
+    planoContasNome: 'Energia e água',
     bancoId: 'bco-1',
     bancoNome: 'Banco do Brasil',
     diaVencimento: 12,
@@ -418,7 +418,7 @@ export const custosFixos: CustoFixo[] = [
     id: 'cf-3',
     nome: 'Internet e telefonia',
     planoContasId: 'pc-3',
-    planoContasNome: 'Energia e agua',
+    planoContasNome: 'Energia e água',
     bancoId: 'bco-2',
     bancoNome: 'Nubank PJ',
     diaVencimento: 15,
@@ -439,7 +439,7 @@ export const custosFixos: CustoFixo[] = [
 export const contasPagar: ContaPagar[] = [
   {
     id: 'cp-1',
-    fornecedor: 'Torrefacao Aurora',
+    fornecedor: 'Torrefação Aurora',
     planoContasId: 'pc-1',
     planoContasNome: 'Fornecedores',
     bancoId: 'bco-1',
@@ -452,7 +452,7 @@ export const contasPagar: ContaPagar[] = [
   },
   {
     id: 'cp-2',
-    fornecedor: 'Imobiliaria Centro',
+    fornecedor: 'Imobiliária Centro',
     planoContasId: 'pc-2',
     planoContasNome: 'Aluguel',
     bancoId: 'bco-1',
@@ -467,7 +467,7 @@ export const contasPagar: ContaPagar[] = [
     id: 'cp-3',
     fornecedor: 'Copel',
     planoContasId: 'pc-3',
-    planoContasNome: 'Energia e agua',
+    planoContasNome: 'Energia e água',
     bancoId: 'bco-1',
     bancoNome: 'Banco do Brasil',
     vencimento: '2026-09-01',
@@ -478,7 +478,7 @@ export const contasPagar: ContaPagar[] = [
   },
   {
     id: 'cp-4',
-    fornecedor: 'Laticinios Campo Verde',
+    fornecedor: 'Laticínios Campo Verde',
     planoContasId: 'pc-1',
     planoContasNome: 'Fornecedores',
     bancoId: 'bco-2',
@@ -512,7 +512,7 @@ export const contasPagar: ContaPagar[] = [
     vencimento: '2026-08-10',
     valor: 890.0,
     valorPago: 890.0,
-    descricao: 'Honorarios de agosto',
+    descricao: 'Honorários de agosto',
     status: 'pago',
   },
 ]
@@ -602,7 +602,7 @@ export const compromissos: Compromisso[] = [
   },
   {
     id: 'ag-2',
-    titulo: 'Pagar Torrefacao Aurora',
+    titulo: 'Pagar Torrefação Aurora',
     data: '2026-08-24',
     hora: '14:00',
     tipo: 'pagamento',
@@ -619,7 +619,7 @@ export const compromissos: Compromisso[] = [
   },
   {
     id: 'ag-4',
-    titulo: 'Reuniao com contador',
+    titulo: 'Reunião com contador',
     data: '2026-08-26',
     hora: '16:00',
     tipo: 'reuniao',
@@ -637,10 +637,10 @@ export const compromissos: Compromisso[] = [
 
 /** Ramos de atividade oferecidos no cadastro da empresa. */
 export const ramosAtividade = [
-  'Comercio varejista de alimentos',
+  'Comércio varejista de alimentos',
   'Restaurante e lanchonete',
-  'Moda e vestuario',
-  'Saude e bem-estar',
-  'Casa e construcao',
-  'Servicos em geral',
+  'Moda e vestuário',
+  'Saúde e bem-estar',
+  'Casa e construção',
+  'Serviços em geral',
 ]

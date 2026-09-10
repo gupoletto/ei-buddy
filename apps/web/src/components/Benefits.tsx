@@ -36,12 +36,12 @@ export default function Benefits() {
     <section className="section">
       <div className="container">
         <header className={styles.head}>
-          <span className="eyebrow">Feito para o seu negocio</span>
+          <span className="eyebrow">Feito para o seu negócio</span>
           <h2 className="sectionTitle">
             O que muda no seu <span className="gradientText">dia a dia</span>
           </h2>
           <p className="sectionLead">
-            Nada aqui e promessa de futuro: cada item abaixo corresponde a uma tela que ja existe no
+            Nada aqui é promessa de futuro: cada item abaixo corresponde a uma tela que já existe no
             sistema.
           </p>
         </header>

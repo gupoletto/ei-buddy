@@ -257,11 +257,11 @@ export default function Suporte() {
             onChange={setDescricao}
             erro={
               descricaoCurta
-                ? 'Conte o que aconteceu — quanto mais detalhe, mais rapida a resposta.'
+                ? 'Conte o que aconteceu — quanto mais detalhe, mais rápida a resposta.'
                 : null
             }
-            dica="O que voce fez, e o que apareceu na tela."
-            placeholder="Conte o que voce fez e o que apareceu"
+            dica="O que você fez, e o que apareceu na tela."
+            placeholder="Conte o que você fez e o que apareceu"
             editavel={!enviando}
           />
 
@@ -280,7 +280,7 @@ export default function Suporte() {
           <Vazio titulo="Carregando" descricao="Buscando seus chamados." />
         ) : erroCarga !== null ? (
           <Vazio
-            titulo="Nao foi possivel carregar"
+            titulo="Não foi possível carregar"
             /* Puxar para atualizar continua valendo: no balcao o sinal cai, e o
                caminho de tentar de novo tem de estar a mao. */
             descricao={`${erroCarga} Puxe para baixo para tentar de novo.`}
@@ -307,7 +307,7 @@ export default function Suporte() {
               {carregandoDetalhe === c.id ? (
                 <Text style={estilos.apoio}>Carregando a conversa...</Text>
               ) : c.mensagens.length === 0 ? (
-                <Text style={estilos.apoio}>Nao deu para carregar a conversa.</Text>
+                <Text style={estilos.apoio}>Não deu para carregar a conversa.</Text>
               ) : (
                 c.mensagens.map((m) => (
                   <View
@@ -315,7 +315,7 @@ export default function Suporte() {
                     style={[estilos.mensagem, m.autor === 'suporte' && estilos.mensagemSuporte]}
                   >
                     <Text style={estilos.mensagemDe}>
-                      {m.autor === 'suporte' ? m.autorNome : 'Voce'} · {formatDateTime(m.data)}
+                      {m.autor === 'suporte' ? m.autorNome : 'Você'} · {formatDateTime(m.data)}
                     </Text>
                     <Text style={estilos.mensagemTexto}>{m.texto}</Text>
                     {m.anexo !== null ? (

@@ -117,7 +117,7 @@ export default function Inicio() {
   return (
     <SafeAreaView style={estilos.tela} edges={['top']}>
       <Cabecalho
-        titulo={s === null ? 'Ola' : s.nome === null ? s.texto : `${s.texto}, ${s.nome}`}
+        titulo={s === null ? 'Olá' : s.nome === null ? s.texto : `${s.texto}, ${s.nome}`}
         subtitulo={s === null ? 'Carregando...' : s.data}
       />
 
@@ -177,14 +177,14 @@ export default function Inicio() {
           style={({ pressed }) => [estilos.atalho, pressed && estilos.atalhoPressionado]}
           onPress={() => router.push('/pdv')}
           accessibilityRole="button"
-          accessibilityLabel="Abrir o balcao para bipar produto e fechar venda"
+          accessibilityLabel="Abrir o balcão para bipar produto e fechar venda"
         >
-          <Text style={estilos.atalhoTexto}>Abrir o balcao</Text>
+          <Text style={estilos.atalhoTexto}>Abrir o balcão</Text>
           <Text style={estilos.atalhoApoio}>Bipar produto e fechar venda</Text>
         </Pressable>
 
         <Sanfona
-          titulo="Ultimas vendas"
+          titulo="Últimas vendas"
           resumo={estado.vendas === null ? '—' : `${estado.vendas.length} recentes`}
           inicialAberta
         >
@@ -192,14 +192,14 @@ export default function Inicio() {
             itens={estado.vendas}
             carregando={carregando}
             vazio="Nenhuma venda ainda. A primeira aparece aqui."
-            erro="Nao deu para carregar as vendas."
+            erro="Não deu para carregar as vendas."
             chave={(v) => v.id}
           >
             {(v) => (
               <View style={estilos.linha}>
                 <Text style={estilos.linhaId}>#{v.number}</Text>
                 <Text style={estilos.linhaTexto} numberOfLines={1}>
-                  {v.customerName ?? 'Venda de balcao'}
+                  {v.customerName ?? 'Venda de balcão'}
                 </Text>
                 <Text style={estilos.linhaValor}>{formatMoney(emReais(v.netAmountCents))}</Text>
               </View>
@@ -220,7 +220,7 @@ export default function Inicio() {
             itens={estado.contas}
             carregando={carregando}
             vazio="Nenhuma conta em aberto."
-            erro="Nao deu para carregar as contas."
+            erro="Não deu para carregar as contas."
             chave={(c) => c.id}
             limite={5}
           >
@@ -252,8 +252,8 @@ export default function Inicio() {
           <Lista
             itens={estado.repor}
             carregando={carregando}
-            vazio="Nada abaixo do minimo. Estoque em ordem."
-            erro="Nao deu para carregar o estoque."
+            vazio="Nada abaixo do mínimo. Estoque em ordem."
+            erro="Não deu para carregar o estoque."
             chave={(p) => p.id}
           >
             {(p) => (
@@ -262,7 +262,7 @@ export default function Inicio() {
                   <Text style={estilos.linhaTexto} numberOfLines={1}>
                     {p.description}
                   </Text>
-                  <Text style={estilos.linhaApoio}>minimo {p.minStock} un</Text>
+                  <Text style={estilos.linhaApoio}>mínimo {p.minStock} un</Text>
                 </View>
                 <Text style={[estilos.linhaValor, estilos.alerta]}>{p.stock} un</Text>
               </View>

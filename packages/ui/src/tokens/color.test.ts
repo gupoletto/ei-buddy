@@ -130,6 +130,41 @@ describe('cor institucional como texto no tema escuro', () => {
   })
 })
 
+/**
+ * O mesmo teste do lado claro — NR-099.
+ *
+ * O painel ganhou tema claro opcional (alem do escuro, que continua padrao).
+ * `accent` e `accentDark` sao tons de POP para fundo escuro e falham como
+ * texto sobre claro — e `accentText` e o token que existe exatamente para
+ * cobrir esse uso. Sem este teste, trocar `accentText` por um tom mais
+ * vibrante (a tentação de quem for "melhorar" a cor) voltaria a quebrar o
+ * painel claro em silêncio.
+ */
+const superficiesClaras = [
+  ['tela do painel', light.bgMuted],
+  ['cartao', light.bg],
+] as const
+
+describe('cor institucional como texto no tema claro do painel', () => {
+  it.each(superficiesClaras)('accentText serve como texto sobre %s', (_onde, fundo) => {
+    expect(meetsAA(brand.accentText, fundo)).toBe(true)
+  })
+
+  it.each(superficiesClaras)(
+    'accent (o tom vibrante) NAO serve como texto sobre %s',
+    (_onde, fundo) => {
+      expect(meetsAA(brand.accent, fundo)).toBe(false)
+    },
+  )
+
+  it.each(superficiesClaras)(
+    'accentDark tambem NAO serve — e mais escuro, mas nao o bastante',
+    (_onde, fundo) => {
+      expect(meetsAA(brand.accentDark, fundo)).toBe(false)
+    },
+  )
+})
+
 describe('a paleta da marca nao se confunde com feedback', () => {
   it('nenhuma cor de feedback repete uma cor institucional', () => {
     const institucionais = new Set<string>(Object.values(brand))

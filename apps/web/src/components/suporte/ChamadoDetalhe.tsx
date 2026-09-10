@@ -181,7 +181,7 @@ export default function ChamadoDetalhe({
         <form onSubmit={enviar} className={styles.respostaForm}>
           {encerrado ? (
             <p className={styles.reabrirAviso}>
-              Este chamado foi encerrado. Se ainda precisar de ajuda, e so responder — ele reabre
+              Este chamado foi encerrado. Se ainda precisar de ajuda, é só responder — ele reabre
               automaticamente.
             </p>
           ) : null}
@@ -190,7 +190,7 @@ export default function ChamadoDetalhe({
             className={`${styles.input} ${styles.textarea}`}
             value={resposta}
             onChange={(e) => setResposta(e.target.value)}
-            placeholder="Escreva sua resposta ou acrescente informacao"
+            placeholder="Escreva sua resposta ou acrescente informação"
             rows={3}
             aria-label="Resposta"
           />

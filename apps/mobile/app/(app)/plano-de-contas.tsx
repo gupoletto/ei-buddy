@@ -33,19 +33,19 @@ export default function PlanoDeContas() {
     Alert.alert(
       'Contas geradas',
       r.jaExistiam > 0
-        ? `${r.geradas} gerada(s). ${r.jaExistiam} ja existiam neste mes e foram puladas.`
+        ? `${r.geradas} gerada(s). ${r.jaExistiam} já existiam neste mês e foram puladas.`
         : `${r.geradas} conta(s) a pagar gerada(s) para agosto.`,
     )
   }
 
   return (
     <SafeAreaView style={estilos.tela} edges={['top']}>
-      <Cabecalho titulo="Plano de contas" subtitulo={`${formatMoney(gastoMes)} de gasto no mes`} />
+      <Cabecalho titulo="Plano de contas" subtitulo={`${formatMoney(gastoMes)} de gasto no mês`} />
 
       <ScrollView contentContainerStyle={estilos.conteudo}>
         <Sanfona
           titulo="Custos fixos"
-          resumo={`${custos.length} · ${formatMoney(totalFixos)} por mes`}
+          resumo={`${custos.length} · ${formatMoney(totalFixos)} por mês`}
           inicialAberta
         >
           {custos.map((c) => (
@@ -66,7 +66,7 @@ export default function PlanoDeContas() {
           ))}
 
           <Botao onPress={gerar} carregando={gerando} largura>
-            {gerando ? 'Gerando...' : 'Gerar contas a pagar do mes'}
+            {gerando ? 'Gerando...' : 'Gerar contas a pagar do mês'}
           </Botao>
         </Sanfona>
 

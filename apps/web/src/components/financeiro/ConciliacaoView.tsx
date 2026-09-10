@@ -113,8 +113,8 @@ export default function ConciliacaoView() {
     setToast({
       msg:
         imported === 0 && ignored > 0
-          ? `Nenhuma nova: as ${ignored} transacoes do arquivo ja estavam aqui.`
-          : `${imported} transacoes importadas${ignored > 0 ? `, ${ignored} ja existiam` : ''}.`,
+          ? `Nenhuma nova: as ${ignored} transações do arquivo já estavam aqui.`
+          : `${imported} transações importadas${ignored > 0 ? `, ${ignored} já existiam` : ''}.`,
       tone: 'success',
     })
 
@@ -126,8 +126,8 @@ export default function ConciliacaoView() {
   return (
     <>
       <PageHeader
-        title="Conciliacao bancaria"
-        subtitle="Confira o extrato contra os lancamentos"
+        title="Conciliação bancária"
+        subtitle="Confira o extrato contra os lançamentos"
         actions={
           <>
             <input
@@ -149,7 +149,7 @@ export default function ConciliacaoView() {
         <Stat
           label="Falta conferir"
           value={String(pendentes)}
-          hint={pendentes === 0 ? 'Extrato em dia' : 'transacoes do extrato sem lancamento'}
+          hint={pendentes === 0 ? 'Extrato em dia' : 'transações do extrato sem lançamento'}
         />
 
         <div className={styles.abas}>
@@ -173,7 +173,7 @@ export default function ConciliacaoView() {
           <EmptyState title="Carregando o extrato" description="Buscando as transacoes." />
         ) : erroCarga !== null ? (
           <EmptyState
-            title="Nao deu para carregar o extrato"
+            title="Não deu para carregar o extrato"
             description={erroCarga}
             action={
               <Button variant="secondary" onClick={recarregar}>
@@ -183,10 +183,10 @@ export default function ConciliacaoView() {
           />
         ) : transacoes.length === 0 ? (
           <EmptyState
-            title={fila ? 'Nada para conferir' : 'Nenhuma conciliacao ainda'}
+            title={fila ? 'Nada para conferir' : 'Nenhuma conciliação ainda'}
             description={
               fila
-                ? 'Importe um extrato em OFX ou CSV para comecar a conferencia.'
+                ? 'Importe um extrato em OFX ou CSV para começar a conferência.'
                 : 'As transacoes que voce conciliar aparecem aqui, e podem ser desfeitas.'
             }
           />
@@ -248,7 +248,7 @@ export default function ConciliacaoView() {
           onPronto={() => {
             setDesfazendo(null)
             setToast({
-              msg: 'Conciliacao desfeita. Os dois voltaram para a fila.',
+              msg: 'Conciliação desfeita. Os dois voltaram para a fila.',
               tone: 'success',
             })
             recarregar()
@@ -351,7 +351,7 @@ function ConciliarDialog({
       <div className={styles.dialogPainel}>
         <header className={styles.dialogCabecalho}>
           <div>
-            <h2 className={styles.dialogTitulo}>Conciliar transacao</h2>
+            <h2 className={styles.dialogTitulo}>Conciliar transação</h2>
             <p className={styles.dialogResumo}>
               {formatDate(transacao.postedOn)} · {transacao.description} ·{' '}
               {formatMoney(emReais(transacao.amountCents))}
@@ -363,7 +363,7 @@ function ConciliarDialog({
         </header>
 
         {carregando ? (
-          <p className={styles.aviso}>Procurando lancamentos que batem...</p>
+          <p className={styles.aviso}>Procurando lançamentos que batem...</p>
         ) : (
           <>
             {sugestoes.length > 0 ? (
@@ -378,7 +378,7 @@ function ConciliarDialog({
                     <div className={styles.sugestaoDados}>
                       <span>vence {formatDate(s.entry.dueDate)}</span>
                       <span>
-                        {s.daysApart === 0 ? 'mesmo dia' : `${s.daysApart} dia(s) de diferenca`}
+                        {s.daysApart === 0 ? 'mesmo dia' : `${s.daysApart} dia(s) de diferença`}
                       </span>
                       {/* So quando difere: o liquido explica por que o extrato
                           traz menos que o titulo (taxa da adquirente, RF-036).
@@ -399,15 +399,15 @@ function ConciliarDialog({
               </ul>
             ) : (
               <p className={styles.aviso}>
-                Nenhum lancamento bate com esta transacao. Crie-o a partir dela abaixo.
+                Nenhum lançamento bate com esta transação. Crie-o a partir dela abaixo.
               </p>
             )}
 
             {criando ? (
               <div className={styles.formCriar}>
                 <p className={styles.aviso}>
-                  Valor e data saem do extrato e nao podem ser mudados aqui — e o que garante que o
-                  lancamento corresponde a linha que voce esta conciliando.
+                  Valor e data saem do extrato e não podem ser mudados aqui — é o que garante que o
+                  lançamento corresponde à linha que você está conciliando.
                 </p>
 
                 <Field label="Fornecedor ou origem">
@@ -418,7 +418,7 @@ function ConciliarDialog({
                   />
                 </Field>
 
-                <Field label="Descricao">
+                <Field label="Descrição">
                   <Textarea
                     value={descricao}
                     onChange={(e) => setDescricao(e.target.value)}
@@ -429,7 +429,7 @@ function ConciliarDialog({
               </div>
             ) : (
               <button type="button" className={styles.alternativa} onClick={() => setCriando(true)}>
-                Nenhuma serve — criar o lancamento a partir desta transacao
+                Nenhuma serve — criar o lançamento a partir desta transação
               </button>
             )}
           </>
@@ -496,7 +496,7 @@ function DesfazerDialog({
       <div className={styles.dialogPainel}>
         <header className={styles.dialogCabecalho}>
           <div>
-            <h2 className={styles.dialogTitulo}>Desfazer conciliacao</h2>
+            <h2 className={styles.dialogTitulo}>Desfazer conciliação</h2>
             {/* O que ela conciliou, e nao so o valor: "desfazer R$ 340,00" nao
                 diz se e essa mesmo. */}
             <p className={styles.dialogResumo}>
@@ -510,7 +510,7 @@ function DesfazerDialog({
         </header>
 
         <p className={styles.aviso}>
-          A transacao e o lancamento voltam para a fila. O lancamento NAO e apagado.
+          A transação e o lançamento voltam para a fila. O lançamento NÃO é apagado.
         </p>
 
         <Field label="Por que esta desfazendo?">

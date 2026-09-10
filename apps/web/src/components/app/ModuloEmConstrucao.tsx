@@ -25,7 +25,7 @@ export default function ModuloEmConstrucao({
       <PageHeader title={titulo} subtitle={subtitulo} />
 
       <section className={styles.card}>
-        <span className={styles.badge}>Em construcao</span>
+        <span className={styles.badge}>Em construção</span>
 
         <h2 className={styles.title}>O que esta tela vai ter</h2>
 
@@ -39,8 +39,8 @@ export default function ModuloEmConstrucao({
         </ul>
 
         <p className={styles.note}>
-          A rota e a navegacao ja estao ligadas. O conteudo entra na proxima etapa, seguindo o mesmo
-          design das telas ja prontas.
+          A rota e a navegação já estão ligadas. O conteúdo entra na próxima etapa, seguindo o mesmo
+          design das telas já prontas.
         </p>
       </section>
     </>

@@ -4,7 +4,7 @@ import LoginForm from '@/components/auth/LoginForm'
 
 export const metadata: Metadata = {
   title: `Entrar — ${BRAND}`,
-  description: 'Acesse o painel do seu negocio.',
+  description: 'Acesse o painel do seu negócio.',
 }
 
 export default function EntrarPage() {

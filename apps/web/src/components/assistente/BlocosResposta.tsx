@@ -94,7 +94,7 @@ export default function BlocosResposta({
                     Confirmar
                   </Button>
                   <Button size="sm" variant="secondary" onClick={() => onAcao('cancelar')}>
-                    Agora nao
+                    Agora não
                   </Button>
                 </div>
               </div>

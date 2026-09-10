@@ -65,11 +65,11 @@ export default function PaymentRequiredModal() {
         <span className={styles.modalBadge}>Pagamento pendente</span>
 
         <h2 id="modal-bloqueio-titulo" className={styles.modalTitle}>
-          Regularize para voltar a usar este modulo
+          Regularize para voltar a usar este módulo
         </h2>
 
         <p className={styles.modalText}>
-          Seu acesso esta em modo restrito porque a ultima fatura ainda nao foi confirmada. Seus
+          Seu acesso está em modo restrito porque a última fatura ainda não foi confirmada. Seus
           dados continuam salvos e nada foi apagado.
         </p>
 
@@ -106,7 +106,7 @@ export default function PaymentRequiredModal() {
             Regularizar pagamento
           </Link>
           <button type="button" className={styles.modalGhost} onClick={fecharModal}>
-            Agora nao
+            Agora não
           </button>
         </div>
       </div>

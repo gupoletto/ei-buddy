@@ -70,7 +70,7 @@ export async function entrar(credencial: string, senha: string): Promise<Resulta
   if (sessao.memberships.length === 0) {
     return {
       estado: 'falhou',
-      erro: 'Sua conta ainda nao esta ligada a nenhuma loja. Fale com quem administra.',
+      erro: 'Sua conta ainda não está ligada a nenhuma loja. Fale com quem administra.',
     }
   }
 

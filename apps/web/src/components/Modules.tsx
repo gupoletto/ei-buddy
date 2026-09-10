@@ -27,13 +27,13 @@ export default function Modules() {
     <section className="section" id="modulos">
       <div className="container">
         <header className={styles.head}>
-          <span className="eyebrow">Modulos</span>
+          <span className="eyebrow">Módulos</span>
           <h2 className="sectionTitle">
-            Sete modulos, um <span className="gradientText">unico</span> banco de dados
+            Sete módulos, um <span className="gradientText">único</span> banco de dados
           </h2>
           <p className="sectionLead">
-            Cada modulo resolve uma parte da operacao e devolve o resultado para os outros. A venda
-            baixa o estoque, lanca o recebivel e emite a nota no mesmo passo.
+            Cada módulo resolve uma parte da operação e devolve o resultado para os outros. A venda
+            baixa o estoque, lança o recebível e emite a nota no mesmo passo.
           </p>
         </header>
 

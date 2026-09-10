@@ -20,7 +20,7 @@ import { cores, espaco, fonte, peso, raio } from '@/theme/tokens'
 /** O papel na tela e em portugues, e nao o valor do contrato. */
 const PAPEL: Record<string, string> = {
   owner: 'Dono',
-  staff: 'Funcionario',
+  staff: 'Funcionário',
   accountant: 'Contador',
   platform_admin: 'Administrador',
 }
@@ -87,7 +87,7 @@ export default function Login() {
     const r = await escolherLoja(companyId)
 
     if (r.estado !== 'pronto') {
-      setErroGeral(r.estado === 'falhou' ? r.erro : 'Nao deu para abrir esta loja.')
+      setErroGeral(r.estado === 'falhou' ? r.erro : 'Não deu para abrir esta loja.')
       setCarregando(false)
       return
     }
@@ -118,8 +118,8 @@ export default function Login() {
             <Text style={estilos.titulo}>{escolhendo === null ? 'Entrar' : 'Qual loja?'}</Text>
             <Text style={estilos.subtitulo}>
               {escolhendo === null
-                ? 'Acesse o balcao do seu negocio.'
-                : `Ola, ${primeiroNome(nome)}. Voce tem acesso a mais de uma.`}
+                ? 'Acesse o balcão do seu negócio.'
+                : `Olá, ${primeiroNome(nome)}. Você tem acesso a mais de uma.`}
             </Text>
           </View>
 
@@ -165,7 +165,7 @@ export default function Login() {
               </Botao>
 
               <Text style={estilos.rodape}>
-                Criar conta e gerenciar assinatura ficam no site — este app e o balcao.
+                Criar conta e gerenciar assinatura ficam no site — este app é o balcão.
               </Text>
             </>
           ) : (

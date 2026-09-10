@@ -47,7 +47,7 @@ export async function buscarCpf(cpf: string): Promise<CpfResult> {
   if (!nome) {
     return {
       ok: false,
-      error: 'Consulta de CPF indisponivel. Preencha o nome manualmente.',
+      error: 'Consulta de CPF indisponível. Preencha o nome manualmente.',
       indisponivel: true,
     }
   }

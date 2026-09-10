@@ -165,7 +165,7 @@ export default function PlanoDeContasView() {
     <>
       <PageHeader
         title="Plano de contas"
-        subtitle="Estrutura de receitas e despesas, e custos fixos do negocio"
+        subtitle="Estrutura de receitas e despesas, e custos fixos do negócio"
         actions={
           <Button onClick={gerarContas} disabled={gerando || custos.length === 0}>
             {gerando ? (
@@ -236,7 +236,7 @@ export default function PlanoDeContasView() {
             <EmptyState title="Carregando o plano" description="Buscando as contas." />
           ) : erroPlano !== null ? (
             <EmptyState
-              title="Nao deu para carregar o plano"
+              title="Não deu para carregar o plano"
               description={erroPlano}
               action={
                 <Button
@@ -265,7 +265,7 @@ export default function PlanoDeContasView() {
                       Mostra-lo e deixar a api recusar seria oferecer uma acao
                       que nunca funciona. */}
                   {c.isDefault ? (
-                    <span className={styles.planoValor}>padrao</span>
+                    <span className={styles.planoValor}>padrão</span>
                   ) : (
                     <button
                       type="button"
@@ -302,7 +302,7 @@ export default function PlanoDeContasView() {
           {custos.length === 0 ? (
             <EmptyState
               title="Nenhum custo fixo"
-              description="Cadastre aluguel, energia, contabilidade — o que se repete todo mes. Depois da para gerar as contas a pagar de uma vez."
+              description="Cadastre aluguel, energia, contabilidade — o que se repete todo mês. Depois dá para gerar as contas a pagar de uma vez."
               action={
                 <Button onClick={() => setFormAberto(true)}>
                   <IconPlus size={16} />
@@ -381,7 +381,7 @@ export default function PlanoDeContasView() {
       {apagando !== null ? (
         <ConfirmarDialog
           titulo="Apagar esta conta?"
-          descricao={`"${apagando.name}" sai do plano. Se ela tiver lancamentos, a operacao e recusada — o historico nao muda de classificacao sozinho.`}
+          descricao={`"${apagando.name}" sai do plano. Se ela tiver lançamentos, a operação é recusada — o histórico não muda de classificação sozinho.`}
           rotuloConfirmar="Apagar"
           tom="perigo"
           processando={processando}
@@ -393,7 +393,7 @@ export default function PlanoDeContasView() {
       {excluindo ? (
         <ConfirmarDialog
           titulo="Excluir custo fixo"
-          descricao="O custo deixa de gerar contas a pagar nos proximos meses. Contas ja lancadas continuam como estao."
+          descricao="O custo deixa de gerar contas a pagar nos próximos meses. Contas já lançadas continuam como estão."
           tom="perigo"
           rotuloConfirmar="Excluir"
           processando={processando}

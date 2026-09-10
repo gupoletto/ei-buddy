@@ -22,7 +22,7 @@ export const CATEGORIAS: { valor: CategoriaChamado; rotulo: string }[] = [
   { valor: 'financeiro', rotulo: 'Financeiro' },
   { valor: 'cadastro', rotulo: 'Cadastro' },
   { valor: 'vendas', rotulo: 'Vendas' },
-  { valor: 'tecnico', rotulo: 'Tecnico' },
+  { valor: 'tecnico', rotulo: 'Técnico' },
   { valor: 'outro', rotulo: 'Outro' },
 ]
 

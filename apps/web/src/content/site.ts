@@ -24,11 +24,11 @@
 export const BRAND = 'Ei Buddy'
 
 export const nav = [
-  { label: 'Modulos', href: '#modulos' },
+  { label: 'Módulos', href: '#modulos' },
   { label: 'Como funciona', href: '#como-funciona' },
   { label: 'Painel', href: '#painel' },
   { label: 'Planos', href: '#planos' },
-  { label: 'Duvidas', href: '#duvidas' },
+  { label: 'Dúvidas', href: '#duvidas' },
 ]
 
 /**
@@ -42,9 +42,9 @@ export const nav = [
  * uma barra de metricas pode voltar — com dado apurado, nao estimado.
  */
 export const highlights = [
-  'Gestao completa do negocio',
+  'Gestão completa do negócio',
   'Assistente por WhatsApp',
-  'Emissao de NFC-e e NFS-e',
+  'Emissão de NFC-e e NFS-e',
   'Contas a pagar e a receber',
   'Controle de estoque',
   'CRM e agenda integrados',
@@ -58,23 +58,23 @@ export const modules = [
     name: 'Empresa',
     tag: 'Cadastro e fiscal',
     description:
-      'Cadastro completo do negocio, com busca automatica de CNPJ e CEP e envio do certificado digital para emitir nota.',
+      'Cadastro completo do negócio, com busca automática de CNPJ e CEP e envio do certificado digital para emitir nota.',
   },
   {
     id: 'clientes',
     icon: 'users',
     name: 'Clientes',
-    tag: 'Historico e contatos',
+    tag: 'Histórico e contatos',
     description:
-      'Historico de compras, pendencias e contatos de cada cliente, com busca por CPF ou CNPJ e importacao por planilha.',
+      'Histórico de compras, pendências e contatos de cada cliente, com busca por CPF ou CNPJ e importação por planilha.',
   },
   {
     id: 'produtos',
     icon: 'box',
     name: 'Produtos',
-    tag: 'Catalogo e estoque',
+    tag: 'Catálogo e estoque',
     description:
-      'Catalogo com controle de estoque, importacao de XML de compra, busca por EAN e NCM e historico de movimentacao.',
+      'Catálogo com controle de estoque, importação de XML de compra, busca por EAN e NCM e histórico de movimentação.',
   },
   {
     id: 'financeiro',
@@ -82,7 +82,7 @@ export const modules = [
     name: 'Financeiro',
     tag: 'Contas e plano de contas',
     description:
-      'Plano de contas com contas a pagar e a receber, baixa total ou parcial e estorno de lancamento.',
+      'Plano de contas com contas a pagar e a receber, baixa total ou parcial e estorno de lançamento.',
   },
   {
     id: 'vendas',
@@ -90,15 +90,15 @@ export const modules = [
     name: 'Vendas',
     tag: 'PDV e nota fiscal',
     description:
-      'Catalogo, carrinho e pagamento em Pix, cartao, dinheiro ou carteira — com NFC-e ou NFS-e emitida no fechamento.',
+      'Catálogo, carrinho e pagamento em Pix, cartão, dinheiro ou carteira — com NFC-e ou NFS-e emitida no fechamento.',
   },
   {
     id: 'crm',
     icon: 'calendar',
     name: 'CRM e Agenda',
-    tag: 'Pendencias e compromissos',
+    tag: 'Pendências e compromissos',
     description:
-      'Pendencias e contatos em quadro estilo Kanban, com agenda de compromissos e lembrete antes da hora.',
+      'Pendências e contatos em quadro estilo Kanban, com agenda de compromissos e lembrete antes da hora.',
   },
   {
     id: 'assistente',
@@ -106,7 +106,7 @@ export const modules = [
     name: 'Assistente de IA',
     tag: 'Pelo WhatsApp',
     description:
-      'Faturamento, rankings, DRE, contas em aberto e cadastros — perguntando em texto, sem abrir relatorio.',
+      'Faturamento, rankings, DRE, contas em aberto e cadastros — perguntando em texto, sem abrir relatório.',
   },
 ]
 
@@ -124,27 +124,27 @@ export const benefits = [
   {
     icon: 'sparkles',
     title: 'Pergunte em vez de procurar',
-    text: 'O numero que voce precisa vem por mensagem, sem abrir relatorio nem montar filtro.',
+    text: 'O número que você precisa vem por mensagem, sem abrir relatório nem montar filtro.',
   },
   {
     icon: 'receipt',
     title: 'A nota sai junto com a venda',
-    text: 'NFC-e e NFS-e emitidas no fechamento, com imposto e taxa de cartao ja calculados.',
+    text: 'NFC-e e NFS-e emitidas no fechamento, com imposto e taxa de cartão já calculados.',
   },
   {
     icon: 'wallet',
     title: 'O caixa deixa de ser estimativa',
-    text: 'Valor liquido da venda cai em contas a receber sozinho, ja descontada a taxa da maquininha.',
+    text: 'Valor líquido da venda cai em contas a receber sozinho, já descontada a taxa da maquininha.',
   },
   {
     icon: 'box',
-    title: 'Reposicao antes da falta',
-    text: 'Estoque minimo por produto e aviso de quando repor, antes de o cliente pedir o que acabou.',
+    title: 'Reposição antes da falta',
+    text: 'Estoque mínimo por produto e aviso de quando repor, antes de o cliente pedir o que acabou.',
   },
   {
     icon: 'users',
-    title: 'O historico do cliente na mao',
-    text: 'O que comprou, quando comprou e o que deve — na hora do atendimento, nao depois.',
+    title: 'O histórico do cliente na mão',
+    text: 'O que comprou, quando comprou e o que deve — na hora do atendimento, não depois.',
   },
   {
     icon: 'shield',
@@ -154,24 +154,24 @@ export const benefits = [
 ]
 
 export const plan = {
-  name: 'Plano unico',
-  badge: 'Todos os modulos inclusos',
+  name: 'Plano único',
+  badge: 'Todos os módulos inclusos',
   price: 'R$ 59,90',
-  period: '/mes por empresa',
+  period: '/mês por empresa',
   /*
    * Sem periodo de teste anunciado: o trial existe no escopo (E12), mas prazo
    * e limites sao pergunta em aberto nas decisoes. Anunciar "14 dias" antes de
    * a decisao fechar seria promessa que o produto ainda nao sustenta.
    */
-  note: 'Cobranca mensal, sem fidelidade. Cancele quando quiser.',
+  note: 'Cobrança mensal, sem fidelidade. Cancele quando quiser.',
   features: [
     'Empresa, clientes, produtos e estoque',
-    'Vendas com emissao de NFC-e e NFS-e',
+    'Vendas com emissão de NFC-e e NFS-e',
     'Financeiro: plano de contas, contas a pagar e a receber',
     'CRM em quadro Kanban e agenda com lembrete de compromisso',
     'Assistente de IA pelo WhatsApp',
-    'Importacao de clientes e produtos por planilha',
-    'Usuarios ilimitados por empresa',
+    'Importação de clientes e produtos por planilha',
+    'Usuários ilimitados por empresa',
   ],
 }
 
@@ -179,32 +179,32 @@ export const faq = [
   {
     question: 'Como funciona o assistente de IA pelo WhatsApp?',
     answer:
-      'Voce pergunta em texto e ele responde com o dado do seu negocio: faturamento mes a mes, ranking de clientes e produtos, DRE, o que ha para pagar hoje. Tambem executa cadastro de cliente e lancamento de pendencia — e pede confirmacao antes de qualquer acao que altere dado.',
+      'Você pergunta em texto e ele responde com o dado do seu negócio: faturamento mês a mês, ranking de clientes e produtos, DRE, o que há para pagar hoje. Também executa cadastro de cliente e lançamento de pendência — e pede confirmação antes de qualquer ação que altere dado.',
   },
   {
     question: 'Preciso de certificado digital para usar o app?',
     answer:
-      'So para emitir nota fiscal. Vendas, financeiro, estoque, clientes e o assistente funcionam sem ele. O certificado A1 e enviado na tela de Empresa e fica guardado cifrado.',
+      'Só para emitir nota fiscal. Vendas, financeiro, estoque, clientes e o assistente funcionam sem ele. O certificado A1 é enviado na tela de Empresa e fica guardado cifrado.',
   },
   {
     question: 'O app emite nota fiscal?',
     answer:
-      'Sim, NFC-e para venda de produto e NFS-e para servico, emitidas no mesmo passo do fechamento da venda. O imposto e a taxa de cartao entram no calculo e o valor liquido vai para contas a receber.',
+      'Sim, NFC-e para venda de produto e NFS-e para serviço, emitidas no mesmo passo do fechamento da venda. O imposto e a taxa de cartão entram no cálculo e o valor líquido vai para contas a receber.',
   },
   {
     question: 'Posso importar meus clientes e produtos de uma planilha?',
     answer:
-      'Sim. Clientes e produtos aceitam importacao por planilha, com mapeamento das colunas do seu arquivo. Produtos tambem aceitam XML de nota de compra, que ja traz descricao, EAN e NCM preenchidos.',
+      'Sim. Clientes e produtos aceitam importação por planilha, com mapeamento das colunas do seu arquivo. Produtos também aceitam XML de nota de compra, que já traz descrição, EAN e NCM preenchidos.',
   },
   {
     question: 'Como funciona o pagamento da mensalidade?',
     answer:
-      'Assinatura mensal por empresa, cobrada no cartao ou por Pix. A fatura fica na tela de Assinatura, com o historico das anteriores.',
+      'Assinatura mensal por empresa, cobrada no cartão ou por Pix. A fatura fica na tela de Assinatura, com o histórico das anteriores.',
   },
   {
     question: 'Posso cancelar quando quiser?',
     answer:
-      'Sim, nao ha fidelidade nem multa. Ao cancelar voce continua podendo ler e exportar seus dados.',
+      'Sim, não há fidelidade nem multa. Ao cancelar você continua podendo ler e exportar seus dados.',
   },
 ]
 
@@ -212,11 +212,11 @@ export const footerColumns = [
   {
     title: 'Produto',
     links: [
-      { label: 'Modulos', href: '/#modulos' },
+      { label: 'Módulos', href: '/#modulos' },
       { label: 'Como funciona', href: '/#como-funciona' },
       { label: 'Painel', href: '/#painel' },
       { label: 'Planos', href: '/#planos' },
-      { label: 'Duvidas', href: '/#duvidas' },
+      { label: 'Dúvidas', href: '/#duvidas' },
     ],
   },
   {
@@ -238,7 +238,7 @@ export const footerColumns = [
      */
     title: 'Suporte',
     links: [
-      { label: 'Duvidas frequentes', href: '/#duvidas' },
+      { label: 'Dúvidas frequentes', href: '/#duvidas' },
       { label: 'Falar com o suporte', href: '/login' },
     ],
   },

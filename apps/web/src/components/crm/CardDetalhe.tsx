@@ -95,7 +95,7 @@ export default function CardDetalhe({
         <header className={styles.detalheCabecalho}>
           <div className={styles.detalheTags}>
             <Badge tone={card.tipo === 'pendencia' ? 'warning' : 'info'}>
-              {card.tipo === 'pendencia' ? 'Pendencia' : 'Contato'}
+              {card.tipo === 'pendencia' ? 'Pendência' : 'Contato'}
             </Badge>
             <Badge tone={concluido ? 'success' : 'neutral'}>
               {COLUNAS.find((c) => c.id === card.coluna)?.titulo}
@@ -127,8 +127,8 @@ export default function CardDetalhe({
             <dd>{formatDate(card.data)}</dd>
           </div>
           <div>
-            <dt>Responsavel</dt>
-            <dd>{card.responsaveis.length > 0 ? card.responsaveis.join(', ') : 'Ninguem ainda'}</dd>
+            <dt>Responsável</dt>
+            <dd>{card.responsaveis.length > 0 ? card.responsaveis.join(', ') : 'Ninguém ainda'}</dd>
           </div>
           <div>
             <dt>Origem</dt>
@@ -153,7 +153,7 @@ export default function CardDetalhe({
 
         {/* --- Historico --- */}
         <section className={styles.historico}>
-          <h3 className={styles.historicoTitulo}>Historico</h3>
+          <h3 className={styles.historicoTitulo}>Histórico</h3>
 
           <ul className={styles.comentarios}>
             {/* Evento de criacao: o card sempre tem ao menos esta linha */}
@@ -179,7 +179,7 @@ export default function CardDetalhe({
               onChange={(e) => setComentario(e.target.value)}
               placeholder="Registrar o que foi combinado, o que o cliente respondeu..."
               rows={2}
-              aria-label="Novo comentario"
+              aria-label="Novo comentário"
             />
             {erro ? (
               <p className={styles.erro} role="alert">
@@ -208,7 +208,7 @@ export default function CardDetalhe({
           {!concluido ? (
             <Button onClick={() => void mudarColuna('concluido')}>
               <IconCheck size={16} />
-              Marcar como concluido
+              Marcar como concluído
             </Button>
           ) : null}
         </div>

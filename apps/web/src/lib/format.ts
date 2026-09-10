@@ -94,7 +94,7 @@ export function daysUntil(value: string, reference = hoje()): number {
 export function describeDueDate(value: string): string {
   const diff = daysUntil(value)
   if (diff === 0) return 'Vence hoje'
-  if (diff === 1) return 'Vence amanha'
+  if (diff === 1) return 'Vence amanhã'
   if (diff > 1) return `Vence em ${diff} dias`
   if (diff === -1) return '1 dia em atraso'
   return `${Math.abs(diff)} dias em atraso`
@@ -102,8 +102,8 @@ export function describeDueDate(value: string): string {
 
 export const formaPagamentoLabel: Record<string, string> = {
   pix: 'Pix',
-  debito: 'Debito',
-  credito: 'Credito',
+  debito: 'Débito',
+  credito: 'Crédito',
   dinheiro: 'Dinheiro',
   carteira: 'Carteira',
 }
@@ -116,7 +116,7 @@ export const statusTituloLabel: Record<string, string> = {
 }
 
 export const statusVendaLabel: Record<string, string> = {
-  concluida: 'Concluida',
+  concluida: 'Concluída',
   cancelada: 'Cancelada',
   em_aberto: 'Em aberto',
   open: 'Aberta',

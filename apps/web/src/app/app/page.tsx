@@ -8,7 +8,7 @@ import { describeDueDate, formaPagamentoLabel, formatMoney } from '@/lib/format'
 import styles from './painel.module.css'
 
 export const metadata: Metadata = {
-  title: `Visao geral — ${BRAND}`,
+  title: `Visão geral — ${BRAND}`,
 }
 
 /**
@@ -35,8 +35,8 @@ const emReais = (centavos: number) => centavos / 100
 function NaoCarregou({ oque }: { oque: string }) {
   return (
     <EmptyState
-      title={`Nao deu para carregar ${oque}`}
-      description="Atualize a pagina. Se continuar, os outros blocos seguem valendo."
+      title={`Não deu para carregar ${oque}`}
+      description="Atualize a página. Se continuar, os outros blocos seguem valendo."
     />
   )
 }
@@ -69,7 +69,7 @@ export default async function VisaoGeralPage() {
         <Stat
           label="Faturamento hoje"
           value={painel.hoje === null ? '—' : formatMoney(emReais(painel.hoje.netCents))}
-          hint={painel.hoje === null ? 'nao carregou' : `${painel.hoje.salesCount} vendas`}
+          hint={painel.hoje === null ? 'não carregou' : `${painel.hoje.salesCount} vendas`}
           tone={painel.hoje !== null && painel.hoje.netCents > 0 ? 'positive' : undefined}
         />
         {/*
@@ -87,7 +87,7 @@ export default async function VisaoGeralPage() {
           Apareceu ao abrir a tela com a api fora do ar.
         */}
         <Stat
-          label="Ticket medio"
+          label="Ticket médio"
           value={
             painel.hoje?.averageTicketCents == null
               ? '—'
@@ -95,7 +95,7 @@ export default async function VisaoGeralPage() {
           }
           hint={
             painel.hoje === null
-              ? 'nao carregou'
+              ? 'não carregou'
               : painel.hoje.averageTicketCents === null
                 ? 'sem vendas hoje'
                 : 'por venda'
@@ -111,10 +111,10 @@ export default async function VisaoGeralPage() {
           value={painel.aPagar === null ? '—' : formatMoney(emReais(painel.aPagar.totalCents))}
           hint={
             painel.aPagar === null
-              ? 'nao carregou'
+              ? 'não carregou'
               : painel.aPagar.vencidas === 0
                 ? 'nada vencido'
-                : `${painel.aPagar.vencidas} ${painel.aPagar.vencidas === 1 ? 'titulo vencido' : 'titulos vencidos'}`
+                : `${painel.aPagar.vencidas} ${painel.aPagar.vencidas === 1 ? 'título vencido' : 'títulos vencidos'}`
           }
           tone={painel.aPagar !== null && painel.aPagar.vencidas > 0 ? 'warning' : undefined}
         />
@@ -132,18 +132,18 @@ export default async function VisaoGeralPage() {
           }
         >
           {painel.semana === null ? (
-            <NaoCarregou oque="o grafico da semana" />
+            <NaoCarregou oque="o gráfico da semana" />
           ) : (
             <Grafico dias={painel.semana} />
           )}
 
-          <h3 className={styles.subTitle}>Ultimas vendas</h3>
+          <h3 className={styles.subTitle}>Últimas vendas</h3>
           {painel.ultimasVendas === null ? (
-            <NaoCarregou oque="as ultimas vendas" />
+            <NaoCarregou oque="as últimas vendas" />
           ) : painel.ultimasVendas.length === 0 ? (
             <EmptyState
               title="Nenhuma venda ainda"
-              description="A primeira venda aparece aqui assim que voce fechar o caixa."
+              description="A primeira venda aparece aqui assim que você fechar o caixa."
             />
           ) : (
             <ul className={styles.rows}>
@@ -169,7 +169,7 @@ export default async function VisaoGeralPage() {
         </Card>
 
         <Card
-          title="Proximos vencimentos"
+          title="Próximos vencimentos"
           action={
             <ButtonLink href="/app/financeiro/contas-a-pagar" variant="ghost" size="sm">
               Ver todos
@@ -199,10 +199,10 @@ export default async function VisaoGeralPage() {
         </Card>
 
         <Card
-          title="Precisa de reposicao"
+          title="Precisa de reposição"
           action={
             <ButtonLink href="/app/produtos" variant="ghost" size="sm">
-              Ver catalogo
+              Ver catálogo
               <IconArrowRight size={15} />
             </ButtonLink>
           }
@@ -210,14 +210,14 @@ export default async function VisaoGeralPage() {
           {painel.reposicao === null ? (
             <NaoCarregou oque="o estoque baixo" />
           ) : painel.reposicao.length === 0 ? (
-            <EmptyState title="Estoque em ordem" description="Nenhum produto abaixo do minimo." />
+            <EmptyState title="Estoque em ordem" description="Nenhum produto abaixo do mínimo." />
           ) : (
             <ul className={styles.rows}>
               {painel.reposicao.map((produto) => (
                 <li key={produto.id} className={styles.row}>
                   <span className={styles.rowMain}>
                     <strong>{produto.description}</strong>
-                    <span>minimo {produto.minStock} un</span>
+                    <span>mínimo {produto.minStock} un</span>
                   </span>
                   <span className={`${styles.rowValue} ${styles.alert}`}>{produto.stock} un</span>
                 </li>

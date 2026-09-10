@@ -19,8 +19,8 @@ export default function ModuleGuard({ children }: { children: ReactNode }) {
 
   return (
     <LockedModuleOverlay
-      titulo="Modulo bloqueado"
-      descricao="Seus dados continuam salvos. Regularize o pagamento para voltar a lancar e editar por aqui."
+      titulo="Módulo bloqueado"
+      descricao="Seus dados continuam salvos. Regularize o pagamento para voltar a lançar e editar por aqui."
     >
       {children}
     </LockedModuleOverlay>

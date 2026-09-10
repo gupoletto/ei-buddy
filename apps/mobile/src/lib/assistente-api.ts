@@ -188,7 +188,7 @@ export async function enviarMensagem(texto: string, contexto: Contexto): Promise
 
     return {
       intencao: 'faturamento',
-      texto: `Hoje voce vendeu ${formatMoney(totalHoje)} em ${hoje.length} vendas.`,
+      texto: `Hoje você vendeu ${formatMoney(totalHoje)} em ${hoje.length} vendas.`,
       contexto: ctx,
       blocos: [
         {
@@ -199,8 +199,8 @@ export async function enviarMensagem(texto: string, contexto: Contexto): Promise
         },
         {
           tipo: 'tabela',
-          titulo: 'Ultimos meses',
-          colunas: ['Mes', 'Faturamento', 'Vendas'],
+          titulo: 'Últimos meses',
+          colunas: ['Mês', 'Faturamento', 'Vendas'],
           linhas: [
             ['Agosto', 'R$ 64.200', '312'],
             ['Julho', 'R$ 58.940', '287'],
@@ -233,7 +233,7 @@ export async function enviarMensagem(texto: string, contexto: Contexto): Promise
   if (t.includes('ranking') && t.includes('produto')) {
     return {
       intencao: 'ranking_produtos',
-      texto: 'Produtos mais vendidos no mes:',
+      texto: 'Produtos mais vendidos no mês:',
       contexto: ctx,
       blocos: [
         {
@@ -242,8 +242,8 @@ export async function enviarMensagem(texto: string, contexto: Contexto): Promise
           colunas: ['Produto', 'Qtd', 'Faturamento'],
           linhas: [
             ['Leite integral 1L', '412', 'R$ 2.467'],
-            ['Cafe torrado 500g', '268', 'R$ 5.869'],
-            ['Acucar mascavo 1kg', '196', 'R$ 2.528'],
+            ['Café torrado 500g', '268', 'R$ 5.869'],
+            ['Açúcar mascavo 1kg', '196', 'R$ 2.528'],
           ],
         },
       ],
@@ -284,8 +284,8 @@ export async function enviarMensagem(texto: string, contexto: Contexto): Promise
       intencao: 'reposicao',
       texto:
         faltando.length > 0
-          ? `${faltando.length} produtos estao abaixo do minimo.`
-          : 'Nenhum produto abaixo do minimo.',
+          ? `${faltando.length} produtos estão abaixo do mínimo.`
+          : 'Nenhum produto abaixo do mínimo.',
       contexto: ctx,
       blocos: [
         {
@@ -293,7 +293,7 @@ export async function enviarMensagem(texto: string, contexto: Contexto): Promise
           titulo: 'Precisa repor',
           itens: faltando.map((p) => ({
             rotulo: p.descricao,
-            valor: `${p.estoque} un · minimo ${p.estoqueMinimo}`,
+            valor: `${p.estoque} un · mínimo ${p.estoqueMinimo}`,
             destaque: true,
           })),
         },
@@ -306,7 +306,7 @@ export async function enviarMensagem(texto: string, contexto: Contexto): Promise
     const parados = produtos.filter((p) => p.diasSemVenda > 30)
     return {
       intencao: 'produtos_parados',
-      texto: `${parados.length} produto(s) sem sair ha mais de 30 dias.`,
+      texto: `${parados.length} produto(s) sem sair há mais de 30 dias.`,
       contexto: ctx,
       blocos: [
         {
@@ -332,7 +332,7 @@ export async function enviarMensagem(texto: string, contexto: Contexto): Promise
       intencao: 'contas_pagar',
       texto:
         hoje.length > 0
-          ? `Voce tem ${hoje.length} conta(s) vencendo hoje, somando ${formatMoney(totalHoje)}.`
+          ? `Você tem ${hoje.length} conta(s) vencendo hoje, somando ${formatMoney(totalHoje)}.`
           : 'Nada vencendo hoje.',
       contexto: ctx,
       blocos: [
@@ -368,7 +368,7 @@ export async function enviarMensagem(texto: string, contexto: Contexto): Promise
     )
     return {
       intencao: 'clientes_inativos',
-      texto: `${inativos.length} cliente(s) sem comprar ha mais de 60 dias.`,
+      texto: `${inativos.length} cliente(s) sem comprar há mais de 60 dias.`,
       contexto: ctx,
       blocos: [
         {
@@ -376,12 +376,12 @@ export async function enviarMensagem(texto: string, contexto: Contexto): Promise
           titulo: 'Sumiram',
           itens: inativos.map((c) => ({
             rotulo: c.nome,
-            valor: `ha ${Math.abs(daysUntil(c.ultimaCompra!))} dias`,
+            valor: `há ${Math.abs(daysUntil(c.ultimaCompra!))} dias`,
           })),
         },
         {
           tipo: 'confirmacao',
-          pergunta: 'Quer que eu mande um WhatsApp para eles com o catalogo?',
+          pergunta: 'Quer que eu mande um WhatsApp para eles com o catálogo?',
           acao: 'enviar_catalogo_inativos',
         },
       ],
@@ -399,7 +399,7 @@ export async function enviarMensagem(texto: string, contexto: Contexto): Promise
     if (!ctx.clienteId) {
       return {
         intencao: 'sem_contexto',
-        texto: 'De qual cliente voce esta falando? Diga o nome que eu busco.',
+        texto: 'De qual cliente você está falando? Diga o nome que eu busco.',
         contexto: ctx,
         blocos: [],
       }
@@ -411,12 +411,12 @@ export async function enviarMensagem(texto: string, contexto: Contexto): Promise
     if (t.includes('devendo') || t.includes('deve')) {
       return {
         intencao: 'divida_cliente',
-        texto: `Situacao de ${cliente.nome}:`,
+        texto: `Situação de ${cliente.nome}:`,
         contexto: ctx,
         blocos: [
           {
             tipo: 'indicador',
-            rotulo: 'Total ja comprado',
+            rotulo: 'Total já comprado',
             valor: formatMoney(cliente.valorTotal),
             apoio: `${cliente.totalCompras} compras`,
           },
@@ -426,7 +426,7 @@ export async function enviarMensagem(texto: string, contexto: Contexto): Promise
 
     return {
       intencao: 'compras_cliente',
-      texto: `As ultimas compras de ${cliente.nome}:`,
+      texto: `As últimas compras de ${cliente.nome}:`,
       contexto: ctx,
       blocos: [
         compras.length > 0
@@ -449,7 +449,7 @@ export async function enviarMensagem(texto: string, contexto: Contexto): Promise
   if (clienteCitado) {
     return {
       intencao: 'resumo_cliente',
-      texto: `${clienteCitado.nome} esta cadastrado. O que voce quer saber?`,
+      texto: `${clienteCitado.nome} está cadastrado. O que você quer saber?`,
       contexto: ctx,
       blocos: [
         {
@@ -475,7 +475,7 @@ export async function enviarMensagem(texto: string, contexto: Contexto): Promise
       blocos: [
         {
           tipo: 'confirmacao',
-          pergunta: 'Quer abrir o formulario completo de cadastro?',
+          pergunta: 'Quer abrir o formulário completo de cadastro?',
           acao: 'abrir_cadastro_cliente',
         },
       ],
@@ -486,7 +486,7 @@ export async function enviarMensagem(texto: string, contexto: Contexto): Promise
   return {
     intencao: 'desconhecida',
     texto:
-      'Ainda nao sei responder isso. Tente uma das sugestoes abaixo, ou pergunte sobre vendas, clientes, produtos ou contas.',
+      'Ainda não sei responder isso. Tente uma das sugestões abaixo, ou pergunte sobre vendas, clientes, produtos ou contas.',
     contexto: ctx,
     blocos: [],
   }

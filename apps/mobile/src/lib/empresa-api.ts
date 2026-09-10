@@ -66,14 +66,14 @@ export async function buscarCep(cep: string): Promise<CepResult> {
     '01310100': {
       logradouro: 'Avenida Paulista',
       bairro: 'Bela Vista',
-      cidade: 'Sao Paulo',
+      cidade: 'São Paulo',
       uf: 'SP',
     },
   }
 
   const encontrado = conhecidos[digits]
   if (!encontrado) {
-    return { ok: false, error: 'CEP nao encontrado.' }
+    return { ok: false, error: 'CEP não encontrado.' }
   }
 
   return { ok: true, endereco: encontrado }
@@ -111,7 +111,7 @@ export async function buscarCnpj(cnpj: string): Promise<CnpjResult> {
     dados: {
       razaoSocial: 'Mercearia Sol Nascente LTDA',
       nomeFantasia: 'Mercearia Sol Nascente',
-      ramoAtividade: 'Comercio varejista de alimentos',
+      ramoAtividade: 'Comércio varejista de alimentos',
       cep: '80010-010',
       logradouro: 'Rua das Flores',
       numero: '482',
@@ -207,19 +207,19 @@ export async function salvarEmpresa(
 
 /** Segmentos oferecidos no seletor de ramo de atividade. */
 export const RAMOS_ATIVIDADE = [
-  'Comercio varejista de alimentos',
+  'Comércio varejista de alimentos',
   'Mercearia e minimercado',
   'Restaurante e lanchonete',
   'Padaria e confeitaria',
-  'Moda e vestuario',
-  'Calcados e acessorios',
-  'Farmacia e saude',
-  'Salao de beleza e estetica',
-  'Casa, construcao e ferragens',
-  'Papelaria e informatica',
+  'Moda e vestuário',
+  'Calçados e acessórios',
+  'Farmácia e saúde',
+  'Salão de beleza e estética',
+  'Casa, construção e ferragens',
+  'Papelaria e informática',
   'Pet shop',
-  'Oficina e autopecas',
-  'Servicos em geral',
+  'Oficina e autopeças',
+  'Serviços em geral',
   'Outro',
 ]
 

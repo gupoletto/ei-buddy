@@ -73,7 +73,7 @@ export default function EtapaPagamento({
       return
     }
     if (valor > restante + 0.01) {
-      setToast({ msg: 'O valor e maior que o restante a pagar.', tone: 'error' })
+      setToast({ msg: 'O valor é maior que o restante a pagar.', tone: 'error' })
       return
     }
 
@@ -155,7 +155,7 @@ export default function EtapaPagamento({
 
               {forma === 'carteira' ? (
                 <p className={styles.aviso}>
-                  A carteira do cliente ainda nao tem saldo controlado no sistema — por enquanto
+                  A carteira do cliente ainda não tem saldo controlado no sistema — por enquanto
                   isto registra apenas a forma de pagamento.
                 </p>
               ) : null}

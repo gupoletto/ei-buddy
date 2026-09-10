@@ -65,7 +65,7 @@ export default function ForgotPasswordForm() {
         />
 
         <SubmitButton loading={loading} loadingLabel="Enviando...">
-          Enviar link de recuperacao
+          Enviar link de recuperação
         </SubmitButton>
       </form>
 

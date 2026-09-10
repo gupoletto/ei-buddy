@@ -77,7 +77,7 @@ export async function buscarCep(cep: string): Promise<CepResult> {
 
   const encontrado = conhecidos[digits]
   if (!encontrado) {
-    return { ok: false, error: 'CEP nao encontrado.' }
+    return { ok: false, error: 'CEP não encontrado.' }
   }
 
   return { ok: true, endereco: encontrado }
@@ -178,7 +178,7 @@ async function chamarFiscal(
       credentials: 'same-origin',
     })
   } catch {
-    return { ok: false, error: 'Sem conexao. Verifique sua internet.' }
+    return { ok: false, error: 'Sem conexão. Verifique sua internet.' }
   }
 
   const corpo = (await resposta.json().catch(() => ({}))) as SituacaoFiscal & {
@@ -206,7 +206,7 @@ export async function enviarCertificado(
   validoAte: string,
 ): Promise<UploadResult> {
   if (senha === '') return { ok: false, error: 'Informe a senha do certificado.' }
-  if (validoAte === '') return { ok: false, error: 'Informe ate quando o certificado vale.' }
+  if (validoAte === '') return { ok: false, error: 'Informe até quando o certificado vale.' }
 
   const nome = arquivo.name.toLowerCase()
   if (!nome.endsWith('.pfx') && !nome.endsWith('.p12')) {

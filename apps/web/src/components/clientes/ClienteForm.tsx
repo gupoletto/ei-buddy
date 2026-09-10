@@ -75,7 +75,7 @@ export default function ClienteForm() {
   const [duplicados, setDuplicados] = useState<CandidatoCliente[] | null>(null)
 
   const rotuloDocumento = tipo === 'fisica' ? 'CPF' : 'CNPJ'
-  const rotuloNome = tipo === 'fisica' ? 'Nome completo' : 'Razao social'
+  const rotuloNome = tipo === 'fisica' ? 'Nome completo' : 'Razão social'
 
   function set<K extends keyof Campos>(campo: K, valor: string) {
     setCampos((c) => ({ ...c, [campo]: valor }))
@@ -180,7 +180,7 @@ export default function ClienteForm() {
   function validarTudo(): boolean {
     const novos: Erros = {
       documento: validateDocumento(campos.documento, tipo),
-      nome: validateRequired(campos.nome, tipo === 'fisica' ? 'o nome' : 'a razao social'),
+      nome: validateRequired(campos.nome, tipo === 'fisica' ? 'o nome' : 'a razão social'),
       ddd: validateDDD(campos.ddd),
       celular: validateCelular(campos.celular),
       cep: validateCEP(campos.cep),
@@ -241,7 +241,7 @@ export default function ClienteForm() {
     setSalvando(false)
 
     if (!r.ok) {
-      setToast({ msg: 'duplicados' in r ? 'Nao foi possivel cadastrar.' : r.error, tone: 'error' })
+      setToast({ msg: 'duplicados' in r ? 'Não foi possível cadastrar.' : r.error, tone: 'error' })
       return
     }
 
@@ -262,7 +262,7 @@ export default function ClienteForm() {
     <>
       <PageHeader
         title="Novo cliente"
-        subtitle="Cadastro de pessoa fisica ou juridica"
+        subtitle="Cadastro de pessoa física ou jurídica"
         actions={
           <ButtonLink href="/app/clientes" variant="secondary">
             Cancelar
@@ -271,7 +271,7 @@ export default function ClienteForm() {
       />
 
       <form onSubmit={salvar} noValidate className={styles.form}>
-        <Card title="Identificacao">
+        <Card title="Identificação">
           {/* Toggle de tipo de documento */}
           <div className={styles.tipoToggle} role="group" aria-label="Tipo de pessoa">
             <button
@@ -280,7 +280,7 @@ export default function ClienteForm() {
               onClick={() => trocarTipo('fisica')}
               aria-pressed={tipo === 'fisica'}
             >
-              Pessoa fisica
+              Pessoa física
             </button>
             <button
               type="button"
@@ -288,7 +288,7 @@ export default function ClienteForm() {
               onClick={() => trocarTipo('juridica')}
               aria-pressed={tipo === 'juridica'}
             >
-              Pessoa juridica
+              Pessoa jurídica
             </button>
           </div>
 
@@ -368,7 +368,7 @@ export default function ClienteForm() {
           </FormGrid>
         </Card>
 
-        <Card title="Endereco">
+        <Card title="Endereço">
           <FormGrid>
             <Field label="CEP" span={4}>
               <div className={styles.inline}>
@@ -407,7 +407,7 @@ export default function ClienteForm() {
               {erroDe('logradouro')}
             </Field>
 
-            <Field label="Numero" span={3}>
+            <Field label="Número" span={3}>
               <Input
                 value={campos.numero}
                 onChange={(e) => set('numero', e.target.value)}
@@ -480,7 +480,7 @@ export default function ClienteForm() {
       {duplicados !== null ? (
         <div className={styles.duplicados} role="dialog" aria-label="Clientes parecidos">
           <p className={styles.duplicadosTitulo}>
-            Ja existe cliente com este telefone ou documento.
+            Já existe cliente com este telefone ou documento.
           </p>
           <ul className={styles.duplicadosLista}>
             {duplicados.map((c) => (

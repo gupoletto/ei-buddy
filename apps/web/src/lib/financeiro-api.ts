@@ -40,8 +40,8 @@ export const NOMES_FORNECEDORES = [...new Set(contasPagar.map((c) => c.fornecedo
 export const NOMES_CLIENTES = clientes.map((c) => c.nome)
 
 export const TIPOS_RECEBIMENTO = [
-  { valor: 'debito', rotulo: 'Cartao de debito' },
-  { valor: 'credito', rotulo: 'Cartao de credito' },
+  { valor: 'debito', rotulo: 'Cartão de débito' },
+  { valor: 'credito', rotulo: 'Cartão de crédito' },
   { valor: 'pix', rotulo: 'Pix' },
   { valor: 'carteira', rotulo: 'Carteira' },
 ] as const
@@ -175,7 +175,7 @@ export async function exportar(formato: FormatoExportacao): Promise<{ ok: false;
   await delay(400)
   return {
     ok: false,
-    error: `Exportacao em ${formato.toUpperCase()} entra quando o backend expuser o endpoint.`,
+    error: `Exportação em ${formato.toUpperCase()} entra quando o backend expuser o endpoint.`,
   }
 }
 
@@ -222,8 +222,8 @@ export type FaixaDeVencimento = 'overdue' | 'today' | 'week' | 'month' | 'later'
 export const ROTULO_FAIXA: Record<FaixaDeVencimento, string> = {
   overdue: 'Vencidas',
   today: 'Vencem hoje',
-  week: 'Proximos 7 dias',
-  month: 'Este mes',
+  week: 'Próximos 7 dias',
+  month: 'Este mês',
   later: 'Mais adiante',
 }
 
@@ -383,8 +383,8 @@ export type FormaDeRecebimento = 'cash' | 'pix' | 'debit' | 'credit' | 'wallet'
 export const FORMAS_DE_RECEBIMENTO: readonly { valor: FormaDeRecebimento; rotulo: string }[] = [
   { valor: 'pix', rotulo: 'Pix' },
   { valor: 'cash', rotulo: 'Dinheiro' },
-  { valor: 'debit', rotulo: 'Cartao de debito' },
-  { valor: 'credit', rotulo: 'Cartao de credito' },
+  { valor: 'debit', rotulo: 'Cartão de débito' },
+  { valor: 'credit', rotulo: 'Cartão de crédito' },
   { valor: 'wallet', rotulo: 'Carteira digital' },
 ]
 

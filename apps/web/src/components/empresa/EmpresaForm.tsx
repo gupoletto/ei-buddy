@@ -193,7 +193,7 @@ export default function EmpresaForm() {
       uf: d.uf,
     }))
     setErros({})
-    setToast({ msg: 'Dados publicos preenchidos a partir do CNPJ.', tone: 'success' })
+    setToast({ msg: 'Dados públicos preenchidos a partir do CNPJ.', tone: 'success' })
   }
 
   /* ---------------------------------------------------------------- *
@@ -203,7 +203,7 @@ export default function EmpresaForm() {
   function validarTudo(): boolean {
     const novos: Erros = {
       cnpj: validateCNPJ(campos.cnpj),
-      razaoSocial: validateRequired(campos.razaoSocial, 'a razao social'),
+      razaoSocial: validateRequired(campos.razaoSocial, 'a razão social'),
       ramoAtividade: validateRequired(campos.ramoAtividade, 'o ramo de atividade'),
       cep: validateCEP(campos.cep),
       logradouro: validateRequired(campos.logradouro, 'o logradouro'),
@@ -256,7 +256,7 @@ export default function EmpresaForm() {
     <>
       <PageHeader
         title="Empresa"
-        subtitle="Dados cadastrais, endereco e certificado digital"
+        subtitle="Dados cadastrais, endereço e certificado digital"
         actions={
           <Button onClick={salvar} disabled={salvando || carregando}>
             {salvando ? (
@@ -265,7 +265,7 @@ export default function EmpresaForm() {
                 Salvando...
               </>
             ) : (
-              'Salvar alteracoes'
+              'Salvar alterações'
             )}
           </Button>
         }
@@ -290,7 +290,7 @@ export default function EmpresaForm() {
         ) : null}
 
         {/* ---------------- Identificacao ---------------- */}
-        <Card title="Identificacao">
+        <Card title="Identificação">
           <FormGrid>
             {/*
               O CNPJ e SOMENTE LEITURA. `updateCompanyInputSchema` o omite de
@@ -331,7 +331,7 @@ export default function EmpresaForm() {
               ) : null}
             </Field>
 
-            <Field label="Razao social" span={7}>
+            <Field label="Razão social" span={7}>
               <Input
                 value={campos.razaoSocial}
                 onChange={(e) => set('razaoSocial', e.target.value)}
@@ -371,15 +371,15 @@ export default function EmpresaForm() {
               ) : null}
             </Field>
 
-            <Field label="Inscricao estadual (IE)" span={6}>
+            <Field label="Inscrição estadual (IE)" span={6}>
               <Input
                 value={campos.inscricaoEstadual}
                 onChange={(e) => set('inscricaoEstadual', e.target.value)}
-                placeholder="Isento, se nao houver"
+                placeholder="Isento, se não houver"
               />
             </Field>
 
-            <Field label="Inscricao municipal (IM)" span={6}>
+            <Field label="Inscrição municipal (IM)" span={6}>
               <Input
                 value={campos.inscricaoMunicipal}
                 onChange={(e) => set('inscricaoMunicipal', e.target.value)}
@@ -389,7 +389,7 @@ export default function EmpresaForm() {
         </Card>
 
         {/* ---------------- Endereco ---------------- */}
-        <Card title="Endereco">
+        <Card title="Endereço">
           <FormGrid>
             <Field label="CEP" span={4}>
               <div className={styles.inline}>
@@ -421,7 +421,7 @@ export default function EmpresaForm() {
                   {avisoCep}
                 </span>
               ) : null}
-              {buscandoCep ? <span className={styles.dica}>Buscando endereco...</span> : null}
+              {buscandoCep ? <span className={styles.dica}>Buscando endereço...</span> : null}
             </Field>
 
             <Field label="Logradouro" span={8}>
@@ -437,7 +437,7 @@ export default function EmpresaForm() {
               ) : null}
             </Field>
 
-            <Field label="Numero" span={3}>
+            <Field label="Número" span={3}>
               <Input
                 value={campos.numero}
                 onChange={(e) => set('numero', e.target.value)}
@@ -542,13 +542,13 @@ export default function EmpresaForm() {
 
           <div className={styles.conexoes}>
             <Checkbox
-              label="Habilitar conexoes com outros usuarios"
+              label="Habilitar conexões com outros usuários"
               checked={conexoes}
               onChange={(e) => setConexoes(e.target.checked)}
             />
             <p className={styles.conexoesNota}>
-              Permite convidar outras pessoas para acessar esta empresa, cada uma com o proprio
-              login. Util para quem tem socio, gerente ou contador acompanhando o negocio.
+              Permite convidar outras pessoas para acessar esta empresa, cada uma com o próprio
+              login. Útil para quem tem sócio, gerente ou contador acompanhando o negócio.
             </p>
           </div>
         </Card>
@@ -560,7 +560,7 @@ export default function EmpresaForm() {
 
         <ComandosWhatsApp
           comandos={[
-            'Qual foi o faturamento mes a mes dos ultimos meses',
+            'Qual foi o faturamento mês a mês dos últimos meses',
             'Ranking dos clientes',
             'Ranking dos produtos',
             'Gerar DRE do mes',
@@ -575,7 +575,7 @@ export default function EmpresaForm() {
                 Salvando...
               </>
             ) : (
-              'Salvar alteracoes'
+              'Salvar alterações'
             )}
           </Button>
         </div>

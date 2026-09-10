@@ -137,7 +137,7 @@ describe('entrar sem loja nenhuma', () => {
 
     expect(r.estado).toBe('falhou')
     if (r.estado !== 'falhou') return
-    expect(r.erro).toContain('nao esta ligada a nenhuma loja')
+    expect(r.erro).toContain('não está ligada a nenhuma loja')
   })
 
   it('nao guarda sessao', async () => {

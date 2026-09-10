@@ -133,7 +133,7 @@ export default function Relatorios() {
 
   return (
     <SafeAreaView style={estilos.tela} edges={['top']}>
-      <Cabecalho titulo="Relatorios" subtitulo="Quanto entrou, e por conta de quem" />
+      <Cabecalho titulo="Relatórios" subtitulo="Quanto entrou, e por conta de quem" />
 
       <View style={estilos.abas}>
         {([6, 12] as const).map((meses) => (
@@ -158,7 +158,7 @@ export default function Relatorios() {
       ) : erro !== null ? (
         <View style={estilos.centro}>
           <Vazio
-            titulo="Nao deu para montar os relatorios"
+            titulo="Não deu para montar os relatórios"
             descricao={erro}
             acao={
               <Botao
@@ -186,7 +186,7 @@ export default function Relatorios() {
           }
         >
           <Cartao>
-            <Text style={estilos.totalRotulo}>Faturamento do periodo</Text>
+            <Text style={estilos.totalRotulo}>Faturamento do período</Text>
             <Text style={estilos.totalValor}>
               {formatMoney(emReais(dados.faturamento.totalNetCents))}
             </Text>
@@ -216,7 +216,7 @@ function MesAMes({ meses }: { meses: readonly Faturamento['months'][number][] })
   const maior = Math.max(...meses.map((m) => m.netCents), 0)
 
   return (
-    <Cartao titulo="Mes a mes">
+    <Cartao titulo="Mês a mês">
       {[...meses].reverse().map((m) => (
         <View key={m.month} style={estilos.mes}>
           <View style={estilos.mesTopo}>
@@ -244,8 +244,8 @@ function MesAMes({ meses }: { meses: readonly Faturamento['months'][number][] })
           */}
           <Text style={estilos.mesDetalhe}>
             {m.salesCount === 0
-              ? 'Sem venda neste mes'
-              : `${m.salesCount} ${m.salesCount === 1 ? 'venda' : 'vendas'} · ticket medio ${formatMoney(
+              ? 'Sem venda neste mês'
+              : `${m.salesCount} ${m.salesCount === 1 ? 'venda' : 'vendas'} · ticket médio ${formatMoney(
                   emReais(m.averageTicketCents ?? 0),
                 )}`}
           </Text>
@@ -276,7 +276,7 @@ function Clientes({ dados }: { dados: RankingDeClientes }) {
   return (
     <Cartao titulo="Quem mais comprou">
       {dados.customers.length === 0 ? (
-        <Text style={estilos.aviso}>Nenhuma venda com cliente identificado no periodo.</Text>
+        <Text style={estilos.aviso}>Nenhuma venda com cliente identificado no período.</Text>
       ) : (
         dados.customers.map((c, i) => (
           <View key={c.customerId} style={estilos.posicao}>
@@ -294,7 +294,7 @@ function Clientes({ dados }: { dados: RankingDeClientes }) {
         ))
       )}
 
-      <Sobra rotulo="Balcao, sem cliente identificado" cents={dados.unidentifiedCents} />
+      <Sobra rotulo="Balcão, sem cliente identificado" cents={dados.unidentifiedCents} />
     </Cartao>
   )
 }
@@ -303,7 +303,7 @@ function Produtos({ dados }: { dados: RankingDeProdutos }) {
   return (
     <Cartao titulo="O que mais saiu">
       {dados.products.length === 0 ? (
-        <Text style={estilos.aviso}>Nenhum produto do cadastro foi vendido no periodo.</Text>
+        <Text style={estilos.aviso}>Nenhum produto do cadastro foi vendido no período.</Text>
       ) : (
         dados.products.map((p, i) => (
           <View key={p.productId} style={estilos.posicao}>

@@ -43,7 +43,7 @@ export type Dre = {
 /** O rotulo de cada tipo, num lugar so. */
 export const ROTULO_DO_TIPO: Record<TipoDeConta, string> = {
   revenue: 'Receita',
-  deduction: 'Deducao',
+  deduction: 'Dedução',
   cost: 'Custo',
   expense: 'Despesa',
 }

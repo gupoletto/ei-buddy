@@ -54,8 +54,8 @@ type LinhaDeResumo = {
 function resumoDe(dre: Dre): LinhaDeResumo[] {
   return [
     { rotulo: 'Receita bruta', valorCents: dre.grossRevenueCents },
-    { rotulo: 'Deducoes', valorCents: dre.deductionsCents, subtrai: true },
-    { rotulo: 'Receita liquida', valorCents: dre.netRevenueCents, destaque: true },
+    { rotulo: 'Deduções', valorCents: dre.deductionsCents, subtrai: true },
+    { rotulo: 'Receita líquida', valorCents: dre.netRevenueCents, destaque: true },
     { rotulo: 'Custo', valorCents: dre.costCents, subtrai: true },
     { rotulo: 'Lucro bruto', valorCents: dre.grossProfitCents, destaque: true },
     { rotulo: 'Despesas', valorCents: dre.expensesCents, subtrai: true },
@@ -110,7 +110,7 @@ export default function DreView() {
     <>
       <PageHeader
         title="DRE simplificado"
-        subtitle="Receita, custo, despesa e resultado do periodo"
+        subtitle="Receita, custo, despesa e resultado do período"
       />
 
       <Card>
@@ -127,14 +127,14 @@ export default function DreView() {
         </div>
 
         {periodoInvalido && de !== '' && ate !== '' ? (
-          <p className={styles.aviso}>O inicio do periodo nao pode ser depois do fim.</p>
+          <p className={styles.aviso}>O início do período não pode ser depois do fim.</p>
         ) : null}
 
         {carregando ? (
           <EmptyState title="Montando o relatorio" description="Somando os lancamentos." />
         ) : erro !== null ? (
           <EmptyState
-            title="Nao deu para montar o DRE"
+            title="Não deu para montar o DRE"
             description={erro}
             action={
               <Button variant="secondary" onClick={aplicarPeriodo}>
@@ -177,7 +177,7 @@ export default function DreView() {
               Margem bruta:{' '}
               <strong>
                 {dre.grossMarginPoints === null
-                  ? 'sem receita no periodo'
+                  ? 'sem receita no período'
                   : `${dre.grossMarginPoints}%`}
               </strong>
             </p>

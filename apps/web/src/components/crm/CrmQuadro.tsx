@@ -68,7 +68,7 @@ export default function CrmQuadro() {
 
     if (!r.ok) {
       setCards((atual) => atual.map((c) => (c.id === id ? { ...c, coluna: card.coluna } : c)))
-      setToast({ msg: 'Nao foi possivel mover o card.', tone: 'error' })
+      setToast({ msg: 'Não foi possível mover o card.', tone: 'error' })
     }
   }
 
@@ -82,11 +82,11 @@ export default function CrmQuadro() {
     <>
       <PageHeader
         title="CRM"
-        subtitle="Pendencias e contatos, vindos dos clientes ou lancados aqui"
+        subtitle="Pendências e contatos, vindos dos clientes ou lançados aqui"
         actions={
           <Button onClick={() => setCriando(true)}>
             <IconPlus size={17} />
-            Nova pendencia
+            Nova pendência
           </Button>
         }
       />
@@ -98,7 +98,7 @@ export default function CrmQuadro() {
           tone={contagem.afazer ? 'warning' : 'neutral'}
         />
         <Stat label="Em andamento" value={String(contagem.andamento)} />
-        <Stat label="Concluidos" value={String(contagem.concluido)} tone="positive" />
+        <Stat label="Concluídos" value={String(contagem.concluido)} tone="positive" />
       </div>
 
       <Card>
@@ -125,8 +125,8 @@ export default function CrmQuadro() {
               onChange={(e) => setFiltroTipo(e.target.value)}
               aria-label="Filtrar por tipo"
             >
-              <option value="">Pendencias e contatos</option>
-              <option value="pendencia">So pendencias</option>
+              <option value="">Pendências e contatos</option>
+              <option value="pendencia">Só pendências</option>
               <option value="contato">So contatos</option>
             </select>
 
@@ -134,17 +134,17 @@ export default function CrmQuadro() {
               className={styles.select}
               value={periodo}
               onChange={(e) => setPeriodo(Number(e.target.value))}
-              aria-label="Filtrar por periodo"
+              aria-label="Filtrar por período"
             >
               <option value={0}>Qualquer data</option>
-              <option value={7}>Ultimos/proximos 7 dias</option>
+              <option value={7}>Últimos/próximos 7 dias</option>
               <option value={30}>30 dias</option>
               <option value={90}>90 dias</option>
             </select>
           </div>
 
           {/* No mobile o quadro rola na horizontal; a lista e a alternativa */}
-          <div className={styles.visoes} role="group" aria-label="Modo de visualizacao">
+          <div className={styles.visoes} role="group" aria-label="Modo de visualização">
             <button
               type="button"
               className={`${styles.visao} ${visao === 'quadro' ? styles.visaoAtiva : ''}`}
@@ -170,14 +170,14 @@ export default function CrmQuadro() {
             title={cards.length === 0 ? 'Nada no CRM ainda' : 'Nenhum card com estes filtros'}
             description={
               cards.length === 0
-                ? 'Pendencias e contatos lancados na tela de Clientes aparecem aqui automaticamente. Voce tambem pode lancar direto por esta tela.'
+                ? 'Pendências e contatos lançados na tela de Clientes aparecem aqui automaticamente. Você também pode lançar direto por esta tela.'
                 : 'Ajuste os filtros para ver outros cards.'
             }
             action={
               cards.length === 0 ? (
                 <Button onClick={() => setCriando(true)}>
                   <IconPlus size={16} />
-                  Lancar a primeira
+                  Lançar a primeira
                 </Button>
               ) : (
                 <Button
@@ -338,7 +338,7 @@ function CardKanban({
       <button type="button" className={styles.cardCorpo} onClick={onAbrir}>
         <span className={styles.cardTopo}>
           <Badge tone={card.tipo === 'pendencia' ? 'warning' : 'info'}>
-            {card.tipo === 'pendencia' ? 'Pendencia' : 'Contato'}
+            {card.tipo === 'pendencia' ? 'Pendência' : 'Contato'}
           </Badge>
           {atrasado ? <Badge tone="danger">Atrasado</Badge> : null}
         </span>
@@ -361,7 +361,7 @@ function CardKanban({
               {card.responsaveis.length > 1 ? ` +${card.responsaveis.length - 1}` : ''}
             </span>
           ) : (
-            <span className={styles.cardSemResponsavel}>sem responsavel</span>
+            <span className={styles.cardSemResponsavel}>sem responsável</span>
           )}
         </span>
 
@@ -486,7 +486,7 @@ function FormCard({
         aria-labelledby="novo-card"
       >
         <h2 id="novo-card" className={styles.dialogTitulo}>
-          Nova pendencia ou contato
+          Nova pendência ou contato
         </h2>
 
         <form onSubmit={salvar} noValidate className={styles.formCampos}>
@@ -497,7 +497,7 @@ function FormCard({
               onClick={() => setTipo('pendencia')}
               aria-pressed={tipo === 'pendencia'}
             >
-              Pendencia
+              Pendência
             </button>
             <button
               type="button"
@@ -510,7 +510,7 @@ function FormCard({
           </div>
 
           <label className={styles.campo}>
-            <span>Titulo</span>
+            <span>Título</span>
             <input
               className={styles.input}
               value={titulo}
@@ -521,7 +521,7 @@ function FormCard({
           </label>
 
           <label className={styles.campo}>
-            <span>Descricao</span>
+            <span>Descrição</span>
             <textarea
               className={`${styles.input} ${styles.textarea}`}
               value={descricao}
@@ -554,13 +554,13 @@ function FormCard({
             </label>
 
             <label className={styles.campo}>
-              <span>Responsavel</span>
+              <span>Responsável</span>
               <CampoTag
                 valor={responsavel}
                 opcoes={listaResponsaveis}
                 onChange={setResponsavel}
                 onCriar={(novo) => setListaResponsaveis((r) => [...r, novo])}
-                ariaLabel="Responsavel"
+                ariaLabel="Responsável"
               />
             </label>
           </div>

@@ -196,7 +196,7 @@ export default function SignupFlow() {
             />
 
             <TextField
-              label="Razao social da empresa"
+              label="Razão social da empresa"
               value={razaoSocial}
               onChange={(v) => {
                 setRazaoSocial(v)
@@ -236,7 +236,7 @@ export default function SignupFlow() {
               inputMode="tel"
               placeholder="(41) 99876-5432"
               autoComplete="tel"
-              hint="E por aqui que o assistente vai falar com voce."
+              hint="É por aqui que o assistente vai falar com você."
             />
 
             <PasswordField
@@ -273,7 +273,7 @@ export default function SignupFlow() {
           </form>
 
           <FormFooter>
-            Ja tem conta? <Link href="/login">Entrar</Link>
+            Já tem conta? <Link href="/login">Entrar</Link>
           </FormFooter>
         </>
       ) : null}
@@ -283,7 +283,7 @@ export default function SignupFlow() {
         <>
           <FormHeader
             title="Cupom de parceiro"
-            subtitle="Se alguem indicou o sistema, informe o cupom. E opcional."
+            subtitle="Se alguém indicou o sistema, informe o cupom. É opcional."
           />
 
           <form
@@ -310,7 +310,7 @@ export default function SignupFlow() {
       {/* ============================ Etapa 3 ============================ */}
       {step === 3 ? (
         <>
-          <FormHeader title="Termos de uso" subtitle="Ultimo passo antes do pagamento." />
+          <FormHeader title="Termos de uso" subtitle="Último passo antes do pagamento." />
 
           {erroCriacao ? <Alert tone="error">{erroCriacao}</Alert> : null}
 
@@ -378,7 +378,7 @@ export default function SignupFlow() {
             criarCobranca={criarCobrancaAssinatura}
             consultarStatus={fetchPixChargeStatus}
             onPago={aoConfirmarPagamento}
-            textoSucesso="Sua assinatura esta ativa. Estamos abrindo seu painel..."
+            textoSucesso="Sua assinatura está ativa. Estamos abrindo seu painel..."
           />
         </>
       ) : null}

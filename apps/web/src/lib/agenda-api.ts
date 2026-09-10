@@ -176,7 +176,7 @@ export const LEMBRETES = [
 export const NOMES_MESES = [
   'Janeiro',
   'Fevereiro',
-  'Marco',
+  'Março',
   'Abril',
   'Maio',
   'Junho',
@@ -188,7 +188,7 @@ export const NOMES_MESES = [
   'Dezembro',
 ]
 
-export const DIAS_SEMANA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab']
+export const DIAS_SEMANA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 
 export type DiaCalendario = {
   /** AAAA-MM-DD */

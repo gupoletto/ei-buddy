@@ -201,7 +201,7 @@ export default function ProdutosLista() {
     <>
       <PageHeader
         title="Produtos"
-        subtitle="Catalogo, precos e estoque"
+        subtitle="Catálogo, preços e estoque"
         actions={
           <>
             <Button variant="secondary" onClick={() => setImportandoXml(true)}>
@@ -231,7 +231,7 @@ export default function ProdutosLista() {
               type="search"
               value={busca}
               onChange={(e) => mudarBusca(e.target.value)}
-              placeholder="Buscar por codigo, descricao ou codigo de barras"
+              placeholder="Buscar por código, descrição ou código de barras"
               aria-label="Buscar produto"
             />
           </label>
@@ -259,7 +259,7 @@ export default function ProdutosLista() {
 
         {erro !== null ? (
           <EmptyState
-            title="Nao deu para carregar o catalogo"
+            title="Não deu para carregar o catálogo"
             description={erro}
             action={
               <Button
@@ -275,7 +275,7 @@ export default function ProdutosLista() {
             }
           />
         ) : carregando && dados === null ? (
-          <EmptyState title="Carregando o catalogo" description="Buscando seus produtos." />
+          <EmptyState title="Carregando o catálogo" description="Buscando seus produtos." />
         ) : total === 0 ? (
           filtrando ? (
             <EmptyState
@@ -290,7 +290,7 @@ export default function ProdutosLista() {
           ) : (
             <EmptyState
               title="Nenhum produto cadastrado"
-              description="Cadastre o primeiro produto, traga o catalogo de uma planilha ou importe o XML de uma nota de compra."
+              description="Cadastre o primeiro produto, traga o catálogo de uma planilha ou importe o XML de uma nota de compra."
               action={
                 <div className={styles.emptyAcoes}>
                   <ButtonLink href="/app/produtos/novo">
@@ -427,7 +427,7 @@ function Resumo({ resumo }: { resumo: ResumoDoCatalogo | null }) {
     <div className="statRow">
       <Stat label="Produtos no catalogo" value={String(resumo.total)} />
       <Stat
-        label="Precisam de reposicao"
+        label="Precisam de reposição"
         value={String(resumo.belowMinimum)}
         hint={
           resumo.belowMinimum
@@ -498,7 +498,7 @@ function Paginacao({
           onClick={() => onIr(pagina + 1)}
           disabled={pagina >= ultimaPagina || carregando}
         >
-          Proxima
+          Próxima
         </Button>
       </div>
     </div>

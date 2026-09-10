@@ -20,7 +20,7 @@ export default function AssistenteEntrada() {
       <span className={styles.perguntaLabel}>Pergunta recebida</span>
       <p className={styles.perguntaTexto}>&ldquo;{pergunta}&rdquo;</p>
       <p className={styles.perguntaNota}>
-        Quando o assistente estiver pronto, esta pergunta ja chega digitada no campo de conversa.
+        Quando o assistente estiver pronto, esta pergunta já chega digitada no campo de conversa.
       </p>
     </div>
   )

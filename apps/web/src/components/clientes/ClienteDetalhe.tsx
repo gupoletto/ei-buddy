@@ -19,10 +19,10 @@ import AnonimizarCliente from './AnonimizarCliente'
 import styles from './detalhe.module.css'
 
 const TIPO_CONTATO: Record<ContatoCliente['tipo'], string> = {
-  ligacao: 'Ligacao',
+  ligacao: 'Ligação',
   whatsapp: 'WhatsApp',
   visita: 'Visita',
-  observacao: 'Observacao',
+  observacao: 'Observação',
 }
 
 /** Documento so com digitos nao se le. CPF vira 000.000.000-00, CNPJ o seu. */
@@ -101,8 +101,8 @@ export default function ClienteDetalhe({ clienteId }: { clienteId: string }) {
         <PageHeader title="Cliente" />
         <Card>
           <EmptyState
-            title="Nao foi possivel abrir a ficha"
-            description={erro ?? 'Este cliente nao existe ou nao e da sua loja.'}
+            title="Não foi possível abrir a ficha"
+            description={erro ?? 'Este cliente não existe ou não é da sua loja.'}
             action={
               <Link href="/app/clientes" className={styles.verMais}>
                 Voltar para a lista
@@ -138,18 +138,18 @@ export default function ClienteDetalhe({ clienteId }: { clienteId: string }) {
             <Button
               variant="secondary"
               onClick={() =>
-                setToast('Lancamento de pendencia entra com o modulo de Contas a Receber.')
+                setToast('Lançamento de pendência entra com o módulo de Contas a Receber.')
               }
             >
               <IconReceipt size={16} />
-              Lancar pendencia
+              Lançar pendência
             </Button>
             <Button
               variant="secondary"
-              onClick={() => setToast('Lancamento de contato entra com o modulo de CRM.')}
+              onClick={() => setToast('Lançamento de contato entra com o módulo de CRM.')}
             >
               <IconCalendar size={16} />
-              Lancar contato
+              Lançar contato
             </Button>
             {/*
               O botao de WhatsApp so aparece com telefone. Antes ele era sempre
@@ -184,7 +184,7 @@ export default function ClienteDetalhe({ clienteId }: { clienteId: string }) {
         />
         <Stat label="Compras" value={String(compras.length)} hint={formatMoney(totalComprado)} />
         <Stat
-          label="Ultima compra"
+          label="Última compra"
           value={compras[0] ? formatDate(compras[0].data) : '—'}
           hint={compras.length === 0 ? 'nunca comprou' : undefined}
         />
@@ -196,7 +196,7 @@ export default function ClienteDetalhe({ clienteId }: { clienteId: string }) {
           <dl className={styles.dados}>
             <div>
               <dt>Documento</dt>
-              <dd>{documento ?? 'Nao informado'}</dd>
+              <dd>{documento ?? 'Não informado'}</dd>
             </div>
             <div>
               <dt>Tipo</dt>
@@ -207,25 +207,25 @@ export default function ClienteDetalhe({ clienteId }: { clienteId: string }) {
               */}
               <dd>
                 {cliente.tipoPessoa === 'fisica'
-                  ? 'Pessoa fisica'
+                  ? 'Pessoa física'
                   : cliente.tipoPessoa === 'juridica'
-                    ? 'Pessoa juridica'
+                    ? 'Pessoa jurídica'
                     : '—'}
               </dd>
             </div>
             <div>
               <dt>Celular</dt>
-              <dd>{telefone ?? 'Nao informado'}</dd>
+              <dd>{telefone ?? 'Não informado'}</dd>
             </div>
             <div>
               <dt>E-mail</dt>
               <dd>{cliente.email ?? '—'}</dd>
             </div>
             <div className={styles.dadosLargo}>
-              <dt>Endereco</dt>
+              <dt>Endereço</dt>
               <dd>
                 {endereco === null ? (
-                  'Nao informado'
+                  'Não informado'
                 ) : (
                   <>
                     {endereco[0]}
@@ -237,7 +237,7 @@ export default function ClienteDetalhe({ clienteId }: { clienteId: string }) {
             </div>
             {cliente.observacao === null ? null : (
               <div className={styles.dadosLargo}>
-                <dt>Observacao</dt>
+                <dt>Observação</dt>
                 <dd>{cliente.observacao}</dd>
               </div>
             )}
@@ -246,7 +246,7 @@ export default function ClienteDetalhe({ clienteId }: { clienteId: string }) {
 
         {/* --- Pendencias financeiras --- */}
         <Card
-          title="Pendencias financeiras"
+          title="Pendências financeiras"
           action={
             <Link href="/app/financeiro/contas-a-receber" className={styles.verMais}>
               Contas a receber
@@ -257,7 +257,7 @@ export default function ClienteDetalhe({ clienteId }: { clienteId: string }) {
           {pendencias.length === 0 ? (
             <EmptyState
               title="Nada em aberto"
-              description="Este cliente nao tem titulos pendentes."
+              description="Este cliente não tem títulos pendentes."
             />
           ) : (
             <ul className={styles.linhas}>
@@ -283,7 +283,7 @@ export default function ClienteDetalhe({ clienteId }: { clienteId: string }) {
 
         {/* --- Historico de compras --- */}
         <Card
-          title="Historico de compras"
+          title="Histórico de compras"
           className={styles.largo}
           action={
             <Link href="/app/vendas" className={styles.verMais}>
@@ -295,7 +295,7 @@ export default function ClienteDetalhe({ clienteId }: { clienteId: string }) {
           {compras.length === 0 ? (
             <EmptyState
               title="Nenhuma compra registrada"
-              description="Quando este cliente comprar, o historico aparece aqui."
+              description="Quando este cliente comprar, o histórico aparece aqui."
             />
           ) : (
             <ul className={styles.linhas}>
@@ -317,13 +317,13 @@ export default function ClienteDetalhe({ clienteId }: { clienteId: string }) {
 
         {/* --- Contatos e pendencias lancadas (CRM) --- */}
         <Card
-          title="Historico de contatos"
+          title="Histórico de contatos"
           className={styles.largo}
           action={
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setToast('Lancamento de contato entra com o modulo de CRM.')}
+              onClick={() => setToast('Lançamento de contato entra com o módulo de CRM.')}
             >
               <IconPlus size={14} />
               Novo contato
@@ -333,7 +333,7 @@ export default function ClienteDetalhe({ clienteId }: { clienteId: string }) {
           {contatos.length === 0 ? (
             <EmptyState
               title="Nenhum contato registrado"
-              description="Registre ligacoes, visitas e combinados para nao depender da memoria."
+              description="Registre ligações, visitas e combinados para não depender da memória."
             />
           ) : (
             <ul className={styles.linhas}>

@@ -9,9 +9,9 @@ import {
 } from '@/lib/cookies'
 
 export const metadata: Metadata = {
-  title: `Politica de Cookies — ${BRAND}`,
+  title: `Política de Cookies — ${BRAND}`,
   description:
-    'Quais cookies o sistema usa, para que servem e quanto duram. Hoje ha um, e ele e essencial.',
+    'Quais cookies o sistema usa, para que servem e quanto duram. Hoje há um, e ele é essencial.',
 }
 
 /**
@@ -24,35 +24,35 @@ export const metadata: Metadata = {
  */
 export default function PoliticaDeCookies() {
   return (
-    <PaginaLegal eyebrow="Documentos" titulo="Politica de Cookies" atualizadoEm="2026-09-09">
+    <PaginaLegal eyebrow="Documentos" titulo="Política de Cookies" atualizadoEm="2026-09-09">
       <p>
-        Esta pagina lista tudo o que o {BRAND} guarda no seu navegador, para que serve e quanto
-        tempo fica. A lista e gerada a partir do proprio codigo do sistema — nao e um texto mantido
-        a mao, e por isso ela nao pode ficar desatualizada em relacao ao que acontece de verdade.
+        Esta página lista tudo o que o {BRAND} guarda no seu navegador, para que serve e quanto
+        tempo fica. A lista é gerada a partir do próprio código do sistema — não é um texto mantido
+        à mão, e por isso ela não pode ficar desatualizada em relação ao que acontece de verdade.
       </p>
 
-      <h2>Nao pedimos seu consentimento, e explicamos por que</h2>
+      <h2>Não pedimos seu consentimento, e explicamos por quê</h2>
 
       <p>
-        Hoje existe <strong>um</strong> cookie, e sem ele o sistema nao funciona: e o que mantem
-        voce autenticado entre uma tela e outra. A base legal para ele nao e o consentimento — e a
-        execucao do contrato (art. 7, inciso V, da LGPD).
+        Hoje existe <strong>um</strong> cookie, e sem ele o sistema não funciona: é o que mantém
+        você autenticado entre uma tela e outra. A base legal para ele não é o consentimento — é a
+        execução do contrato (art. 7, inciso V, da LGPD).
       </p>
 
       <p>
-        Perguntar &quot;voce aceita cookies?&quot; para algo que sera gravado de qualquer forma nao
-        protegeria voce de nada. Serviria para nos, como aparencia de conformidade, e treinaria voce
+        Perguntar &quot;você aceita cookies?&quot; para algo que será gravado de qualquer forma não
+        protegeria você de nada. Serviria para nós, como aparência de conformidade, e treinaria você
         a clicar em &quot;aceitar&quot; sem ler — o que torna o consentimento pior justamente nos
-        casos em que ele importa. O que a lei pede aqui e transparencia, e e o que esta abaixo.
+        casos em que ele importa. O que a lei pede aqui é transparência, e é o que está abaixo.
       </p>
 
       <p>
         <strong>
-          Nao usamos cookie de analise, de publicidade ou de rastreamento, nem carregamos script de
+          Não usamos cookie de análise, de publicidade ou de rastreamento, nem carregamos script de
           terceiros.
         </strong>{' '}
-        No dia em que isso mudar, voce sera perguntado antes — de forma separada por finalidade, e
-        podendo mudar de ideia depois. {EXIGE_CONSENTIMENTO ? '' : 'Nao e o caso hoje.'}
+        No dia em que isso mudar, você será perguntado antes — de forma separada por finalidade, e
+        podendo mudar de ideia depois. {EXIGE_CONSENTIMENTO ? '' : 'Não é o caso hoje.'}
       </p>
 
       <h2>Cookies</h2>
@@ -64,7 +64,7 @@ export default function PoliticaDeCookies() {
               <th>Nome</th>
               <th>Tipo</th>
               <th>Para que serve</th>
-              <th>Duracao</th>
+              <th>Duração</th>
             </tr>
           </thead>
           <tbody>
@@ -81,8 +81,8 @@ export default function PoliticaDeCookies() {
                   {c.httpOnly ? (
                     <>
                       {' '}
-                      Ele e marcado como <code>httpOnly</code>: nem o codigo da propria pagina
-                      consegue le-lo, o que limita o dano de uma falha de seguranca.
+                      Ele é marcado como <code>httpOnly</code>: nem o código da própria página
+                      consegue lê-lo, o que limita o dano de uma falha de segurança.
                     </>
                   ) : null}
                 </td>
@@ -96,7 +96,7 @@ export default function PoliticaDeCookies() {
       <h2>Outras coisas guardadas no seu navegador</h2>
 
       <p>
-        Tecnicamente nao sao cookies, e a diferenca nao muda nada para voce: tambem ficam no seu
+        Tecnicamente não são cookies, e a diferença não muda nada para você: também ficam no seu
         aparelho. Por isso entram aqui.
       </p>
 
@@ -107,7 +107,7 @@ export default function PoliticaDeCookies() {
               <th>Chave</th>
               <th>Tipo</th>
               <th>Para que serve</th>
-              <th>Duracao</th>
+              <th>Duração</th>
             </tr>
           </thead>
           <tbody>
@@ -130,21 +130,21 @@ export default function PoliticaDeCookies() {
       <h2>Como remover</h2>
 
       <p>
-        Voce pode apagar tudo isso a qualquer momento pelas configuracoes do seu navegador, ou
-        clicando em <strong>Sair</strong> dentro do sistema — o que encerra a sessao no servidor, e
-        nao apenas no seu aparelho.
+        Você pode apagar tudo isso a qualquer momento pelas configurações do seu navegador, ou
+        clicando em <strong>Sair</strong> dentro do sistema — o que encerra a sessão no servidor, e
+        não apenas no seu aparelho.
       </p>
 
       <p>
-        Apagar o cookie de sessao desconecta voce. Nao ha perda de dado: o que voce lancou fica no
-        sistema, e voce entra de novo com a mesma conta.
+        Apagar o cookie de sessão desconecta você. Não há perda de dado: o que você lançou fica no
+        sistema, e você entra de novo com a mesma conta.
       </p>
 
-      <h2>Duvidas</h2>
+      <h2>Dúvidas</h2>
 
       <p>
         Sobre seus dados em geral, veja a{' '}
-        <a href="/politica-de-privacidade">Politica de Privacidade</a>, que explica o que coletamos,
+        <a href="/politica-de-privacidade">Política de Privacidade</a>, que explica o que coletamos,
         por que, e como exercer seus direitos.
       </p>
     </PaginaLegal>

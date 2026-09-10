@@ -98,7 +98,7 @@ function CardLinha({ card, onMover }: { card: CardCrm; onMover: (destino: Coluna
     <View style={estilos.card}>
       <View style={estilos.cardTopo}>
         <Etiqueta tom={card.tipo === 'pendencia' ? 'atencao' : 'neutro'}>
-          {card.tipo === 'pendencia' ? 'Pendencia' : 'Contato'}
+          {card.tipo === 'pendencia' ? 'Pendência' : 'Contato'}
         </Etiqueta>
         {atrasado ? <Etiqueta tom="erro">Atrasado</Etiqueta> : null}
       </View>

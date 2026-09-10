@@ -21,7 +21,7 @@ export async function pedir<T>(caminho: string, init?: RequestInit): Promise<Res
       credentials: 'same-origin',
     })
   } catch {
-    return { ok: false, erro: 'Sem conexao. Verifique sua internet.' }
+    return { ok: false, erro: 'Sem conexão. Verifique sua internet.' }
   }
 
   const corpo = (await resposta.json().catch(() => ({}))) as {

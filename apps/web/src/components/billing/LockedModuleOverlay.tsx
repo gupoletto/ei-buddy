@@ -31,8 +31,8 @@ function IconLock({ size = 22 }: { size?: number }) {
  * Clicar em qualquer lugar abre o modal de regularizacao.
  */
 export default function LockedModuleOverlay({
-  titulo = 'Modulo bloqueado',
-  descricao = 'Regularize o pagamento para voltar a usar este modulo.',
+  titulo = 'Módulo bloqueado',
+  descricao = 'Regularize o pagamento para voltar a usar este módulo.',
   children,
 }: {
   titulo?: string

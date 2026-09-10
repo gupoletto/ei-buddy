@@ -53,17 +53,17 @@ export function hojeLocal(agora: Date = new Date()): string {
 const DIAS = [
   'Domingo',
   'Segunda-feira',
-  'Terca-feira',
+  'Terça-feira',
   'Quarta-feira',
   'Quinta-feira',
   'Sexta-feira',
-  'Sabado',
+  'Sábado',
 ] as const
 
 const MESES = [
   'janeiro',
   'fevereiro',
-  'marco',
+  'março',
   'abril',
   'maio',
   'junho',

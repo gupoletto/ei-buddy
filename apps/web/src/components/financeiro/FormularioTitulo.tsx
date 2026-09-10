@@ -93,7 +93,7 @@ export default function FormularioTitulo({
     if (!vencimento) novos.vencimento = 'Informe a data de vencimento.'
     if (paraNumero(valor) <= 0) novos.valor = 'Informe um valor maior que zero.'
     if (!descricao.trim()) {
-      novos.descricao = tipo === 'pagar' ? 'Descreva o que e.' : 'Informe a que se refere.'
+      novos.descricao = tipo === 'pagar' ? 'Descreva o que é.' : 'Informe a que se refere.'
     }
 
     setErros(novos)
@@ -218,7 +218,7 @@ export default function FormularioTitulo({
           <div className={styles.formLinha}>
             {tipo === 'receber' ? (
               <label className={styles.campo}>
-                <span>Data de emissao</span>
+                <span>Data de emissão</span>
                 <input
                   type="date"
                   className={styles.input}
@@ -302,7 +302,7 @@ export default function FormularioTitulo({
                   Salvando...
                 </>
               ) : (
-                'Lancar titulo'
+                'Lançar título'
               )}
             </Button>
           </div>

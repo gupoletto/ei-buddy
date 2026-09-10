@@ -84,7 +84,7 @@ export default function Empresa() {
     const r = await salvarEmpresa({ ...campos, conexoesHabilitadas: false } as never)
     setSalvando(false)
 
-    Alert.alert(r.ok ? 'Salvo' : 'Nao deu certo', r.ok ? 'Dados da empresa atualizados.' : r.error)
+    Alert.alert(r.ok ? 'Salvo' : 'Não deu certo', r.ok ? 'Dados da empresa atualizados.' : r.error)
   }
 
   return (
@@ -92,7 +92,7 @@ export default function Empresa() {
       <Cabecalho titulo="Empresa" subtitulo={campos.nomeFantasia} />
 
       <ScrollView contentContainerStyle={estilos.conteudo} keyboardShouldPersistTaps="handled">
-        <Sanfona titulo="Identificacao" resumo={campos.cnpj} inicialAberta>
+        <Sanfona titulo="Identificação" resumo={campos.cnpj} inicialAberta>
           <Campo
             rotulo="CNPJ"
             valor={campos.cnpj}
@@ -104,7 +104,7 @@ export default function Empresa() {
             tipoTeclado="numeric"
           />
           <Campo
-            rotulo="Razao social"
+            rotulo="Razão social"
             valor={campos.razaoSocial}
             onChange={(v) => set('razaoSocial', v)}
           />
@@ -119,18 +119,18 @@ export default function Empresa() {
             onChange={(v) => set('ramoAtividade', v)}
           />
           <Campo
-            rotulo="Inscricao estadual"
+            rotulo="Inscrição estadual"
             valor={campos.inscricaoEstadual}
             onChange={(v) => set('inscricaoEstadual', v)}
           />
           <Campo
-            rotulo="Inscricao municipal"
+            rotulo="Inscrição municipal"
             valor={campos.inscricaoMunicipal}
             onChange={(v) => set('inscricaoMunicipal', v)}
           />
         </Sanfona>
 
-        <Sanfona titulo="Endereco" resumo={`${campos.cidade}/${campos.uf}`}>
+        <Sanfona titulo="Endereço" resumo={`${campos.cidade}/${campos.uf}`}>
           <Campo
             rotulo="CEP"
             valor={campos.cep}
@@ -139,7 +139,7 @@ export default function Empresa() {
               set('cep', m)
               void preencherPorCep(m)
             }}
-            dica={buscandoCep ? 'Buscando endereco...' : undefined}
+            dica={buscandoCep ? 'Buscando endereço...' : undefined}
             tipoTeclado="numeric"
           />
           <Campo
@@ -148,7 +148,7 @@ export default function Empresa() {
             onChange={(v) => set('logradouro', v)}
           />
           <Campo
-            rotulo="Numero"
+            rotulo="Número"
             valor={campos.numero}
             onChange={(v) => set('numero', v)}
             tipoTeclado="numeric"
@@ -185,16 +185,16 @@ export default function Empresa() {
 
         <Sanfona titulo="Certificado digital" resumo="gerenciado no site">
           <View style={estilos.aviso}>
-            <Etiqueta tom="atencao">So no site</Etiqueta>
+            <Etiqueta tom="atencao">Só no site</Etiqueta>
             <Text style={estilos.avisoTexto}>
-              O envio do certificado A1 e a senha ficam no site. Arquivo .pfx pelo celular e
-              trabalhoso, e senha de certificado nao deveria ser digitada em teclado de toque.
+              O envio do certificado A1 é a senha ficam no site. Arquivo .pfx pelo celular é
+              trabalhoso, e senha de certificado não deveria ser digitada em teclado de toque.
             </Text>
           </View>
         </Sanfona>
 
         <Botao onPress={salvar} carregando={salvando} largura>
-          {salvando ? 'Salvando...' : 'Salvar alteracoes'}
+          {salvando ? 'Salvando...' : 'Salvar alterações'}
         </Botao>
       </ScrollView>
     </SafeAreaView>

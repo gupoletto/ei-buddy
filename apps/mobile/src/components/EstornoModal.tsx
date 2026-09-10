@@ -141,14 +141,14 @@ export default function EstornoModal({
             </View>
 
             {baixas === null ? (
-              <Vazio titulo="Carregando" descricao="Buscando as baixas do titulo." />
+              <Vazio titulo="Carregando" descricao="Buscando as baixas do título." />
             ) : erroCarga !== null ? (
               <Vazio
-                titulo="Nao foi possivel carregar"
+                titulo="Não foi possível carregar"
                 descricao={`${erroCarga} Feche e tente de novo.`}
               />
             ) : baixas.length === 0 ? (
-              <Vazio titulo="Este titulo nao tem baixas" descricao="Nao ha nada para estornar." />
+              <Vazio titulo="Este título não tem baixas" descricao="Não há nada para estornar." />
             ) : (
               <>
                 <View style={estilos.lista}>
@@ -160,7 +160,7 @@ export default function EstornoModal({
                     const detalhe = negativa
                       ? 'Estorno'
                       : estornadas.has(b.id)
-                        ? 'Baixa ja estornada'
+                        ? 'Baixa já estornada'
                         : [rotuloDaForma(b.method), b.bankAccount].filter(Boolean).join(' · ') ||
                           'Baixa'
 
@@ -195,7 +195,7 @@ export default function EstornoModal({
 
                 {estornaveis.length === 0 ? (
                   <Text style={estilos.aviso}>
-                    Todas as baixas deste titulo ja foram estornadas. Para baixar de novo, lance uma
+                    Todas as baixas deste título já foram estornadas. Para baixar de novo, lance uma
                     baixa — o estorno de um estorno nao existe.
                   </Text>
                 ) : (
@@ -203,8 +203,8 @@ export default function EstornoModal({
                     rotulo="Motivo do estorno"
                     valor={motivo}
                     onChange={setMotivo}
-                    placeholder="Ex.: lancado na conta errada"
-                    dica="Fica na trilha: e a resposta para “por que esse saldo mudou”."
+                    placeholder="Ex.: lançado na conta errada"
+                    dica="Fica na trilha: é a resposta para “por que esse saldo mudou”."
                     editavel={!processando}
                   />
                 )}

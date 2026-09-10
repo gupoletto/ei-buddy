@@ -3,6 +3,7 @@ import { Poppins, Inter } from 'next/font/google'
 import AvisoDeCookies from '@/components/AvisoDeCookies'
 import ScrollRestoration from '@/components/ScrollRestoration'
 import { BRAND } from '@/content/site'
+import { SCRIPT_TEMA_INICIAL } from '@/lib/tema-painel'
 import './globals.css'
 
 /* Fonte de marca/destaque: geometrica e arredondada, no espirito da
@@ -30,7 +31,41 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {
   return (
-    <html lang="pt-BR" className={`${poppins.variable} ${inter.variable}`}>
+    <html
+      lang="pt-BR"
+      className={`${poppins.variable} ${inter.variable}`}
+      /*
+       * O script logo abaixo escreve `data-theme` neste elemento ANTES da
+       * hidratacao — de proposito, e o unico jeito de escolher o tema sem
+       * um flash escuro no primeiro paint (ver `SCRIPT_TEMA_INICIAL`). O
+       * servidor nunca sabe o valor (nao ha `localStorage` la), entao o HTML
+       * que ele renderiza sempre difere do DOM depois do script rodar.
+       *
+       * Sem isto, o React compara os dois, ve a diferenca e avisa
+       * "hydration mismatch" — um alarme falso: NADA quebrou, o atributo e
+       * exatamente o que devia ser. `suppressHydrationWarning` e a forma que
+       * o proprio React documenta para este caso exato, e o React so aplica
+       * a supressao aos ATRIBUTOS deste elemento — o conteudo dele continua
+       * conferido normalmente.
+       */
+      suppressHydrationWarning
+    >
+      <head>
+        {/*
+          Aplica o tema do painel ANTES da hidratacao — NR-099.
+
+          So tem efeito visivel dentro de `.appTheme` (o painel logado); o
+          site institucional e a autenticacao nao leem este atributo, entao
+          rodar em toda pagina nao muda nada nelas. Sem isto, quem ja
+          escolheu claro numa visita anterior veria um flash escuro no
+          primeiro paint do painel, toda vez.
+
+          Script inline e nao um modulo importado: precisa rodar SINCRONO,
+          antes do primeiro paint, e um `<script src>` externo perderia a
+          corrida por causa da ida a rede.
+        */}
+        <script dangerouslySetInnerHTML={{ __html: SCRIPT_TEMA_INICIAL }} />
+      </head>
       <body>
         <ScrollRestoration />
         {children}

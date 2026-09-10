@@ -137,7 +137,7 @@ export default function ContasView({ tipo }: { tipo: 'pagar' | 'receber' }) {
     setBaixando(null)
     setAviso(
       quitou
-        ? `Titulo quitado: ${formatMoney(r.dados.amountCents / 100)}.`
+        ? `Título quitado: ${formatMoney(r.dados.amountCents / 100)}.`
         : `Baixa parcial de ${formatMoney(r.dados.amountCents / 100)} registrada.`,
     )
 
@@ -166,10 +166,10 @@ export default function ContasView({ tipo }: { tipo: 'pagar' | 'receber' }) {
         }
       >
         {carregando ? (
-          <Vazio titulo="Carregando" descricao="Buscando os titulos da loja." />
+          <Vazio titulo="Carregando" descricao="Buscando os títulos da loja." />
         ) : erro !== null ? (
           <Vazio
-            titulo="Nao foi possivel carregar"
+            titulo="Não foi possível carregar"
             /* Puxar para atualizar continua valendo: no balcao o sinal cai, e
                o caminho de tentar de novo tem de estar a mao. */
             descricao={`${erro} Puxe para baixo para tentar de novo.`}
@@ -177,7 +177,7 @@ export default function ContasView({ tipo }: { tipo: 'pagar' | 'receber' }) {
         ) : linhas.length === 0 ? (
           <Vazio
             titulo={pagar ? 'Nenhuma conta a pagar' : 'Nenhuma conta a receber'}
-            descricao="Lancamentos aparecem aqui conforme forem criados."
+            descricao="Lançamentos aparecem aqui conforme forem criados."
           />
         ) : (
           <>
@@ -237,7 +237,7 @@ export default function ContasView({ tipo }: { tipo: 'pagar' | 'receber' }) {
 
             <Sanfona
               titulo={pagar ? 'Pagos' : 'Recebidos'}
-              resumo={`${grupos.quitados.length} titulo(s)`}
+              resumo={`${grupos.quitados.length} título(s)`}
             >
               {grupos.quitados.length === 0 ? (
                 <Text style={estilos.vazioTexto}>Nada baixado ainda.</Text>

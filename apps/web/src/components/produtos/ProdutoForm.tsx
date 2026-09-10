@@ -84,7 +84,7 @@ export default function ProdutoForm() {
   async function consultarEan(codigoBarras?: string) {
     const alvo = (codigoBarras ?? ean).trim()
     if (!alvo) {
-      setAvisoEan('Informe o codigo de barras.')
+      setAvisoEan('Informe o código de barras.')
       return
     }
 
@@ -104,7 +104,7 @@ export default function ProdutoForm() {
     setDescricao(r.dados.descricao)
     setNcm(r.dados.ncm)
     if (!categoria) setCategoria(r.dados.categoria)
-    setToast({ msg: 'Dados preenchidos pelo codigo de barras.', tone: 'success' })
+    setToast({ msg: 'Dados preenchidos pelo código de barras.', tone: 'success' })
   }
 
   /* ---------------------------------------------------------------- *
@@ -151,9 +151,9 @@ export default function ProdutoForm() {
 
     const novos: Record<string, FieldError> = {
       codigo: validateRequired(codigo, 'o codigo'),
-      descricao: validateRequired(descricao, 'a descricao'),
+      descricao: validateRequired(descricao, 'a descrição'),
       categoria: validateRequired(categoria, 'a categoria'),
-      precoVenda: venda > 0 ? null : 'Informe um preco de venda maior que zero.',
+      precoVenda: venda > 0 ? null : 'Informe um preço de venda maior que zero.',
     }
 
     setErros(novos)
@@ -202,7 +202,7 @@ export default function ProdutoForm() {
     <>
       <PageHeader
         title="Novo produto"
-        subtitle="Cadastro, preco e estoque"
+        subtitle="Cadastro, preço e estoque"
         actions={
           <ButtonLink href="/app/produtos" variant="secondary">
             Cancelar
@@ -214,7 +214,7 @@ export default function ProdutoForm() {
         {/* ---------------- Identificacao ---------------- */}
         <Card title="Identificacao">
           <FormGrid>
-            <Field label="Codigo de barras (EAN)" span={6}>
+            <Field label="Código de barras (EAN)" span={6}>
               <div className={styles.inline}>
                 <Input
                   value={ean}
@@ -250,7 +250,7 @@ export default function ProdutoForm() {
               ) : null}
             </Field>
 
-            <Field label="Codigo interno" span={6}>
+            <Field label="Código interno" span={6}>
               <Input
                 value={codigo}
                 onChange={(e) => setCodigo(e.target.value.toUpperCase())}
@@ -260,11 +260,11 @@ export default function ProdutoForm() {
               {erroDe('codigo')}
             </Field>
 
-            <Field label="Descricao" span={12}>
+            <Field label="Descrição" span={12}>
               <Input
                 value={descricao}
                 onChange={(e) => setDescricao(e.target.value)}
-                placeholder="Cafe torrado e moido 500g"
+                placeholder="Café torrado e moído 500g"
                 aria-invalid={Boolean(erros.descricao)}
               />
               {erroDe('descricao')}
@@ -296,7 +296,7 @@ export default function ProdutoForm() {
         </Card>
 
         {/* ---------------- NCM ---------------- */}
-        <Card title="Classificacao fiscal">
+        <Card title="Classificação fiscal">
           <FormGrid>
             <Field label="NCM" span={4}>
               <Input
@@ -309,7 +309,7 @@ export default function ProdutoForm() {
             <Field
               label="CFOP"
               span={4}
-              hint="5102 e revenda comum. Bebida e cigarro com imposto ja recolhido usam 5405."
+              hint="5102 é revenda comum. Bebida e cigarro com imposto já recolhido usam 5405."
             >
               <Input
                 value={cfop}
@@ -326,7 +326,7 @@ export default function ProdutoForm() {
                  tributaria depende do produto E do estado, muda por convenio, e
                  errar para menos e sonegacao. Dizer como o codigo se parece e
                  ajudar; escolher por ele seria dar conselho fiscal. */
-              hint="Empresa do Simples usa CSOSN (3 digitos, ex. 102). Regime normal usa CST (2, ex. 00)."
+              hint="Empresa do Simples usa CSOSN (3 dígitos, ex. 102). Regime normal usa CST (2, ex. 00)."
             >
               <Input
                 value={situacaoTributaria}
@@ -336,7 +336,7 @@ export default function ProdutoForm() {
               />
             </Field>
 
-            <Field label="Nao sabe o NCM?" span={12} hint="Descreva o produto e escolha na lista.">
+            <Field label="Não sabe o NCM?" span={12} hint="Descreva o produto e escolha na lista.">
               <div className={styles.inline}>
                 <Input
                   value={termoNcm}
@@ -375,9 +375,9 @@ export default function ProdutoForm() {
         </Card>
 
         {/* ---------------- Precos ---------------- */}
-        <Card title="Precos">
+        <Card title="Preços">
           <FormGrid>
-            <Field label="Preco de custo" span={4}>
+            <Field label="Preço de custo" span={4}>
               <Input
                 value={precoCusto}
                 onChange={(e) => setPrecoCusto(e.target.value)}
@@ -386,7 +386,7 @@ export default function ProdutoForm() {
               />
             </Field>
 
-            <Field label="Preco de venda" span={4}>
+            <Field label="Preço de venda" span={4}>
               <Input
                 value={precoVenda}
                 onChange={(e) => setPrecoVenda(e.target.value)}
@@ -406,12 +406,12 @@ export default function ProdutoForm() {
                 aria-live="polite"
               >
                 {margem === null ? (
-                  <span className={styles.margemVazia}>informe o preco de venda</span>
+                  <span className={styles.margemVazia}>informe o preço de venda</span>
                 ) : (
                   <>
                     <strong>{formatPercent(margem)}</strong>
                     <span>
-                      {lucro >= 0 ? 'lucro de ' : 'prejuizo de '}
+                      {lucro >= 0 ? 'lucro de ' : 'prejuízo de '}
                       {formatMoney(Math.abs(lucro))} por unidade
                     </span>
                   </>
@@ -433,9 +433,9 @@ export default function ProdutoForm() {
             </Field>
 
             <Field
-              label="Estoque minimo"
+              label="Estoque mínimo"
               span={4}
-              hint="Abaixo disso, entra no alerta de reposicao."
+              hint="Abaixo disso, entra no alerta de reposição."
             >
               <Input
                 value={estoqueMinimo}
@@ -447,7 +447,7 @@ export default function ProdutoForm() {
             <Field
               label="Motivo do ajuste"
               span={4}
-              hint="Obrigatorio ao corrigir a quantidade de um produto ja cadastrado."
+              hint="Obrigatório ao corrigir a quantidade de um produto já cadastrado."
             >
               <Input
                 value={motivoAjuste}
@@ -466,7 +466,7 @@ export default function ProdutoForm() {
                 {/* unoptimized: e um data URL local, nao passa pelo otimizador */}
                 <Image
                   src={imagem}
-                  alt="Previa da imagem do produto"
+                  alt="Prévia da imagem do produto"
                   className={styles.previa}
                   width={160}
                   height={160}

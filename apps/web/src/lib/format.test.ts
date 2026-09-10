@@ -139,7 +139,7 @@ describe('daysUntil', () => {
 describe('describeDueDate', () => {
   it.each([
     ['2026-09-08', 'Vence hoje'],
-    ['2026-09-09', 'Vence amanha'],
+    ['2026-09-09', 'Vence amanhã'],
     ['2026-09-11', 'Vence em 3 dias'],
     ['2026-09-07', '1 dia em atraso'],
     ['2026-09-03', '5 dias em atraso'],

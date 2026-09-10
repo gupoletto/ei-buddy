@@ -4,7 +4,7 @@ import ProdutosLista from '@/components/produtos/ProdutosLista'
 
 export const metadata: Metadata = {
   title: `Produtos — ${BRAND}`,
-  description: 'Catalogo, precos e controle de estoque.',
+  description: 'Catálogo, preços e controle de estoque.',
 }
 
 export default function ProdutosPage() {

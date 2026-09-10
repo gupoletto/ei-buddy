@@ -32,11 +32,11 @@ export default function Home() {
               Pergunte pelo <span className="gradientText">WhatsApp</span>
             </>
           }
-          text="Em vez de abrir o painel, montar filtro e exportar planilha, mande uma mensagem. O assistente consulta os mesmos dados do sistema e devolve o numero pronto — e pede confirmacao antes de qualquer acao que altere dado."
+          text="Em vez de abrir o painel, montar filtro e exportar planilha, mande uma mensagem. O assistente consulta os mesmos dados do sistema e devolve o número pronto — e pede confirmação antes de qualquer ação que altere dado."
           bullets={[
-            '"Qual foi o faturamento mes a mes dos ultimos meses"',
-            '"Quais produtos precisam de reposicao de estoque"',
-            '"O que ha para pagar ate sexta"',
+            '"Qual foi o faturamento mês a mês dos últimos meses"',
+            '"Quais produtos precisam de reposição de estoque"',
+            '"O que há para pagar até sexta"',
             '"Cadastra um cliente para mim"',
           ]}
           visual={<AssistantVisual />}
@@ -49,12 +49,12 @@ export default function Home() {
               A nota sai junto com a <span className="gradientText">venda</span>
             </>
           }
-          text="Monte o carrinho pelo leitor de codigo de barras ou pela busca, aplique desconto por item e receba em Pix, cartao, dinheiro ou carteira. A NFC-e ou NFS-e e emitida no fechamento."
+          text="Monte o carrinho pelo leitor de código de barras ou pela busca, aplique desconto por item e receba em Pix, cartão, dinheiro ou carteira. A NFC-e ou NFS-e é emitida no fechamento."
           bullets={[
-            'Leitor de codigo de barras direto no catalogo',
+            'Leitor de código de barras direto no catálogo',
             'Desconto por item ou no total da venda',
-            'Custo, imposto e taxa de cartao calculados na hora',
-            'Valor liquido lancado sozinho em contas a receber',
+            'Custo, imposto e taxa de cartão calculados na hora',
+            'Valor líquido lançado sozinho em contas a receber',
           ]}
           visual={<SalesVisual />}
           reverse
@@ -68,12 +68,12 @@ export default function Home() {
               Contas a pagar e a <span className="gradientText">receber</span>
             </>
           }
-          text="Plano de contas proprio, com titulos organizados por vencimento. Baixa total ou parcial, estorno de lancamento e a previsao de caixa sempre um passo a frente."
+          text="Plano de contas próprio, com títulos organizados por vencimento. Baixa total ou parcial, estorno de lançamento e a previsão de caixa sempre um passo a frente."
           bullets={[
-            'Plano de contas para classificar cada lancamento',
+            'Plano de contas para classificar cada lançamento',
             'Baixa total, parcial ou estorno',
-            'Titulos vencidos separados dos a vencer',
-            'DRE do mes pelo painel ou pelo assistente',
+            'Títulos vencidos separados dos a vencer',
+            'DRE do mês pelo painel ou pelo assistente',
           ]}
           visual={<FinanceVisual />}
         />
@@ -82,14 +82,14 @@ export default function Home() {
           eyebrow="Clientes e CRM"
           title={
             <>
-              O historico do cliente na <span className="gradientText">mao</span>
+              O histórico do cliente na <span className="gradientText">mão</span>
             </>
           }
-          text="Cada cliente com suas compras, pendencias e contatos no mesmo lugar. As pendencias viram cartoes num quadro, e os compromissos aparecem na agenda."
+          text="Cada cliente com suas compras, pendências e contatos no mesmo lugar. As pendências viram cartões num quadro, e os compromissos aparecem na agenda."
           bullets={[
-            'Busca por CPF ou CNPJ e importacao por planilha',
-            'Historico de compras e o que esta em aberto',
-            'Pendencias e contatos em quadro estilo Kanban',
+            'Busca por CPF ou CNPJ e importação por planilha',
+            'Histórico de compras e o que está em aberto',
+            'Pendências e contatos em quadro estilo Kanban',
             'Agenda de compromissos com lembrete antes da hora',
           ]}
           visual={<CrmVisual />}

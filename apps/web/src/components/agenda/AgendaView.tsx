@@ -144,7 +144,7 @@ export default function AgendaView() {
       {erroCarga ? (
         <Card>
           <EmptyState
-            title="Nao foi possivel carregar a agenda"
+            title="Não foi possível carregar a agenda"
             description={erroCarga}
             action={
               <Button
@@ -169,7 +169,7 @@ export default function AgendaView() {
               type="button"
               className={styles.navMes}
               onClick={() => mudarMes(-1)}
-              aria-label="Mes anterior"
+              aria-label="Mês anterior"
             >
               ‹
             </button>
@@ -180,7 +180,7 @@ export default function AgendaView() {
               type="button"
               className={styles.navMes}
               onClick={() => mudarMes(1)}
-              aria-label="Proximo mes"
+              aria-label="Próximo mês"
             >
               ›
             </button>
@@ -227,7 +227,7 @@ export default function AgendaView() {
         {/* --- Dia selecionado --- */}
         <Card title={`Compromissos de ${formatDate(diaSelecionado)}`}>
           {carregando ? (
-            <EmptyState title="Carregando" description="Buscando os compromissos do periodo." />
+            <EmptyState title="Carregando" description="Buscando os compromissos do período." />
           ) : doDia.length === 0 ? (
             <EmptyState
               title="Nada marcado"
@@ -273,7 +273,7 @@ export default function AgendaView() {
         </Card>
 
         {/* --- Proximos --- */}
-        <Card title="Proximos compromissos" className={styles.proximosCard}>
+        <Card title="Próximos compromissos" className={styles.proximosCard}>
           {eventosHoje.length > 0 ? (
             <p className={styles.destaqueHoje}>
               <strong>{eventosHoje.length}</strong> compromisso(s) hoje
@@ -285,7 +285,7 @@ export default function AgendaView() {
               title="Agenda livre"
               /* "Neste periodo" e nao "daqui pra frente": a busca cobre o mes
                  visivel, e prometer o futuro inteiro seria mentira. */
-              description="Nada marcado no periodo mostrado."
+              description="Nada marcado no período mostrado."
             />
           ) : (
             <ul className={styles.proximos}>
@@ -399,7 +399,7 @@ function FormCompromisso({
      * defesa precisa estar onde o dado mora.
      */
     if (titulo.trim().length < 2) {
-      setErro('Informe o titulo do compromisso.')
+      setErro('Informe o título do compromisso.')
       return
     }
     if (data === '') {
@@ -407,7 +407,7 @@ function FormCompromisso({
       return
     }
     if (horaFim !== '' && horaFim <= horaInicio) {
-      setErro('O horario de fim precisa ser depois do inicio.')
+      setErro('O horário de fim precisa ser depois do início.')
       return
     }
 
@@ -457,7 +457,7 @@ function FormCompromisso({
               className={styles.input}
               value={titulo}
               onChange={(e) => setTitulo(e.target.value)}
-              placeholder="Entrega, reuniao, cobranca..."
+              placeholder="Entrega, reunião, cobrança..."
               autoFocus
             />
           </label>
@@ -474,7 +474,7 @@ function FormCompromisso({
 
           <div className={styles.formLinha}>
             <label className={styles.campo}>
-              <span>Inicio</span>
+              <span>Início</span>
               <input
                 type="time"
                 className={styles.input}
@@ -501,7 +501,7 @@ function FormCompromisso({
               className={styles.input}
               value={local}
               onChange={(e) => setLocal(e.target.value)}
-              placeholder="Endereco ou link da reuniao"
+              placeholder="Endereço ou link da reunião"
             />
           </label>
 
