@@ -77,3 +77,6 @@ NR-096 — api: composition e rotas cujo SQL/contrato mudou,Sprint 6 — Catálo
 "NR-097 — web + mobile: vocabulário e campos (venda, suporte, endereço, categoria)",Sprint 6 — Catálogo 0909,Trilha 3 — Clientes,Done,Medium,2,Sprint 6,NR-096,,web mobile,"US-014–019, US-062",docs/processo/task-ledger.md
 NR-098 — Merge do baseline na main e infra:reset no setup,Sprint 6 — Catálogo 0909,Trilha 2 — Plataforma & Integracoes,Done,Medium,1,Sprint 6,"NR-095, NR-096, NR-097",,repo infra,RNF-048,docs/processo/task-ledger.md
 NR-099 — Tema claro do painel: alternancia com persistencia e paridade AA de contraste,Sprint 6 — Catálogo 0909,Trilha 3 — Clientes,Done,Medium,1,Sprint 6,,,web ui,RNF-055,docs/processo/task-ledger.md
+"NR-100 — Polish do painel: som e animacao na venda fechada, skeleton e mascote nos vazios",Sprint 6 — Catálogo 0909,Trilha 3 — Clientes,Done,Medium,1,Sprint 6,,,web,RNF-055,docs/processo/task-ledger.md
+NR-101 — Tutorial guiado no primeiro login: spotlight pelo dashboard e pela barra lateral,Sprint 6 — Catálogo 0909,Trilha 3 — Clientes,Done,Medium,1,Sprint 6,,,web,—,docs/processo/task-ledger.md
+NR-102 — Corrige o tema claro: sidebar/topbar e ~20 preenchimentos que so funcionavam no escuro,Sprint 6 — Catálogo 0909,Trilha 3 — Clientes,Done,Medium,1,Sprint 6,,,web,RNF-055,docs/processo/task-ledger.md

@@ -101,7 +101,7 @@
 }
 
 .badge_neutral {
-  background: rgba(255, 255, 255, 0.07);
+  background: var(--app-field-hover);
   color: var(--app-muted);
 }
 
@@ -121,8 +121,8 @@
 }
 
 .badge_info {
-  background: rgba(120, 150, 255, 0.16);
-  color: #9db4ff;
+  background: var(--app-info-soft);
+  color: var(--app-info);
 }
 
 /* --- Formulario --- */
@@ -243,6 +243,13 @@
   text-align: center;
   border: 1px dashed var(--app-border);
   border-radius: var(--radius);
+}
+
+.emptyMascote {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  margin-bottom: 4px;
 }
 
 .emptyTitle {

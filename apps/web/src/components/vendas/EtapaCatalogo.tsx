@@ -15,6 +15,7 @@ import {
 } from '@/lib/vendas-api'
 import { formatMoney } from '@/lib/format'
 import { Badge, Card, EmptyState } from '@/components/ui/UI'
+import { SkeletonCartoes } from '@/components/ui/Skeleton'
 import { Button } from '@/components/ui/Button'
 import Toast from '@/components/ui/Toast'
 import ConfirmarDialog from '@/components/app/ConfirmarDialog'
@@ -272,7 +273,7 @@ export default function EtapaCatalogo({
           </div>
 
           {carregandoCatalogo ? (
-            <EmptyState title="Carregando o catalogo" description="Buscando os produtos." />
+            <SkeletonCartoes />
           ) : erroCatalogo !== null ? (
             <EmptyState
               title="Nao deu para carregar o catalogo"
@@ -291,14 +292,18 @@ export default function EtapaCatalogo({
               }
             />
           ) : catalogo.length === 0 ? (
-            <EmptyState
-              title="Nenhum produto encontrado"
-              description={
-                busca.trim() === ''
-                  ? 'Cadastre produtos para vender pelo balcão.'
-                  : 'Tente outro termo, ou leia o código de barras.'
-              }
-            />
+            busca.trim() === '' ? (
+              <EmptyState
+                title="Nenhum produto encontrado"
+                description="Cadastre produtos para vender pelo balcão."
+                mascote
+              />
+            ) : (
+              <EmptyState
+                title="Nenhum produto encontrado"
+                description="Tente outro termo, ou leia o código de barras."
+              />
+            )
           ) : (
             <ul className={styles.catalogo}>
               {catalogo.map((p) => {

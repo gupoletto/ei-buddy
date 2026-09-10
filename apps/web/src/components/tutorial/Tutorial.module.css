@@ -1,0 +1,137 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+}
+
+/* Passos sem alvo (boas-vindas/fim): nao ha nada para "revelar", entao um
+   fundo escurecido comum basta — o truque do box-shadow do `.foco` abaixo so
+   faz sentido quando existe uma area especifica a manter nitida. */
+.pano {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 10, 22, 0.72);
+}
+
+/* O "buraco" no fundo escurecido: um box-shadow gigante escurece tudo, MENOS
+   a area do proprio elemento — nao precisa de um SVG com mascara. */
+.foco {
+  position: fixed;
+  border-radius: 12px;
+  box-shadow: 0 0 0 9999px rgba(8, 10, 22, 0.72);
+  border: 2px solid var(--brand-accent);
+  pointer-events: none;
+  transition:
+    top 0.3s ease,
+    left 0.3s ease,
+    width 0.3s ease,
+    height 0.3s ease;
+}
+
+.cartao {
+  position: fixed;
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+  background: var(--app-raised);
+  border: 1px solid var(--app-border);
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  animation: cartaoEntrada 0.25s ease-out;
+}
+
+@keyframes cartaoEntrada {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Sem alvo (boas-vindas/fim): cartao centralizado, sem foco no fundo.
+   Animacao PROPRIA, e nao a `cartaoEntrada` de `.cartao`: as duas mexem em
+   `transform`, e a ultima a "vencer" apaga a outra — aqui a centralizacao
+   (translate -50%/-50%) TEM que estar dentro da propria animacao, ou o
+   deslize da entrada a substitui e o cartao para fora do centro. */
+.lado_centro {
+  top: 50%;
+  left: 50%;
+  width: min(360px, calc(100vw - 32px));
+  animation-name: cartaoEntradaCentro;
+  /*
+   * `forwards`: sem isso, quando a animacao termina ela some, e o elemento
+   * volta a valer o `transform` "normal" — que aqui e NENHUM, porque a
+   * centralizacao mora dentro do proprio keyframe. Sem `forwards`, o cartao
+   * fica perfeitamente centralizado so durante os 0.25s da entrada, e depois
+   * pula para o canto superior esquerdo. So aparece depois que a animacao
+   * acaba — e por isso passou batido num primeiro teste manual rapido.
+   */
+  animation-fill-mode: forwards;
+}
+
+@keyframes cartaoEntradaCentro {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) translateY(0);
+  }
+}
+
+.fechar {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  color: var(--app-muted);
+}
+
+.fechar:hover {
+  background: var(--app-field);
+  color: var(--app-text);
+}
+
+.progresso {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--app-accent);
+  text-transform: uppercase;
+}
+
+.titulo {
+  font-family: var(--font-display);
+  font-size: 16px;
+  color: var(--app-text);
+  padding-right: 20px;
+}
+
+.texto {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--app-muted);
+}
+
+.acoes {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+@media (max-width: 640px) {
+  .cartao:not(.lado_centro) {
+    left: 16px !important;
+    width: calc(100vw - 32px) !important;
+  }
+}

@@ -11,6 +11,7 @@ import {
 import { formatMoney } from '@/lib/format'
 import { Button } from '@/components/ui/Button'
 import { Card, EmptyState, Field, Input, PageHeader } from '@/components/ui/UI'
+import { SkeletonLinhas } from '@/components/ui/Skeleton'
 import styles from './dre.module.css'
 
 /**
@@ -131,7 +132,7 @@ export default function DreView() {
         ) : null}
 
         {carregando ? (
-          <EmptyState title="Montando o relatorio" description="Somando os lancamentos." />
+          <SkeletonLinhas />
         ) : erro !== null ? (
           <EmptyState
             title="Não deu para montar o DRE"

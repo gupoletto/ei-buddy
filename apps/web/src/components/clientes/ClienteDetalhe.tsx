@@ -258,6 +258,7 @@ export default function ClienteDetalhe({ clienteId }: { clienteId: string }) {
             <EmptyState
               title="Nada em aberto"
               description="Este cliente não tem títulos pendentes."
+              mascote
             />
           ) : (
             <ul className={styles.linhas}>
@@ -296,6 +297,7 @@ export default function ClienteDetalhe({ clienteId }: { clienteId: string }) {
             <EmptyState
               title="Nenhuma compra registrada"
               description="Quando este cliente comprar, o histórico aparece aqui."
+              mascote
             />
           ) : (
             <ul className={styles.linhas}>
@@ -334,6 +336,7 @@ export default function ClienteDetalhe({ clienteId }: { clienteId: string }) {
             <EmptyState
               title="Nenhum contato registrado"
               description="Registre ligações, visitas e combinados para não depender da memória."
+              mascote
             />
           ) : (
             <ul className={styles.linhas}>

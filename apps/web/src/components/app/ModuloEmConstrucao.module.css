@@ -44,7 +44,7 @@
   flex: none;
   margin-top: 8px;
   border-radius: 50%;
-  background: var(--app-accent);
+  background: var(--brand-accent);
 }
 
 .note {

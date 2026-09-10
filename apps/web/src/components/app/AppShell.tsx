@@ -13,6 +13,9 @@ import PaymentOverdueBanner from '../billing/PaymentOverdueBanner'
 import PaymentRequiredModal from '../billing/PaymentRequiredModal'
 import { useSubscription } from '../billing/SubscriptionProvider'
 import ThemeToggle from './ThemeToggle'
+import SomToggle from './SomToggle'
+import Tutorial from '../tutorial/Tutorial'
+import { iniciarTutorial } from '@/lib/tutorial'
 import {
   IconBag,
   IconBank,
@@ -23,6 +26,7 @@ import {
   IconChevronDown,
   IconClose,
   IconList,
+  IconHelp,
   IconLogout,
   IconMenu,
   IconReceipt,
@@ -204,6 +208,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
                     }`}
                     onClick={() => setFinanceiroAberto((v) => !v)}
                     aria-expanded={financeiroAberto}
+                    data-tutorial={item.href}
                   >
                     <Icon size={18} />
                     {item.label}
@@ -273,6 +278,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
                 href={item.href}
                 className={`${styles.navItem} ${isActive(item.href) ? styles.navActive : ''}`}
                 aria-current={isActive(item.href) ? 'page' : undefined}
+                data-tutorial={item.href}
               >
                 <Icon size={18} />
                 {item.label}
@@ -310,7 +316,21 @@ export default function AppShell({ children }: { children: ReactNode }) {
           <BuscaGlobal />
 
           <div className={styles.topActions}>
-            <ThemeToggle />
+            <div className={styles.topActionsGroup} data-tutorial="tema-som">
+              <ThemeToggle />
+              <SomToggle />
+            </div>
+
+            <button
+              type="button"
+              className={styles.iconButton}
+              onClick={iniciarTutorial}
+              aria-label="Rever o tutorial guiado"
+              title="Tutorial"
+              data-tutorial="ajuda"
+            >
+              <IconHelp size={19} />
+            </button>
 
             {/*
               O ponto so acende quando HA aviso.
@@ -318,7 +338,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
               desde o primeiro segundo. Aviso que nunca apaga deixa de ser
               aviso — quem o ve todo dia para de olhar.
             */}
-            <div className={styles.avisosWrap}>
+            <div className={styles.avisosWrap} data-tutorial="notificacoes">
               <button
                 type="button"
                 className={styles.iconButton}
@@ -400,6 +420,12 @@ export default function AppShell({ children }: { children: ReactNode }) {
       </div>
 
       <PaymentRequiredModal />
+
+      <Tutorial
+        navAberto={navOpen}
+        abrirNav={() => setNavOpen(true)}
+        fecharNav={() => setNavOpen(false)}
+      />
     </div>
   )
 }

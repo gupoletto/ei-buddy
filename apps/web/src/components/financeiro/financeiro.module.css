@@ -461,7 +461,7 @@
 }
 
 .baixaModoAtivo {
-  background: var(--app-accent);
+  background: var(--brand-accent);
   color: #06312e;
   font-weight: 600;
 }

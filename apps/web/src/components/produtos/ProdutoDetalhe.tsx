@@ -268,6 +268,7 @@ export default function ProdutoDetalhe({ produtoId }: { produtoId: string }) {
             <EmptyState
               title="Nenhuma movimentacao ainda"
               description="Baixas por venda, devoluções e ajustes manuais aparecem aqui."
+              mascote
             />
           ) : (
             <>

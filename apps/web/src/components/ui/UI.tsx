@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import Image from 'next/image'
 import styles from './UI.module.css'
 
 /* ------------------------------------------------------------------ *
@@ -167,13 +168,24 @@ export function EmptyState({
   title,
   description,
   action,
+  mascote = false,
 }: {
   title: string
   description?: string
   action?: ReactNode
+  /**
+   * Mostra o Buddy — SO para "nao ha nada aqui ainda" (ex.: nenhum cliente
+   * cadastrado). Fica de fora por padrao porque este mesmo componente tambem
+   * serve de "carregando..." (ver `Skeleton.tsx` para o substituto disso) e
+   * de erro — um mascote sorrindo nesses dois casos destoaria do tom.
+   */
+  mascote?: boolean
 }) {
   return (
     <div className={styles.empty}>
+      {mascote ? (
+        <Image src="/buddy.png" alt="" width={72} height={72} className={styles.emptyMascote} />
+      ) : null}
       <strong className={styles.emptyTitle}>{title}</strong>
       {description ? <p className={styles.emptyText}>{description}</p> : null}
       {action}

@@ -19,6 +19,7 @@ import {
 import type { CustoFixo } from '@/lib/types'
 import { formatMoney, mesDeHoje } from '@/lib/format'
 import { Badge, Card, EmptyState, PageHeader, Stat } from '@/components/ui/UI'
+import { SkeletonLinhas } from '@/components/ui/Skeleton'
 import { Button } from '@/components/ui/Button'
 import Toast from '@/components/ui/Toast'
 import { Spinner } from '@/components/auth/Fields'
@@ -233,7 +234,7 @@ export default function PlanoDeContasView() {
           </form>
 
           {carregandoPlano ? (
-            <EmptyState title="Carregando o plano" description="Buscando as contas." />
+            <SkeletonLinhas />
           ) : erroPlano !== null ? (
             <EmptyState
               title="Não deu para carregar o plano"
@@ -303,6 +304,7 @@ export default function PlanoDeContasView() {
             <EmptyState
               title="Nenhum custo fixo"
               description="Cadastre aluguel, energia, contabilidade — o que se repete todo mês. Depois dá para gerar as contas a pagar de uma vez."
+              mascote
               action={
                 <Button onClick={() => setFormAberto(true)}>
                   <IconPlus size={16} />

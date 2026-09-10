@@ -11,6 +11,7 @@ import {
   type SituacaoCertificado,
 } from '@/lib/vendas-api'
 import { formatMoney } from '@/lib/format'
+import { tocarConfirmacao } from '@/lib/som'
 import { Card } from '@/components/ui/UI'
 import { Button, ButtonLink } from '@/components/ui/Button'
 import { Spinner } from '@/components/auth/Fields'
@@ -32,6 +33,31 @@ export default function EtapaFiscal({
   const [estado, setEstado] = useState<EstadoEmissao>('ocioso')
   const [nota, setNota] = useState<NotaEmitida | null>(null)
   const [erro, setErro] = useState<string | null>(null)
+  const [totalExibido, setTotalExibido] = useState(0)
+
+  /*
+   * O momento de maior satisfacao do dia do lojista e este: a venda fechou.
+   * O numero subindo ate o total (em vez de aparecer pronto) e o som de
+   * confirmacao dao esse instante um peso que o card estatico de antes nao
+   * tinha — NR-100. `tocarConfirmacao` respeita a preferencia de som sozinha.
+   */
+  useEffect(() => {
+    tocarConfirmacao()
+
+    const duracaoMs = 550
+    const inicio = performance.now()
+    let quadro: number
+
+    function passo(agora: number) {
+      const decorrido = Math.min((agora - inicio) / duracaoMs, 1)
+      const progresso = 1 - (1 - decorrido) ** 3 /* ease-out */
+      setTotalExibido(Math.round(total * progresso))
+      if (decorrido < 1) quadro = requestAnimationFrame(passo)
+    }
+    quadro = requestAnimationFrame(passo)
+    return () => cancelAnimationFrame(quadro)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   /* SUBSTITUIR POR: GET /empresa/certificado */
   useEffect(() => {
@@ -133,7 +159,7 @@ export default function EtapaFiscal({
           </span>
           <div>
             <strong>Venda #{vendaNumero} fechada</strong>
-            <span>{formatMoney(total)} · o valor liquido ja entrou em contas a receber</span>
+            <span>{formatMoney(totalExibido)} · o valor líquido já entrou em contas a receber</span>
           </div>
         </div>
       </Card>

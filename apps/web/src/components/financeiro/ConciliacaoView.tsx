@@ -23,6 +23,7 @@ import {
   Stat,
   Textarea,
 } from '@/components/ui/UI'
+import { SkeletonLinhas } from '@/components/ui/Skeleton'
 import { Button } from '@/components/ui/Button'
 import Toast from '@/components/ui/Toast'
 import { IconUpload } from '@/components/Icons'
@@ -170,7 +171,7 @@ export default function ConciliacaoView() {
         </div>
 
         {carregando ? (
-          <EmptyState title="Carregando o extrato" description="Buscando as transacoes." />
+          <SkeletonLinhas />
         ) : erroCarga !== null ? (
           <EmptyState
             title="Não deu para carregar o extrato"

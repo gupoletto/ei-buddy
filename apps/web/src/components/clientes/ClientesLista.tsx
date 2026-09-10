@@ -12,6 +12,7 @@ import {
 import { isValidCNPJ, isValidCPF } from '@/lib/validation'
 import { formatDate, formatMoney } from '@/lib/format'
 import { Badge, Card, EmptyState, PageHeader, Stat } from '@/components/ui/UI'
+import { SkeletonLinhas } from '@/components/ui/Skeleton'
 import { Button, ButtonLink } from '@/components/ui/Button'
 import { IconPlus, IconSearch, IconUpload } from '@/components/Icons'
 import { COMANDOS_CLIENTES } from '@/lib/comandos'
@@ -197,7 +198,7 @@ export default function ClientesLista() {
 
         {/* --- Lista --- */}
         {carregando ? (
-          <EmptyState title="Carregando seus clientes" description="Um instante." />
+          <SkeletonLinhas />
         ) : erroCarga !== null ? (
           <EmptyState
             title="Não deu para carregar os clientes"
@@ -223,6 +224,7 @@ export default function ClientesLista() {
             <EmptyState
               title="Nenhum cliente cadastrado"
               description="Cadastre o primeiro cliente ou traga sua base de uma planilha. Leva menos de um minuto."
+              mascote
               action={
                 <div className={styles.emptyAcoes}>
                   <ButtonLink href="/app/clientes/novo">

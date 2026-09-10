@@ -12,6 +12,7 @@ import {
 import { calcularMargem, confirmarImportacaoProdutos, nivelEstoque } from '@/lib/produtos-api'
 import { formatMoney, formatPercent } from '@/lib/format'
 import { Badge, Card, EmptyState, PageHeader, Stat } from '@/components/ui/UI'
+import { SkeletonCartoes } from '@/components/ui/Skeleton'
 import { Button, ButtonLink } from '@/components/ui/Button'
 import { IconBox, IconPlus, IconSearch, IconUpload } from '@/components/Icons'
 import { COMANDOS_PRODUTOS } from '@/lib/comandos'
@@ -275,7 +276,7 @@ export default function ProdutosLista() {
             }
           />
         ) : carregando && dados === null ? (
-          <EmptyState title="Carregando o catálogo" description="Buscando seus produtos." />
+          <SkeletonCartoes />
         ) : total === 0 ? (
           filtrando ? (
             <EmptyState
@@ -291,6 +292,7 @@ export default function ProdutosLista() {
             <EmptyState
               title="Nenhum produto cadastrado"
               description="Cadastre o primeiro produto, traga o catálogo de uma planilha ou importe o XML de uma nota de compra."
+              mascote
               action={
                 <div className={styles.emptyAcoes}>
                   <ButtonLink href="/app/produtos/novo">

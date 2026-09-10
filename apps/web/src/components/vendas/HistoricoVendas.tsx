@@ -10,6 +10,7 @@ import {
 } from '@/lib/vendas-api'
 import { formatDateTime, formatMoney } from '@/lib/format'
 import { Badge, Card, EmptyState, PageHeader, Stat } from '@/components/ui/UI'
+import { SkeletonLinhas } from '@/components/ui/Skeleton'
 import { ButtonLink, Button } from '@/components/ui/Button'
 import { IconPlus, IconSearch } from '@/components/Icons'
 import { COMANDOS_VENDAS } from '@/lib/comandos'
@@ -235,26 +236,31 @@ export default function HistoricoVendas() {
             }
           />
         ) : carregando && dados === null ? (
-          <EmptyState title="Carregando as vendas" description="Buscando o histórico." />
+          <SkeletonLinhas />
         ) : total === 0 ? (
-          <EmptyState
-            title={filtrando ? 'Nenhuma venda encontrada' : 'Nenhuma venda ainda'}
-            description={
-              filtrando ? 'Ajuste a busca ou o período.' : 'Abra o PDV e registre a primeira venda.'
-            }
-            action={
-              filtrando ? (
+          filtrando ? (
+            <EmptyState
+              title="Nenhuma venda encontrada"
+              description="Ajuste a busca ou o período."
+              action={
                 <Button variant="secondary" onClick={limparFiltros}>
                   Limpar filtros
                 </Button>
-              ) : (
+              }
+            />
+          ) : (
+            <EmptyState
+              title="Nenhuma venda ainda"
+              description="Abra o PDV e registre a primeira venda."
+              mascote
+              action={
                 <ButtonLink href="/app/vendas/nova">
                   <IconPlus size={16} />
                   Nova venda
                 </ButtonLink>
-              )
-            }
-          />
+              }
+            />
+          )
         ) : (
           <>
             <ul className={styles.historico} aria-busy={carregando}>

@@ -15,6 +15,7 @@ import {
 } from '@/lib/agenda-api'
 import { formatDate } from '@/lib/format'
 import { Card, EmptyState, PageHeader } from '@/components/ui/UI'
+import { SkeletonLinhas } from '@/components/ui/Skeleton'
 import { Button } from '@/components/ui/Button'
 import Toast from '@/components/ui/Toast'
 import { Spinner } from '@/components/auth/Fields'
@@ -227,7 +228,7 @@ export default function AgendaView() {
         {/* --- Dia selecionado --- */}
         <Card title={`Compromissos de ${formatDate(diaSelecionado)}`}>
           {carregando ? (
-            <EmptyState title="Carregando" description="Buscando os compromissos do período." />
+            <SkeletonLinhas />
           ) : doDia.length === 0 ? (
             <EmptyState
               title="Nada marcado"

@@ -39,6 +39,18 @@
   --warning-bg: #fffaeb;
   --warning-border: #fec84b;
 
+  /*
+   * Badge solido de contagem (item de nav "Suporte", sino de avisos): texto
+   * DENTRO de um circulo colorido, nao so uma cor de apoio. `--app-warn` muda
+   * de sentido entre os temas (e cor de TEXTO no claro, e cor de FUNDO no
+   * escuro — os ~20 usos como `color` esperam isso), entao um badge que usa
+   * `--app-warn` como fundo quebra num dos dois temas. Este par fica FORA do
+   * `.appTheme`, de proposito: o badge e um elemento autocontido, do mesmo
+   * jeito nos dois temas.
+   */
+  --badge-warn-bg: #fdb022;
+  --badge-warn-text: #3a2400;
+
   --success: #079455;
   --success-text: #067647;
   --success-bg: #ecfdf3;
@@ -301,6 +313,10 @@ svg {
   --app-danger: #ff9c9c;
   --app-danger-soft: rgba(255, 118, 118, 0.16);
 
+  /* "Informativo" (NFC-e, Novo, Parcial...) — nem alerta, nem sucesso. */
+  --app-info: #9db4ff;
+  --app-info-soft: rgba(120, 150, 255, 0.16);
+
   /* Roxo da marca, para destaque — nao para alerta. */
   --app-destaque: #c4a8ff;
   --app-destaque-soft: rgba(109, 51, 221, 0.26);
@@ -344,6 +360,14 @@ svg {
   --app-warn-soft: var(--warning-bg);
   --app-danger: var(--danger-text);
   --app-danger-soft: var(--danger-bg);
+
+  /*
+   * Unica excecao a regra do comentario acima ("nenhum valor novo"): nao ha
+   * azul na paleta de `packages/ui` para reusar. #4338ca sobre #eef2ff da
+   * ~8.6:1 — bem acima do 4.5:1 do AA, a mesma fasquia dos outros tokens.
+   */
+  --app-info: #4338ca;
+  --app-info-soft: #eef2ff;
 
   --app-destaque: var(--brand-highlight);
   --app-destaque-soft: var(--brand-highlight-soft);
