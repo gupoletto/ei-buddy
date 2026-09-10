@@ -118,7 +118,11 @@ Gamificação de metas.
 ### Fase 4 — Rede
 
 Marketplace de lojas · Vitrine de especialidades · Espaço para propaganda ·
-Parcerias por elegibilidade (alto faturamento, CNPJ regular).
+Parcerias por elegibilidade (alto faturamento, CNPJ regular). Uma proposta
+concreta desta fase — busca de fornecedores próximos por CEP, com pedido de
+conexão — já tem desenho registrado em
+[DEC-021](../decisoes/README.md#dec-021), adiado pelo mesmo motivo do
+marketplace: depende de massa crítica de lojistas.
 
 > [!NOTE]
 > As fases 2–4 vêm da apresentação comercial e ainda não têm requisitos
