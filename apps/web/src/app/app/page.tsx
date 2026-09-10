@@ -54,14 +54,14 @@ export default async function VisaoGeralPage() {
         }
         subtitle={painel.data}
         actions={
-          <ButtonLink href="/app/vendas/nova">
+          <ButtonLink href="/app/vendas/nova" data-tutorial="dashboard-nova-venda">
             <IconPlus size={17} />
             Nova venda
           </ButtonLink>
         }
       />
 
-      <div className={styles.stats}>
+      <div className={styles.stats} data-tutorial="dashboard-stats">
         {/*
           Um traco quando a leitura falhou, e nao "R$ 0,00": zero e uma
           resposta — o dia sem vendas — e uma rede que caiu nao e.

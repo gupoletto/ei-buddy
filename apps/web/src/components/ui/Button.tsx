@@ -42,9 +42,14 @@ export function ButtonLink({
   size,
   block,
   className,
-}: CommonProps & { href: string }) {
+  ...rest
+}: CommonProps & { href: string } & React.AnchorHTMLAttributes<HTMLAnchorElement>) {
   return (
-    <Link href={href} className={classesFor({ children, variant, size, block, className })}>
+    <Link
+      href={href}
+      className={classesFor({ children, variant, size, block, className })}
+      {...rest}
+    >
       {children}
     </Link>
   )

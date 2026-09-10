@@ -234,6 +234,12 @@
   margin-left: auto;
 }
 
+.topActionsGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .iconButton {
   position: relative;
   display: inline-flex;

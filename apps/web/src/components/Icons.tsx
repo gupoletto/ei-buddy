@@ -386,3 +386,14 @@ export function IconSomMudo({ size = 24, className }: IconProps) {
     </svg>
   )
 }
+
+/** Ajuda: circulo com interrogacao — abre o tutorial guiado. */
+export function IconHelp({ size = 24, className }: IconProps) {
+  return (
+    <svg {...svgProps(size, className)}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M9.6 9.5a2.4 2.4 0 1 1 3.4 2.2c-.8.4-1 .8-1 1.6" />
+      <path d="M12 17v.1" />
+    </svg>
+  )
+}

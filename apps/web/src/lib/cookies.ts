@@ -107,6 +107,16 @@ export const ARMAZENAMENTO_LOCAL: readonly ArmazenamentoLocal[] = [
     duracao: 'Ate voce limpar os dados do navegador',
   },
   {
+    chave: 'nr:tutorial-visto',
+    /* Nasce sozinha, sem clique seu — mas so registra que voce ja PASSOU pelo
+       tutorial guiado uma vez, sem guardar nada sobre o que voce fez nele.
+       Sem isso, o tutorial reapareceria em toda visita ao painel. */
+    categoria: 'preferencia',
+    finalidade:
+      'Lembrar que voce ja viu o tutorial guiado do painel, para ele nao reaparecer sozinho.',
+    duracao: 'Ate voce limpar os dados do navegador',
+  },
+  {
     chave: 'nr:som',
     /* Mesma razao do tema: nasce de um clique seu (o botao de alto-falante no
        painel), e guarda-la e o que evita o bipe e a confirmacao de venda
