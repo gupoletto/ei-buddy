@@ -62,6 +62,7 @@ describe('sessao', () => {
     userName: 'Ana',
     memberships: [{ companyId: 'empresa-1', companyName: 'Loja da Ana', role: 'owner' }],
     activeCompanyId: 'empresa-1',
+    isPlatformAdmin: false,
   }
 
   it('aceita a sessao com loja escolhida', () => {

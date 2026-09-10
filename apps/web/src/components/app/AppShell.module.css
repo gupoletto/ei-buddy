@@ -317,6 +317,39 @@
   padding: 22px 16px 44px;
 }
 
+/* --- Banner de "entrar como" Super Admin (ADR-0007) --- */
+
+.adminBanner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--app-info-soft);
+  background: var(--app-info-soft);
+  color: var(--app-info);
+  font-size: 13.5px;
+}
+
+.adminBannerText {
+  flex: 1;
+  min-width: 200px;
+}
+
+.adminBannerExit {
+  padding: 7px 14px;
+  border-radius: var(--radius-full);
+  border: 1px solid currentColor;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background-color var(--transition);
+}
+
+.adminBannerExit:hover {
+  background: color-mix(in srgb, var(--app-info) 12%, transparent);
+}
+
 /* --- Responsivo --- */
 
 @media (min-width: 720px) {

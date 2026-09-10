@@ -26,6 +26,7 @@ import { registerErrorHandler } from './plugins/error-handler.js'
 import { buildLoggerOptions, generateRequestId, registerLogging } from './plugins/logging.js'
 import { registerRateLimit } from './plugins/rate-limit.js'
 import { registerSession } from './plugins/session.js'
+import { registerAdminRoutes } from './routes/admin.js'
 import { registerAgendaRoutes } from './routes/agenda.js'
 import { registerAuthRoutes } from './routes/auth.js'
 import { registerCadastroRoutes } from './routes/cadastro.js'
@@ -91,6 +92,7 @@ async function registrarRotas(): Promise<void> {
   const authDeps = buildAuthDeps()
   registerSession(app, authDeps.sessions)
   registerAuthRoutes(app, authDeps)
+  registerAdminRoutes(app, authDeps)
 
   /* `buildSaleDeps()` abre a conexao, entao e chamada aqui e nao no topo do
      modulo — ver o comentario em composition.ts. */

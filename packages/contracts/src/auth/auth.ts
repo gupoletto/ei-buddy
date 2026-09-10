@@ -64,6 +64,15 @@ export const sessionOutputSchema = z.object({
   userName: z.string(),
   memberships: z.array(membershipOutputSchema),
   activeCompanyId: idSchema.nullable(),
+  /**
+   * Explicito, e nao inferido de `memberships.length === 0` — ADR-0007.
+   *
+   * E verdade hoje so nesse caso (Super Admin nao tem vinculo de loja), mas
+   * deixar quem le o contrato deduzir isso e pedir para adivinhar uma regra
+   * de negocio a partir da ausencia de dado. Um campo com nome diz a mesma
+   * coisa sem exigir a deducao.
+   */
+  isPlatformAdmin: z.boolean(),
 })
 
 export type SessionOutput = z.infer<typeof sessionOutputSchema>
@@ -154,3 +163,57 @@ export const signupInputSchema = z
   .strict()
 
 export type SignupInput = z.infer<typeof signupInputSchema>
+
+/**
+ * Super Admin — ADR-0007, RF-131.
+ *
+ * "Entrar como" exige justificativa: e o que transforma acesso cross-tenant
+ * de bypass cru em acesso auditado. Sem minimo, "." passaria e a trilha
+ * ficaria tao vazia quanto sem justificativa nenhuma.
+ */
+export const enterCompanyInputSchema = z
+  .object({
+    companyId: idSchema,
+    justification: z
+      .string()
+      .trim()
+      .min(10, 'Explique em poucas palavras por que esta entrando nesta empresa.')
+      .max(500, 'Justificativa muito longa.'),
+  })
+  .strict()
+
+export type EnterCompanyInput = z.infer<typeof enterCompanyInputSchema>
+
+/** A visao geral da plataforma — uma linha por empresa. */
+export const companyOverviewSchema = z.object({
+  id: idSchema,
+  legalName: z.string(),
+  tradeName: z.string().nullable(),
+  cnpj: z.string(),
+  isActive: z.boolean(),
+  createdAt: dateTimeSchema,
+})
+
+export type CompanyOverview = z.infer<typeof companyOverviewSchema>
+
+/**
+ * Conceder Super Admin a alguem que ja tem conta — por e-mail, nunca por id.
+ *
+ * `name` so importa quando a pessoa ainda nao existe (nasce uma conta nova) —
+ * ignorado quando o e-mail ja tem dono, porque essa pessoa ja escolheu o
+ * proprio nome.
+ */
+export const grantPlatformAdminInputSchema = z
+  .object({ email: emailSchema, name: nameSchema.optional() })
+  .strict()
+
+export type GrantPlatformAdminInput = z.infer<typeof grantPlatformAdminInputSchema>
+
+export const platformAdminOutputSchema = z.object({
+  userId: idSchema,
+  name: z.string(),
+  email: z.string(),
+  grantedAt: dateTimeSchema,
+})
+
+export type PlatformAdminOutput = z.infer<typeof platformAdminOutputSchema>

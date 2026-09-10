@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server'
 import { SESSION_COOKIE } from '@/lib/session'
 
 /**
- * Protecao das rotas de `/app/*`.
+ * Protecao das rotas de `/app/*` e `/admin/*` (ADR-0007).
  *
  * No Next 16 o antigo Middleware passou a se chamar Proxy — mesma
  * funcionalidade, arquivo `src/proxy.ts`.
@@ -35,5 +35,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: '/app/:path*',
+  matcher: ['/app/:path*', '/admin/:path*'],
 }

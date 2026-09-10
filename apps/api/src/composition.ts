@@ -33,6 +33,7 @@ import {
   createDataSubjectRepository,
   createExportSource,
   createLoginThrottle,
+  createPlatformAdminAccess,
   createSessionIssuer,
   createSettlementQueries,
   createSettlementUnitOfWork,
@@ -262,6 +263,8 @@ export function buildAuthDeps(): AuthRouteDeps {
      * mesma guarda de producao.
      */
     audit: createAuditTrail(sql),
+    /* Super Admin — ADR-0007. Mesma conexao das outras portas de identidade. */
+    platformAdmin: createPlatformAdminAccess(sql),
   }
 }
 
