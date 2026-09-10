@@ -192,7 +192,12 @@ export type { Profile, ProfileDeps } from './auth/profile.js'
  * As tres sao por instancia e nao sobrevivem a reinicio. Isso NAO e detalhe de
  * teste: e o motivo de a guarda de producao existir.
  */
-export { FakeIdentityProvider, InMemoryLoginThrottle, InMemorySessionIssuer } from './auth/fakes.js'
+export {
+  FakeIdentityProvider,
+  InMemoryLoginThrottle,
+  InMemoryPlatformAdminAccess,
+  InMemorySessionIssuer,
+} from './auth/fakes.js'
 /* Idem: a trilha so persiste quando `db` expuser repositorio de auditoria. */
 export { InMemoryAuditTrail } from './audit/fakes.js'
 export { InMemoryReconciliation } from './reconciliation/fakes.js'
@@ -207,6 +212,20 @@ export type {
   UserDirectory,
   VerifiedIdentity,
 } from './ports/identity.js'
+
+/* --- Super Admin — ADR-0007, RF-131 --- */
+export {
+  enterCompany,
+  exitCompany,
+  grantPlatformAdmin,
+  listCompanies as listPlatformCompanies,
+  listPlatformAdmins,
+} from './auth/platform-admin.js'
+export type {
+  GrantResult as GrantPlatformAdminResult,
+  PlatformAdminDeps,
+} from './auth/platform-admin.js'
+export type { PlatformAdminAccess } from './ports/platform-admin.js'
 
 /* --- Conciliacao bancaria — NR-033 --- */
 export {

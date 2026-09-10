@@ -126,5 +126,6 @@ export async function signup(
     userName: usuario.name,
     memberships: [{ companyId: empresa.id, companyName: empresa.tradeName, role: 'owner' }],
     activeCompanyId: empresa.id,
+    isPlatformAdmin: false,
   }
 }

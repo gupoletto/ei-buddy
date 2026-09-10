@@ -154,5 +154,19 @@ export function createUserDirectory(sql: Sql): UserDirectory {
         `,
       )
     },
+
+    createUserWithoutCompany: async (dados) => {
+      /* Mesmo motivo do id gerado em `createUserWithAccess`: `RETURNING`
+         passaria pela politica de SELECT de `users`, que exige vinculo em
+         `company_users` — e este usuario nasce sem nenhum, de proposito. */
+      const id = randomUUID()
+
+      await sql`
+        INSERT INTO users (id, name, email, created_at, updated_at)
+        VALUES (${id}, ${dados.name}, ${dados.email}, ${dados.createdAt}, ${dados.createdAt})
+      `
+
+      return { id, name: dados.name, isActive: true }
+    },
   }
 }

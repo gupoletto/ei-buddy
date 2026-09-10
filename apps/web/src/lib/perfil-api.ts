@@ -21,6 +21,8 @@ export type Perfil = {
   companyName: string | null
   role: Vinculo['role'] | null
   memberships: Vinculo[]
+  /** Sessao de Super Admin "dentro" desta empresa — ADR-0007. */
+  isImpersonating: boolean
 }
 
 export const carregarPerfil = (): Promise<Resultado<Perfil>> => pedir('/api/perfil')

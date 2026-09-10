@@ -1,0 +1,169 @@
+/* --- Cabecalho da pagina --- */
+
+.intro {
+  display: grid;
+  gap: 4px;
+}
+
+.introTitle {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--app-text);
+}
+
+.introSubtitle {
+  font-size: 13.5px;
+  color: var(--app-muted);
+}
+
+/* --- Busca --- */
+
+.busca {
+  width: 100%;
+  max-width: 320px;
+}
+
+/* --- Lista de empresas / admins --- */
+
+.lista {
+  display: grid;
+  gap: 8px;
+}
+
+.linha {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-md);
+  background: var(--app-field);
+}
+
+.linhaTexto {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.linhaTitulo {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--app-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.linhaDetalhe {
+  font-size: 12.5px;
+  color: var(--app-muted);
+}
+
+/* --- Convite de Super Admin --- */
+
+.conviteForm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.conviteCampo {
+  flex: 1;
+  min-width: 200px;
+}
+
+/* --- Senha temporaria revelada uma unica vez --- */
+
+.senhaBox {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px dashed var(--app-accent);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--app-accent) 10%, transparent);
+}
+
+.senhaBoxLabel {
+  font-size: 12px;
+  color: var(--app-muted);
+}
+
+.senhaBoxValor {
+  font-family: monospace;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--app-text);
+  word-break: break-all;
+}
+
+/* --- Dialogo de justificativa --- */
+
+.dialogRoot {
+  position: fixed;
+  inset: 0;
+  z-index: 230;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.dialogBackdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(6, 9, 26, 0.74);
+  backdrop-filter: blur(3px);
+}
+
+.dialogPainel {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  max-height: 92vh;
+  overflow-y: auto;
+  display: grid;
+  gap: 14px;
+  padding: 22px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-lg);
+  background: var(--app-surface);
+  color: var(--app-text);
+}
+
+.dialogPainel:focus {
+  outline: none;
+}
+
+.dialogCabecalho {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dialogTitulo {
+  font-size: 18px;
+  color: var(--app-text);
+}
+
+.dialogAlvo {
+  font-size: 13.5px;
+  color: var(--app-muted);
+}
+
+.dialogErro {
+  font-size: 13px;
+  color: var(--danger-text);
+}
+
+.dialogAcoes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 4px;
+}

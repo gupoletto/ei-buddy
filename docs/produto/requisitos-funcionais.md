@@ -217,7 +217,7 @@ está em [Requisitos Não Funcionais](requisitos-nao-funcionais.md).
 | RF-128 | Preservar a integridade de totais e relatórios após anonimização de um cliente                                  | US-063 | `core`      |  M  | ✅  |
 | RF-129 | Correlacionar erro de integração ao identificador da requisição, incluindo a resposta do provedor               | US-064 | `api`       |  M  | ⬜  |
 | RF-130 | Reprocessar job falho com espera crescente e limite de tentativas antes de descartar                            | US-064 | `worker`    |  M  | ⬜  |
-| RF-131 | Registrar acesso administrativo a dados de tenant com justificativa                                             | US-064 | `core`      |  M  | ⬜  |
+| RF-131 | Registrar acesso administrativo a dados de tenant com justificativa                                             | US-064 | `core`      |  M  | ✅  |
 
 ---
 

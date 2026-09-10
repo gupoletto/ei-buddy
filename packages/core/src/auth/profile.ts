@@ -1,9 +1,21 @@
 import type { MembershipOutput } from '@na-regua/contracts'
 import { AppError } from '../app-error.js'
 import type { SessionClaims, UserDirectory } from '../ports/identity.js'
+import type { CompanyRepository } from '../ports/registration-repositories.js'
 
 export type ProfileDeps = {
   readonly users: UserDirectory
+  /**
+   * So para o caso do Super Admin — ADR-0007.
+   *
+   * Quem entrou numa empresa via `auth_session_enter_company` tem
+   * `claims.companyId` preenchido mas NENHUM vinculo em `company_users`: o
+   * nome da loja nao sai de `vinculos` porque nao ha vinculo nenhum para
+   * achar. `findById` sob a MESMA politica de RLS (o `company_id` do
+   * contexto ja aponta para a empresa certa) resolve sem precisar de um
+   * caminho novo — RLS nao liga para COMO a pessoa chegou naquele tenant.
+   */
+  readonly companies: CompanyRepository
 }
 
 /**
@@ -29,6 +41,15 @@ export type Profile = {
   readonly role: MembershipOutput['role'] | null
   /** Todas as lojas a que ela tem acesso, para o seletor de loja. */
   readonly memberships: readonly MembershipOutput[]
+  /**
+   * Esta sessao esta "dentro" de uma empresa via Super Admin — ADR-0007.
+   *
+   * Derivado de `empresaSemVinculo`, e nao de uma consulta propria: quem
+   * opera a PROPRIA loja sempre tem vinculo em `company_users`; chegar aqui
+   * com empresa ativa e SEM vinculo so acontece por
+   * `auth_session_enter_company`. O sinal ja estava disponivel de graca.
+   */
+  readonly isImpersonating: boolean
 }
 
 export async function loadProfile(deps: ProfileDeps, claims: SessionClaims): Promise<Profile> {
@@ -49,21 +70,27 @@ export async function loadProfile(deps: ProfileDeps, claims: SessionClaims): Pro
   const vinculos = await deps.users.listMemberships(usuario.id)
 
   /*
-   * O nome da loja sai dos VINCULOS, e nao de uma leitura de `companies`.
-   *
-   * Os vinculos ja vem com o nome, e ler `companies` de novo seria uma segunda
-   * ida ao banco para um dado que ja esta na mao. Alem disso a lista inteira e
-   * necessaria de qualquer jeito: quem tem acesso a mais de uma loja precisa do
-   * seletor (US-059).
+   * O nome da loja sai dos VINCULOS quando ha um, e nao de uma leitura de
+   * `companies` — os vinculos ja vem com o nome, e ler `companies` de novo
+   * seria uma segunda ida ao banco para um dado que ja esta na mao. A lista
+   * inteira e necessaria de qualquer jeito: quem tem acesso a mais de uma
+   * loja precisa do seletor (US-059). So quando NAO ha vinculo (`empresaSemVinculo`
+   * abaixo) e que a leitura direta entra — ver o comentario em `ProfileDeps`.
    */
   const ativo =
     claims.companyId === null ? undefined : vinculos.find((v) => v.companyId === claims.companyId)
+
+  /* Sessao com empresa mas sem vinculo: so acontece em modo Super Admin. */
+  const empresaSemVinculo =
+    claims.companyId !== null && ativo === undefined
+      ? await deps.companies.findById(claims.companyId)
+      : undefined
 
   return {
     userId: usuario.id,
     userName: usuario.name,
     activeCompanyId: claims.companyId,
-    companyName: ativo?.companyName ?? null,
+    companyName: ativo?.companyName ?? empresaSemVinculo?.tradeName ?? null,
     /*
      * O papel vem do VINCULO e nao das claims quando os dois existem.
      *
@@ -71,8 +98,13 @@ export async function loadProfile(deps: ProfileDeps, claims: SessionClaims): Pro
      * o atual. As claims continuam mandando na autorizacao — trocar isso aqui
      * seria decidir permissao numa leitura de apresentacao —, mas o que a tela
      * MOSTRA deve ser o de agora.
+     *
+     * Sem vinculo (Super Admin), nao ha "o de agora" para buscar — so existe
+     * o das claims mesmo, que e sempre `owner` enquanto ele estiver "dentro"
+     * de uma empresa (ADR-0007).
      */
-    role: ativo?.role ?? null,
+    role: ativo?.role ?? (claims.companyId === null ? null : claims.role),
     memberships: vinculos,
+    isImpersonating: empresaSemVinculo !== undefined,
   }
 }

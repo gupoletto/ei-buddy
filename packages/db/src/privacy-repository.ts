@@ -120,6 +120,17 @@ export const FORA_DA_EXPORTACAO: Readonly<Record<string, string>> = {
   idempotency_keys: 'Controle de reenvio, nao dado do titular.',
   outbox: 'Fila interna de publicacao.',
   webhook_events: 'Inbox de provedor; payload de terceiro, nao do titular.',
+  /* Quem PODE entrar em qualquer empresa (ADR-0007). Nao e dado da empresa
+     titular do pacote — e dado sobre a PLATAFORMA, sem tenant. */
+  platform_admins: 'Quem e Super Admin (ADR-0007). Plataforma, sem tenant.',
+  /* RF-131: trilha de quando um Super Admin entrou em cada empresa, e por
+     que. Fica de fora pela mesma razao de `audit_logs` ser INCLUIDA seria
+     estranho aqui: isto e trilha SOBRE acesso administrativo, nao dado que o
+     titular gerou operando o proprio negocio — exportar isso devolveria ao
+     lojista um registro de quando a PLATAFORMA olhou os dados dele, que e
+     transparencia legitima mas de natureza diferente do que a portabilidade
+     do art. 18 pede. */
+  platform_admin_access: 'Trilha de acesso administrativo (RF-131), nao dado gerado pelo titular.',
 }
 
 /**

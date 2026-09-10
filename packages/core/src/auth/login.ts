@@ -9,6 +9,7 @@ import type {
   SessionIssuer,
   UserDirectory,
 } from '../ports/identity.js'
+import type { PlatformAdminAccess } from '../ports/platform-admin.js'
 
 export type AuthDeps = {
   readonly provider: IdentityProvider
@@ -16,6 +17,7 @@ export type AuthDeps = {
   readonly sessions: SessionIssuer
   readonly throttle: LoginThrottle
   readonly audit: AuditTrail
+  readonly platformAdmin: PlatformAdminAccess
 }
 
 /**
@@ -96,7 +98,17 @@ export async function login(
 
   const vinculos = await deps.users.listMemberships(usuario.id)
 
-  if (vinculos.length === 0) {
+  /*
+   * Zero vinculo e falha, EXCETO para quem e Super Admin — ADR-0007. Um
+   * Super Admin nasce sem loja nenhuma de proposito (nao e dono de conta
+   * alguma, entra em qualquer uma sob justificativa). A checagem so roda
+   * neste ramo: quem tem pelo menos um vinculo nunca precisa dela, porque o
+   * modelo nao deixa a mesma pessoa ser as duas coisas.
+   */
+  const ehSuperAdmin =
+    vinculos.length === 0 ? await deps.platformAdmin.isPlatformAdmin(usuario.id) : false
+
+  if (vinculos.length === 0 && !ehSuperAdmin) {
     await registraFalha(deps, input, meta)
     throw AppError.unauthorized(FALHA_DE_LOGIN)
   }
@@ -125,6 +137,7 @@ export async function login(
     userName: usuario.name,
     memberships: [...vinculos],
     activeCompanyId: unico?.companyId ?? null,
+    isPlatformAdmin: ehSuperAdmin,
   }
 }
 
@@ -192,6 +205,9 @@ export async function selectCompany(
     userName: usuario.name,
     memberships: [...vinculos],
     activeCompanyId: vinculo.companyId,
+    /* Quem escolhe entre lojas PROPRIAS nunca e Super Admin no nosso modelo
+       — ADR-0007. As duas coisas nao coexistem na mesma pessoa. */
+    isPlatformAdmin: false,
   }
 }
 

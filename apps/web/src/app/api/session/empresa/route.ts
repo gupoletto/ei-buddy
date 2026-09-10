@@ -18,6 +18,7 @@ type SessaoDaApi = {
   userName: string
   memberships: { companyId: string; companyName: string; role: string }[]
   activeCompanyId: string | null
+  isPlatformAdmin: boolean
 }
 
 export async function POST(request: Request) {

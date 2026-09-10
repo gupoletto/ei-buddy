@@ -17,6 +17,7 @@ type SessaoDaApi = {
   userName: string
   memberships: { companyId: string; companyName: string; role: string }[]
   activeCompanyId: string | null
+  isPlatformAdmin: boolean
 }
 
 /** Entrar. */

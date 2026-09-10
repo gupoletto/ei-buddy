@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { isAppError } from '../app-error.js'
 import { InMemoryAuditTrail } from '../audit/fakes.js'
 import type { ExecutionContext } from '../context.js'
+import { InMemoryCompanyRepository } from '../registration/fakes.js'
 import {
   FakeIdentityProvider,
   InMemoryLoginThrottle,
+  InMemoryPlatformAdminAccess,
   InMemorySessionIssuer,
   InMemoryUserDirectory,
   TENTATIVAS_ATE_DESACELERAR,
@@ -37,13 +39,20 @@ function cenario() {
   const sessions = new InMemorySessionIssuer()
   const throttle = new InMemoryLoginThrottle()
   const audit = new InMemoryAuditTrail()
+  const companies = new InMemoryCompanyRepository()
+  const platformAdmin = new InMemoryPlatformAdminAccess({
+    aoEntrar: () => undefined,
+    aoSair: () => undefined,
+  })
   return {
-    deps: { provider, users, sessions, throttle, audit },
+    deps: { provider, users, sessions, throttle, audit, platformAdmin, companies },
     provider,
     users,
     sessions,
     throttle,
     audit,
+    platformAdmin,
+    companies,
   }
 }
 
@@ -701,6 +710,57 @@ describe('perfil de quem esta logado — NR-013, RF-119', () => {
     })
 
     expect(perfil.memberships).toHaveLength(2)
+  })
+
+  it('Super Admin sem vinculo: nome da empresa vem de companies, e isImpersonating e verdadeiro', async () => {
+    const c = cenario()
+    const superAdmin = c.users.adicionarUsuario({
+      name: 'Super Admin',
+      email: 'sa@plataforma.local',
+    })
+    c.companies.registros.set('empresa-x', {
+      id: 'empresa-x',
+      legalName: 'Loja X LTDA',
+      tradeName: 'Loja X',
+      cnpj: '00000000000000',
+      email: 'x@x.com',
+      phone: '41999990000',
+      stateRegistration: null,
+      municipalRegistration: null,
+      businessSegment: null,
+      address: {
+        zipCode: null,
+        street: null,
+        number: null,
+        complement: null,
+        district: null,
+        city: null,
+        state: null,
+      },
+      createdAt: new Date().toISOString(),
+    })
+
+    const perfil = await loadProfile(c.deps, {
+      userId: superAdmin.id,
+      companyId: 'empresa-x',
+      role: 'owner',
+    })
+
+    expect(perfil.companyName).toBe('Loja X')
+    expect(perfil.role).toBe('owner')
+    expect(perfil.isImpersonating).toBe(true)
+  })
+
+  it('dono de verdade da propria loja: isImpersonating e falso', async () => {
+    const c = comUmaLoja()
+
+    const perfil = await loadProfile(c.deps, {
+      userId: c.usuario.id,
+      companyId: 'empresa-1',
+      role: 'owner',
+    })
+
+    expect(perfil.isImpersonating).toBe(false)
   })
 
   it('sessao apontando para usuario que sumiu e 401, e nao 404', async () => {

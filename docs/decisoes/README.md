@@ -47,7 +47,7 @@ PR**, e a linha sai da tabela de abertas.
 | 🔴 Aberta          |   9 | DEC-003, 005, 007, 009, 011, 012, 013, 016, 018 |
 | 🟡 Em análise      |   1 | DEC-001                                         |
 | ⚪ Adiada          |   1 | DEC-014                                         |
-| 🟢 Decidida        |   6 | DEC-002, 006, 008, 010, 015, 019                |
+| 🟢 Decidida        |   7 | DEC-002, 006, 008, 010, 015, 019, 020           |
 | ❓ Pergunta aberta |  10 | QST-001 a QST-008, QST-011, QST-012             |
 
 **Bloqueando o MVP agora:** DEC-003, DEC-009.
@@ -529,6 +529,18 @@ Baseline novo em `packages/db/src/migrations/`. O arquivo
 [`db_0909.sql`](../arquitetura/db_0909.sql) continua documental — não se aplica
 com `pnpm db:migrate`. Identidade Better Auth, sessão, cofre fiscal e extrato
 **não** são desfeitos. Retrabalho: NR-088 a NR-098.
+
+### <a id="dec-020"></a>DEC-020 — Como o Super Admin (`platform_admin`) atravessa o RLS
+
+|             |                                                                                           |
+| ----------- | ----------------------------------------------------------------------------------------- |
+| **Status**  | 🟢 Decidida — [ADR-0007](adr/0007-super-admin-por-sessao-auditada.md)                     |
+| **Escolha** | "Entrar como" via troca de sessão auditada — não rota paralela, não papel com `BYPASSRLS` |
+| **Data**    | 2026-09-10                                                                                |
+
+RNF-025 (2FA para `platform_admin`) e o convite por e-mail (nenhuma
+integração de e-mail existe no projeto) ficam de fora desta entrega — ver "O
+que fica em aberto" na ADR-0007.
 
 ## Documentos relacionados
 

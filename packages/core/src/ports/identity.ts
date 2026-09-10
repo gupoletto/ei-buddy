@@ -127,6 +127,22 @@ export type UserDirectory = {
     readonly role: Role
     readonly createdAt: Date
   }): Promise<void>
+
+  /**
+   * Cria uma pessoa SEM vinculo de empresa nenhum — ADR-0007.
+   *
+   * So existe para o bootstrap de um Super Admin novo: toda outra pessoa do
+   * sistema nasce com `createUserWithAccess`, porque nasce operando uma loja.
+   * `users.tenant_isolation` aceita qualquer INSERT (`WITH CHECK (true)`) —
+   * so a LEITURA exige vinculo — entao esta escrita nao precisa de
+   * `SECURITY DEFINER` nenhum, so nao pode devolver a linha por `RETURNING`
+   * (o `SELECT` implicito dele passaria pela politica e veria zero linhas).
+   */
+  createUserWithoutCompany(dados: {
+    readonly name: string
+    readonly email: string
+    readonly createdAt: Date
+  }): Promise<LocalUser>
 }
 
 /**

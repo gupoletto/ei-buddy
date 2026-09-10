@@ -26,6 +26,8 @@ export type SessionUser = {
   readonly userName: string
   readonly activeCompanyId: string | null
   readonly memberships: readonly { companyId: string; companyName: string; role: string }[]
+  /** Pode "entrar como" qualquer loja — ADR-0007. Sempre falso fora do login. */
+  readonly isPlatformAdmin: boolean
 }
 
 /** Opcoes do cookie, num lugar so — divergir entre escrever e apagar deixa cookie orfao. */

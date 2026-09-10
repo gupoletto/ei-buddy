@@ -7,6 +7,7 @@ import { BRAND } from '@/content/site'
 import { MODULOS_BLOQUEADOS } from '@/lib/access'
 import { carregarAvisos, type Aviso } from '@/lib/avisos-api'
 import { carregarPerfil, iniciaisDe, type Perfil } from '@/lib/perfil-api'
+import { sairDoModoAdmin } from '@/lib/admin-api'
 import { sair as encerrarSessao } from '@/lib/session-client'
 import BuscaGlobal from './BuscaGlobal'
 import PaymentOverdueBanner from '../billing/PaymentOverdueBanner'
@@ -174,6 +175,19 @@ export default function AppShell({ children }: { children: ReactNode }) {
     router.push('/login')
   }
 
+  /**
+   * Sai do modo Super Admin — ADR-0007.
+   *
+   * Ao contrario de `sair`, ESPERA a resposta E confere se deu certo: aqui o
+   * token continua o mesmo, e navegar antes de a sessao no servidor voltar ao
+   * estado "sem empresa" levaria a `/admin` com a empresa anterior ainda
+   * ativa. Numa falha o banner so continua na tela — a pessoa tenta de novo.
+   */
+  async function sairDoAdmin() {
+    const r = await sairDoModoAdmin()
+    if (r.ok) router.push('/admin')
+  }
+
   return (
     <div className={`appTheme ${styles.shell}`}>
       {navOpen ? (
@@ -300,6 +314,24 @@ export default function AppShell({ children }: { children: ReactNode }) {
       </aside>
 
       <div className={styles.main}>
+        {/* Banner de "entrar como" Super Admin — some assim que a sessao
+            volta ao estado normal, sem precisar de reload. */}
+        {perfil?.isImpersonating === true ? (
+          <div className={styles.adminBanner} role="status">
+            <span className={styles.adminBannerText}>
+              Você está vendo como Super Admin —{' '}
+              <strong>{perfil.companyName ?? 'esta loja'}</strong>.
+            </span>
+            <button
+              type="button"
+              className={styles.adminBannerExit}
+              onClick={() => void sairDoAdmin()}
+            >
+              Sair do modo Super Admin
+            </button>
+          </div>
+        ) : null}
+
         {/* Aviso persistente de pagamento pendente. Fica no layout de /app,
             portanto aparece em qualquer sub-rota. */}
         {bloqueado ? <PaymentOverdueBanner /> : null}

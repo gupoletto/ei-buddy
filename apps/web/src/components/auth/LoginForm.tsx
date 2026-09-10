@@ -75,6 +75,14 @@ export default function LoginForm() {
   async function concluir(sessao: SessionUser) {
     if (sessao.activeCompanyId !== null) return irParaOPainel()
 
+    /* Super Admin nunca tem vinculo de loja (ADR-0007) — sem este desvio ele
+       cairia direto no "conta sem vinculo" logo abaixo, que e o erro certo
+       para todo MUNDO menos ele. */
+    if (sessao.isPlatformAdmin) {
+      router.push('/admin')
+      return
+    }
+
     if (sessao.memberships.length === 1) {
       const r = await escolherEmpresa(sessao.memberships[0]!.companyId)
       if (!r.ok) {

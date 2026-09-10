@@ -89,7 +89,15 @@ export async function chamarApi<T>(
     resposta = await fetch(`${API_URL}${caminho}`, {
       method: opcoes.method ?? 'GET',
       headers: {
-        'content-type': 'application/json',
+        /*
+         * So quando HA corpo. Um POST sem corpo mas com este cabecalho as
+         * vezes faz a api recusar com 500 (`FST_ERR_CTP_EMPTY_JSON_BODY`) —
+         * o parser de JSON do Fastify roda pelo cabecalho, encontra corpo
+         * vazio, e lanca. `/admin/sair` foi onde isso apareceu primeiro, mas
+         * o defeito era de qualquer POST sem corpo (`/auth/logout` inclusive)
+         * — so nao tinha aparecido antes.
+         */
+        ...(opcoes.body === undefined ? {} : { 'content-type': 'application/json' }),
         ...opcoes.headers,
         /* O token vem DEPOIS dos extras: nenhum cabecalho de rota pode
            sobrescrever a autorizacao por engano. */
