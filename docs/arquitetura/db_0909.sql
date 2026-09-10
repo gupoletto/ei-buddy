@@ -1,10 +1,9 @@
--- Snapshot documental (2026-09-09), NAO e migration.
+-- Snapshot documental (2026-09-09). NAO e migration — ADR-0006 / DEC-019.
 --
--- Origem: docs/arquitetura/db_0909.sql da branch asaas_teste.
--- O schema que roda de verdade esta em packages/db/src/migrations/
--- (0001_tenant_isolation … incrementais). Este arquivo descreve o recorte
--- alvo com company_integrations (Focus + Asaas 1:0..1). Nao aplicar com
--- `pnpm db:migrate`.
+-- O schema que roda esta em packages/db/src/migrations/ (baseline 0001–0007).
+-- Este arquivo descreve o recorte de DOMINIO com company_integrations.
+-- Identidade, sessao, cofre fiscal e extrato bancario NAO estao aqui e
+-- permanecem no baseline como acrescimo. Nao aplicar com `pnpm db:migrate`.
 --
 -- Catalogo em prosa: docs/arquitetura/esquema-postgresql.md
 -- Duvidas: docs/arquitetura/integracoes/duvidas-db.md

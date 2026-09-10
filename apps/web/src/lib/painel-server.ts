@@ -54,7 +54,7 @@ type PaginaDeVendas = {
     number: number
     soldAt: string
     customerName: string | null
-    status: 'registered' | 'cancelled' | 'returned' | 'partially_returned'
+    status: 'open' | 'settled' | 'cancelled' | 'returned'
     netAmountCents: number
     payments: { method: string }[]
   }[]

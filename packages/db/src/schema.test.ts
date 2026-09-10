@@ -23,7 +23,7 @@ const DATABASE_URL = process.env.DATABASE_URL
 const MIGRATION_URL = process.env.DATABASE_MIGRATION_URL ?? DATABASE_URL
 
 /** Tabelas que NAO sao de negocio e por isso nao seguem a regra do company_id. */
-const NAO_TENANT = new Set(['schema_migrations'])
+const NAO_TENANT = new Set(['schema_migrations', 'partners', 'coupons'])
 
 describe.skipIf(!DATABASE_URL)('schema de cadastros — NR-008', () => {
   /** Administrador: papel de teste, concessoes e leitura de catalogo. */
@@ -51,7 +51,7 @@ describe.skipIf(!DATABASE_URL)('schema de cadastros — NR-008', () => {
 
   beforeAll(async () => {
     const r = await migrate(MIGRATION_URL!)
-    expect([...r.aplicadas, ...r.jaEstavam]).toContain('0002_cadastros')
+    expect([...r.aplicadas, ...r.jaEstavam]).toContain('0002_dominio_0909')
 
     admin = postgres(DATABASE_URL!, { max: 3, onnotice: () => {} })
     aplicacao = await conectarComoAplicacao(admin, DATABASE_URL!)
@@ -416,8 +416,13 @@ describe.skipIf(!DATABASE_URL)('schema de cadastros — NR-008', () => {
      *   que e exatamente o que o protocolo existe para evitar.
      */
     expect(fora.map((r) => `${r.tabela}.${r.indice}`)).toEqual([
+      'company_integrations.company_integrations_payments_account_id_idx',
       'company_users.company_users_por_usuario',
+      'payments.payments_provider_event_id_idx',
+      'payments.payments_provider_payment_id_idx',
+      'subscriptions.subscriptions_provider_subscription_id_idx',
       'support_tickets.support_tickets_protocolo_unico',
+      'webhook_events.webhook_events_provider_event_unique',
     ])
   })
 })

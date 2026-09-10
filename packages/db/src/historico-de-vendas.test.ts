@@ -102,7 +102,7 @@ describe.skipIf(!DATABASE_URL)('historico de vendas — NR-027', () => {
 
   beforeAll(async () => {
     const r = await migrate(MIGRATION_URL!)
-    expect([...r.aplicadas, ...r.jaEstavam]).toContain('0003_vendas_e_financeiro')
+    expect([...r.aplicadas, ...r.jaEstavam]).toContain('0002_dominio_0909')
 
     admin = postgres(DATABASE_URL!, { max: 6, onnotice: () => {} })
     aplicacao = await conectarComoAplicacao(admin, DATABASE_URL!)

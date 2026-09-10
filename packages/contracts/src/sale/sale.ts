@@ -151,7 +151,7 @@ export const saleHistoryEntrySchema = z.object({
   customerId: idSchema.nullable(),
   /** `null` na venda de balcao sem identificacao — RF-033. */
   customerName: z.string().nullable(),
-  status: z.enum(['registered', 'cancelled', 'returned', 'partially_returned']),
+  status: z.enum(['open', 'settled', 'cancelled', 'returned']),
   grossAmountCents: z.number().int(),
   discountCents: z.number().int(),
   netAmountCents: z.number().int(),

@@ -451,7 +451,7 @@ export type VendaDoHistorico = {
   clienteId: string | null
   /** Nulo na venda de balcao sem identificacao — RF-033. */
   clienteNome: string | null
-  status: 'registered' | 'cancelled' | 'returned' | 'partially_returned'
+  status: 'open' | 'settled' | 'cancelled' | 'returned'
   bruto: number
   desconto: number
   total: number

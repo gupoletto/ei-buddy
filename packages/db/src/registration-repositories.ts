@@ -33,11 +33,11 @@ type LinhaEmpresa = {
   state_registration: string | null
   municipal_registration: string | null
   business_segment: string | null
-  zip_code: string | null
+  postal_code: string | null
   street: string | null
-  number: string | null
+  street_number: string | null
   complement: string | null
-  district: string | null
+  neighborhood: string | null
   city: string | null
   state: string | null
   created_at: Date
@@ -52,19 +52,19 @@ type LinhaEmpresa = {
  * como "o complemento some quando salvo por esta tela e nao pela outra".
  */
 const paraEndereco = (l: {
-  zip_code: string | null
+  postal_code: string | null
   street: string | null
-  number: string | null
+  street_number: string | null
   complement: string | null
-  district: string | null
+  neighborhood: string | null
   city: string | null
   state: string | null
 }) => ({
-  zipCode: l.zip_code,
+  zipCode: l.postal_code,
   street: l.street,
-  number: l.number,
+  number: l.street_number,
   complement: l.complement,
-  district: l.district,
+  district: l.neighborhood,
   city: l.city,
   state: l.state,
 })
@@ -107,7 +107,7 @@ export function createCompanyRepository(sql: Sql): CompanyRepository {
           INSERT INTO companies
             (id, legal_name, trade_name, cnpj, email, phone,
              state_registration, municipal_registration, business_segment,
-             zip_code, street, number, complement, district, city, state,
+             postal_code, street, street_number, complement, neighborhood, city, state,
              created_at)
           VALUES (${id}, ${c.legalName}, ${c.tradeName ?? null}, ${c.cnpj},
                   ${c.email}, ${c.phone},
@@ -204,11 +204,11 @@ export function createCompanyRepository(sql: Sql): CompanyRepository {
             municipal_registration = COALESCE(${m.municipalRegistration ?? null},
                                               municipal_registration),
             business_segment       = COALESCE(${m.businessSegment ?? null}, business_segment),
-            zip_code               = COALESCE(${m.address?.zipCode ?? null}, zip_code),
+            postal_code               = COALESCE(${m.address?.zipCode ?? null}, postal_code),
             street                 = COALESCE(${m.address?.street ?? null}, street),
-            number                 = COALESCE(${m.address?.number ?? null}, number),
+            street_number          = COALESCE(${m.address?.number ?? null}, street_number),
             complement             = COALESCE(${m.address?.complement ?? null}, complement),
-            district               = COALESCE(${m.address?.district ?? null}, district),
+            neighborhood           = COALESCE(${m.address?.district ?? null}, neighborhood),
             city                   = COALESCE(${m.address?.city ?? null}, city),
             state                  = COALESCE(${m.address?.state ?? null}, state),
             updated_at             = now()
@@ -237,11 +237,11 @@ type LinhaCliente = {
   notes: string | null
   wallet_limit_cents: string | number
   wallet_balance_cents: string | number
-  zip_code: string | null
+  postal_code: string | null
   street: string | null
-  number: string | null
+  street_number: string | null
   complement: string | null
-  district: string | null
+  neighborhood: string | null
   city: string | null
   state: string | null
   created_at: Date
@@ -273,7 +273,7 @@ export function createCustomerRepository(sql: Sql): CustomerRepository {
         (tx) => tx<LinhaCliente[]>`
           INSERT INTO customers
             (company_id, name, document, phone, email, notes, wallet_limit_cents,
-             zip_code, street, number, complement, district, city, state,
+             postal_code, street, street_number, complement, neighborhood, city, state,
              created_by, created_at)
           VALUES (${c.companyId}, ${c.name}, ${c.document ?? null}, ${c.phone ?? null},
                   ${c.email ?? null}, ${c.notes ?? null}, ${c.walletLimitCents ?? 0},
@@ -430,9 +430,9 @@ type LinhaProduto = {
   sale_price_cents: string | number
   cost_price_cents: string | number
   tax_rate: string | null
-  stock_quantity: number
+  stock: number
   min_stock: number
-  category_id: string | null
+  category: string | null
   is_active: boolean
   created_at: Date
   ncm: string | null
@@ -453,10 +453,10 @@ const paraProduto = (l: LinhaProduto): ProductOutput => ({
   ncm: l.ncm,
   cfop: l.cfop,
   taxSituationCode: l.tax_situation_code,
-  /* A coluna chama `stock_quantity`; o contrato chama `stock`. */
-  stock: l.stock_quantity,
+  /* A coluna chama `stock`; o contrato chama `stock`. */
+  stock: l.stock,
   minStock: l.min_stock,
-  categoryId: l.category_id,
+  category: l.category,
 })
 
 export function createProductRepository(sql: Sql): ProductRepository {
@@ -468,12 +468,12 @@ export function createProductRepository(sql: Sql): ProductRepository {
         (tx) => tx<LinhaProduto[]>`
           INSERT INTO products
             (company_id, description, barcode, internal_code, unit_of_measure,
-             sale_price_cents, cost_price_cents, tax_rate, min_stock, category_id,
+             sale_price_cents, cost_price_cents, tax_rate, min_stock, category,
              ncm, cfop, tax_situation_code,
              created_by, created_at)
           VALUES (${p.companyId}, ${p.description}, ${p.barcode ?? null}, ${p.internalCode},
                   ${p.unitOfMeasure}, ${p.salePriceCents}, ${p.costPriceCents},
-                  ${p.taxRate ?? null}, ${p.minStock}, ${p.categoryId ?? null},
+                  ${p.taxRate ?? null}, ${p.minStock}, ${p.category ?? null},
                   ${p.ncm}, ${p.cfop}, ${p.taxSituationCode},
                   ${p.createdBy}, ${p.createdAt})
           RETURNING *
@@ -575,9 +575,9 @@ export function createProductRepository(sql: Sql): ProductRepository {
           }
           ${
             criterio.stock === 'esgotado'
-              ? tx`AND stock_quantity <= 0`
+              ? tx`AND stock <= 0`
               : criterio.stock === 'baixo'
-                ? tx`AND stock_quantity > 0 AND stock_quantity < min_stock`
+                ? tx`AND stock > 0 AND stock < min_stock`
                 : tx``
           }
           ORDER BY description, id
@@ -616,9 +616,9 @@ export function createProductRepository(sql: Sql): ProductRepository {
           }[]
         >`
           SELECT count(*)                                              AS total,
-                 count(*) FILTER (WHERE stock_quantity < min_stock)    AS below_minimum,
-                 count(*) FILTER (WHERE stock_quantity <= 0)           AS out_of_stock,
-                 COALESCE(SUM(stock_quantity * cost_price_cents), 0)   AS stock_value_cents
+                 count(*) FILTER (WHERE stock < min_stock)    AS below_minimum,
+                 count(*) FILTER (WHERE stock <= 0)           AS out_of_stock,
+                 COALESCE(SUM(stock * cost_price_cents), 0)   AS stock_value_cents
           FROM products
           WHERE deleted_at IS NULL
         `,

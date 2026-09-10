@@ -49,7 +49,7 @@ describe.skipIf(!DATABASE_URL)('trilha de auditoria — NR-025', () => {
       sql,
       empresa,
       (tx) => tx<{ id: string }[]>`
-        INSERT INTO audit_log
+        INSERT INTO audit_logs
           (company_id, entity, entity_id, action, actor_id, channel, occurred_at, before, after)
         VALUES (
           ${empresa},
@@ -70,7 +70,7 @@ describe.skipIf(!DATABASE_URL)('trilha de auditoria — NR-025', () => {
 
   beforeAll(async () => {
     const r = await migrate(MIGRATION_URL!)
-    expect([...r.aplicadas, ...r.jaEstavam]).toContain('0007_auditoria')
+    expect([...r.aplicadas, ...r.jaEstavam]).toContain('0007_acrescimos')
 
     admin = postgres(DATABASE_URL!, { max: 3, onnotice: () => {} })
     aplicacao = await conectarComoAplicacao(admin, DATABASE_URL!)
@@ -91,7 +91,7 @@ describe.skipIf(!DATABASE_URL)('trilha de auditoria — NR-025', () => {
      * verifica. As linhas ficam no banco de teste, e ficar e barato — elas sao
      * pequenas, escopadas por empresa, e cada execucao cria empresas novas.
      *
-     * Apagar as empresas funciona porque `audit_log` nao tem chave estrangeira
+     * Apagar as empresas funciona porque `audit_logs` nao tem chave estrangeira
      * para `companies` — decisao registrada na migration: prova nao pode
      * depender da existencia daquilo que ela prova.
      */
@@ -112,7 +112,7 @@ describe.skipIf(!DATABASE_URL)('trilha de auditoria — NR-025', () => {
         (tx) =>
           tx<
             { actor_id: string; channel: string; before: unknown; after: unknown }[]
-          >`SELECT actor_id, channel, before, after FROM audit_log WHERE id = ${id}`,
+          >`SELECT actor_id, channel, before, after FROM audit_logs WHERE id = ${id}`,
       )
 
       expect(linha?.actor_id).toBe('11111111-1111-1111-1111-111111111111')
@@ -127,7 +127,7 @@ describe.skipIf(!DATABASE_URL)('trilha de auditoria — NR-025', () => {
       const [linha] = await withTenant(
         sql,
         empresaA,
-        (tx) => tx<{ channel: string }[]>`SELECT channel FROM audit_log WHERE id = ${id}`,
+        (tx) => tx<{ channel: string }[]>`SELECT channel FROM audit_logs WHERE id = ${id}`,
       )
 
       expect(linha?.channel).toBe('whatsapp')
@@ -143,7 +143,7 @@ describe.skipIf(!DATABASE_URL)('trilha de auditoria — NR-025', () => {
           sql,
           empresaA,
           (tx) => tx`
-            INSERT INTO audit_log
+            INSERT INTO audit_logs
               (company_id, entity, entity_id, action, actor_id, channel, occurred_at, before)
             VALUES (${empresaA}, ${'Product'}, ${randomUUID()}, ${'created'}, ${randomUUID()},
                     ${'app'}, ${'2026-09-02T12:00:00Z'}, ${sql.json({ a: 1 })})
@@ -165,7 +165,7 @@ describe.skipIf(!DATABASE_URL)('trilha de auditoria — NR-025', () => {
         withTenant(
           sql,
           empresaA,
-          (tx) => tx`UPDATE audit_log SET action = ${'created'} WHERE id = ${id}`,
+          (tx) => tx`UPDATE audit_logs SET action = ${'created'} WHERE id = ${id}`,
         ),
       ).rejects.toThrow(/somente-insercao/)
     })
@@ -174,7 +174,7 @@ describe.skipIf(!DATABASE_URL)('trilha de auditoria — NR-025', () => {
       const id = await registrar(empresaA)
 
       await expect(
-        withTenant(sql, empresaA, (tx) => tx`DELETE FROM audit_log WHERE id = ${id}`),
+        withTenant(sql, empresaA, (tx) => tx`DELETE FROM audit_logs WHERE id = ${id}`),
       ).rejects.toThrow(/somente-insercao/)
     })
 
@@ -192,28 +192,28 @@ describe.skipIf(!DATABASE_URL)('trilha de auditoria — NR-025', () => {
      * caso que `REVOKE` nao cobriria, e o motivo de a garantia ser gatilho.
      */
     it('recusa TRUNCATE, inclusive pelo dono da tabela', async () => {
-      await expect(admin`TRUNCATE audit_log`).rejects.toThrow(/somente-insercao/)
+      await expect(admin`TRUNCATE audit_logs`).rejects.toThrow(/somente-insercao/)
     })
 
     it('recusa UPDATE do dono — REVOKE nao cobriria este caso', async () => {
       const id = await registrar(empresaA)
 
       await expect(
-        admin`UPDATE audit_log SET action = ${'created'} WHERE id = ${id}`,
+        admin`UPDATE audit_logs SET action = ${'created'} WHERE id = ${id}`,
       ).rejects.toThrow(/somente-insercao/)
     })
 
     it('a linha continua la depois da tentativa', async () => {
       const id = await registrar(empresaA)
 
-      await withTenant(sql, empresaA, (tx) => tx`DELETE FROM audit_log WHERE id = ${id}`).catch(
+      await withTenant(sql, empresaA, (tx) => tx`DELETE FROM audit_logs WHERE id = ${id}`).catch(
         () => undefined,
       )
 
       const achada = await withTenant(
         sql,
         empresaA,
-        (tx) => tx<{ id: string }[]>`SELECT id FROM audit_log WHERE id = ${id}`,
+        (tx) => tx<{ id: string }[]>`SELECT id FROM audit_logs WHERE id = ${id}`,
       )
 
       expect(achada).toHaveLength(1)
@@ -227,7 +227,7 @@ describe.skipIf(!DATABASE_URL)('trilha de auditoria — NR-025', () => {
       const daOutra = await withTenant(
         sql,
         empresaB,
-        (tx) => tx<{ id: string }[]>`SELECT id FROM audit_log WHERE id = ${id}`,
+        (tx) => tx<{ id: string }[]>`SELECT id FROM audit_logs WHERE id = ${id}`,
       )
 
       expect(daOutra).toEqual([])
@@ -239,7 +239,7 @@ describe.skipIf(!DATABASE_URL)('trilha de auditoria — NR-025', () => {
           sql,
           empresaA,
           (tx) => tx`
-            INSERT INTO audit_log
+            INSERT INTO audit_logs
               (company_id, entity, entity_id, action, actor_id, channel, occurred_at)
             VALUES (${empresaB}, ${'Product'}, ${randomUUID()}, ${'updated'}, ${randomUUID()},
                     ${'app'}, ${'2026-09-02T12:00:00Z'})

@@ -15,7 +15,7 @@ import { chamarApi, type Resposta } from './api'
  * vem da api acontece na BORDA, aqui embaixo, e as telas falam uma lingua so.
  */
 
-export type StatusChamado = 'aberto' | 'andamento' | 'respondido' | 'encerrado'
+export type StatusChamado = 'open' | 'waiting' | 'closed'
 
 export type CategoriaChamado = 'financeiro' | 'cadastro' | 'vendas' | 'tecnico' | 'outro'
 
@@ -35,10 +35,9 @@ export const CATEGORIAS: readonly { valor: CategoriaChamado; rotulo: string }[] 
 ]
 
 export const ROTULO_STATUS: Record<StatusChamado, string> = {
-  aberto: 'Aberto',
-  andamento: 'Em andamento',
-  respondido: 'Respondido',
-  encerrado: 'Encerrado',
+  open: 'Aberto',
+  waiting: 'Aguardando',
+  closed: 'Encerrado',
 }
 
 /** Os minimos do contrato, para a tela recusar ANTES de ir na rede. */

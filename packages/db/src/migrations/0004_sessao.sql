@@ -1,3 +1,6 @@
+-- Baseline NR-089 / ADR-0006. Origem fundida: 0022_sessao_e_desaceleracao.sql.
+-- Historia nova: nao editar as migrations 0001–0025 antigas — elas nao existem mais.
+
 -- Sessao persistente e desaceleracao de login — NR-083, ADR-0002, RF-006, RF-119, RF-120.
 --
 -- ## O que estava em memoria, e por que isso bloqueava producao

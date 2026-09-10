@@ -232,7 +232,7 @@ function cadastroEmMemoria() {
         taxSituationCode: p.taxSituationCode,
         stock: 0,
         minStock: p.minStock,
-        categoryId: p.categoryId ?? null,
+        category: p.category ?? null,
       }
       produtos.push(pr)
 

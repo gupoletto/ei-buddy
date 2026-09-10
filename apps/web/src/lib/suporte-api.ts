@@ -14,7 +14,7 @@ import { pedir, type Resultado } from './http'
  * A traducao do que vem da api acontece na BORDA, aqui embaixo.
  */
 
-export type StatusChamado = 'aberto' | 'andamento' | 'respondido' | 'encerrado'
+export type StatusChamado = 'open' | 'waiting' | 'closed'
 
 export type CategoriaChamado = 'financeiro' | 'cadastro' | 'vendas' | 'tecnico' | 'outro'
 
@@ -27,10 +27,9 @@ export const CATEGORIAS: { valor: CategoriaChamado; rotulo: string }[] = [
 ]
 
 export const ROTULO_STATUS: Record<StatusChamado, string> = {
-  aberto: 'Aberto',
-  andamento: 'Em andamento',
-  respondido: 'Respondido',
-  encerrado: 'Encerrado',
+  open: 'Aberto',
+  waiting: 'Aguardando',
+  closed: 'Encerrado',
 }
 
 export type MensagemChamado = {

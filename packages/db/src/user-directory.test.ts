@@ -11,9 +11,9 @@ import { createUserDirectory } from './user-directory.js'
  *
  * A suite existe por uma propriedade que nenhum teste em memoria alcanca: o
  * login precisa ler `users` SEM empresa no contexto, e a politica de RLS
- * (0002) mais o erro da 0004 tornam isso impossivel por consulta normal.
+ * (0003) mais o erro da 0001 tornam isso impossivel por consulta normal.
  *
- * O que se prova aqui e que o caminho estreito da 0009 funciona **e continua
+ * O que se prova aqui e que o caminho estreito da 0003 funciona **e continua
  * estreito** — a consulta comum ainda esconde usuario de outra loja.
  *
  * Como nas outras suites de `db`: pulada sem `DATABASE_URL`, executada na CI,

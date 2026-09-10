@@ -1,3 +1,6 @@
+-- Baseline NR-089 / ADR-0006. Origem fundida: 0009_identidade_de_login.sql, 0017_cnpj_no_cadastro_de_conta.sql, 0023_schema_da_identidade.sql.
+-- Historia nova: nao editar as migrations 0001–0025 antigas — elas nao existem mais.
+
 -- Identidade de login — NR-014, RF-005, RF-119, RF-120.
 --
 -- Duas coisas: a coluna que amarra a identidade externa ao nosso usuario, e o
@@ -245,3 +248,116 @@ CREATE OR REPLACE FUNCTION auth_attach_subject(p_user_id uuid, p_subject text)
 
 COMMENT ON FUNCTION auth_attach_subject(uuid, text) IS
   'Amarra a identidade do provedor a um usuario que ainda nao tem. Nunca reaponta (NR-014).';
+
+
+-- O caminho estreito do CADASTRO DE CONTA — NR-014, RF-002, RF-121.
+--
+-- ## O defeito
+--
+-- `signup` comeca perguntando se o CNPJ ja tem cadastro (RF-002). Essa pergunta
+-- acontece ANTES de existir empresa — descobrir se ela existe e justamente o
+-- que se esta fazendo. O repositorio respondia com `withPlatformScope`, que
+-- roda a consulta SEM tenant.
+--
+-- E consulta sem tenant LANCA, de proposito, desde a 0004 (RF-121): melhor
+-- falhar que devolver vazio, porque vazio parece resposta. Entao, numa conexao
+-- de verdade — papel comum, sujeito a RLS — o cadastro morria na primeira
+-- linha com:
+--
+--   Consulta sem empresa no contexto: app.company_id nao esta definido.
+--
+-- A api traduzia para 500, e a pessoa via "algo deu errado do nosso lado". Nao
+-- havia como criar conta, e sem conta nao havia como entrar.
+--
+-- ## Por que nenhum teste pegou
+--
+-- Porque todos rodavam a conexao do DONO do banco, e dono e superusuario —
+-- superusuario ignora politica de RLS inteiramente, entao a consulta sem tenant
+-- nunca chegava a falhar. O teste passava pelo motivo errado. E a mesma
+-- armadilha que o `checkIsolation` da subida existe para denunciar, e que a
+-- suite de `db` ja evita conectando com um papel comum.
+--
+-- ## A correcao
+--
+-- A mesma que a 0009 usou para o login, que tem a MESMA contradicao: o login
+-- precisa achar o usuario antes de saber a empresa. Uma funcao `SECURITY
+-- DEFINER` estreita, com as quatro travas de la:
+--
+-- 1. `SET search_path` — sem isso, quem chama poderia criar uma tabela
+--    `companies` num schema anterior no caminho de busca e a funcao, rodando
+--    com privilegio do dono, leria a tabela do atacante.
+-- 2. Igualdade exata, nunca padrao — inutil para enumerar a base.
+-- 3. Retorno minimo. Aqui ele e o menor possivel: um BOOLEANO. A funcao nao
+--    devolve id, nome nem nada da empresa existente, o que casa com a RF-002
+--    ("recusar sem revelar dados da empresa existente").
+-- 4. `STABLE`, sem escrita.
+--
+-- Sobre GRANT vale o mesmo da 0009: a funcao nasce executavel por PUBLIC e
+-- assim fica, porque o papel da aplicacao muda por ambiente e a migration nao o
+-- conhece. O contrapeso e o retorno: quem chamar so descobre o que ja teria
+-- descoberto tentando cadastrar.
+
+CREATE OR REPLACE FUNCTION auth_cnpj_taken(p_cnpj text)
+  RETURNS boolean
+  LANGUAGE sql
+  STABLE
+  SECURITY DEFINER
+  SET search_path = pg_catalog, public
+  AS $$
+    SELECT EXISTS (SELECT 1 FROM companies c WHERE c.cnpj = p_cnpj)
+  $$;
+
+COMMENT ON FUNCTION auth_cnpj_taken(text) IS
+  'Este CNPJ ja tem cadastro? Booleano, sem empresa no contexto (RF-002, NR-014).';
+
+
+-- Schema da identidade — NR-084, ADR-0002 (opcao D), ADR-0001.
+--
+-- Esta migration cria UM schema vazio e nada mais. As tabelas dentro dele são
+-- do Better Auth, e quem as cria é ele — ver o porquê abaixo.
+--
+-- ## Por que as tabelas do provedor NAO podem morar em `public`
+--
+-- A ADR-0001 tem uma invariante: **toda tabela em `public` nasce com RLS
+-- habilitado e forcado**, e `schema.test.ts` reprova o PR que esquecer. A
+-- invariante existe porque esquecer RLS numa tabela nova e vazamento entre
+-- lojas, e regra que so vive em documento e regra que ja foi quebrada.
+--
+-- As quatro tabelas do Better Auth (`user`, `session`, `account`,
+-- `verification`) nao tem `company_id` e nunca terao: elas guardam a PROVA de
+-- identidade, que e da pessoa e nao da loja — a mesma pessoa opera cinco lojas
+-- com uma credencial so. Poe-las em `public` deixaria duas saidas ruins:
+--
+-- - dar-lhes RLS sem politica, como `sessions` (0022). Mas ali o acesso passa
+--   por funcoes nossas; aqui quem consulta e a biblioteca, com o pool dela, e
+--   ela nao sabe de `app.company_id`. Toda consulta dela voltaria vazia.
+-- - acrescenta-las a lista de excecoes do teste. E ai a invariante passa a ter
+--   quatro furos que ninguem revisita, e o quinto entra sem discussao.
+--
+-- Um schema proprio nao e desvio da regra: e a regra dizendo a verdade. O teste
+-- olha `nspname = 'public'`, entao `identidade` fica de fora — e fica de fora
+-- por ser outra coisa, nao por ter sido perdoada.
+--
+-- ## Por que a migration nao cria as tabelas
+--
+-- Porque elas mudam com a VERSAO da biblioteca. Copiar o DDL do Better Auth
+-- para ca faria cada atualizacao dele exigir um diff escrito a mao, e o erro
+-- apareceria em producao, no primeiro login depois do deploy — nao no `pnpm
+-- typecheck`.
+--
+-- Quem cria e `ctx.runMigrations()`, a migracao do proprio Better Auth,
+-- chamada por `apps/api/src/bin/migrar-identidade.ts`. A regra que fica: **o
+-- que e nosso mora em `public` e e migrado por `packages/db`; o que e da
+-- biblioteca mora em `identidade` e e migrado por ela.**
+--
+-- ## O que este schema NAO tem
+--
+-- Nenhum GRANT. Pelo mesmo motivo da 0009: o papel da aplicacao tem nome
+-- diferente em cada ambiente e a migration nao o conhece, entao conceder
+-- privilegio nomeado e trabalho de implantacao e depende da DEC-009. O pool do
+-- Better Auth conecta com `DATABASE_URL`, que ja e dono do schema.
+
+CREATE SCHEMA IF NOT EXISTS identidade;
+
+COMMENT ON SCHEMA identidade IS
+  'Tabelas do provedor de identidade (Better Auth, ADR-0002 opcao D). Fora de public de proposito: nao tem company_id e nao entram na invariante de RLS da ADR-0001. Migradas pela propria biblioteca, nunca por packages/db.';

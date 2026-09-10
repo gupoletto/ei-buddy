@@ -64,6 +64,9 @@ const COLUNAS_NAO_PESSOAIS = new Set([
      registro de que a pessoa pediu para nao ser contatada. */
   'whatsapp_consent_at',
   'whatsapp_opt_out_at',
+  'collection_consent_at',
+  'payments_customer_id',
+  'city_ibge_code',
   'created_at',
   'updated_at',
   'created_by',
@@ -127,7 +130,7 @@ describe.skipIf(!DATABASE_URL)('privacidade — NR-086', () => {
       (tx) => tx`
         INSERT INTO customers (
           id, company_id, name, document, phone, email, notes,
-          zip_code, street, number, complement, district, city, state,
+          postal_code, street, street_number, complement, neighborhood, city, state,
           wallet_balance_cents
         ) VALUES (
           ${id}, ${empresa}, ${'Maria de Souza'}, ${'52998224725'}, ${'41988887777'},
@@ -258,11 +261,11 @@ describe.skipIf(!DATABASE_URL)('privacidade — NR-086', () => {
           phone: null,
           email: null,
           notes: null,
-          zip_code: null,
+          postal_code: null,
           street: null,
-          number: null,
+          street_number: null,
           complement: null,
-          district: null,
+          neighborhood: null,
           city: null,
           state: null,
         },
@@ -283,8 +286,9 @@ describe.skipIf(!DATABASE_URL)('privacidade — NR-086', () => {
       expect(linha?.['notes']).toBeNull()
       /* O que faltava antes da NR-086. */
       expect(linha?.['street']).toBeNull()
-      expect(linha?.['number']).toBeNull()
-      expect(linha?.['zip_code']).toBeNull()
+      expect(linha?.['street_number']).toBeNull()
+      expect(linha?.['neighborhood']).toBeNull()
+      expect(linha?.['postal_code']).toBeNull()
       expect(linha?.['city']).toBeNull()
       expect(linha?.['anonymized_at']).toBeInstanceOf(Date)
       expect(linha?.['anonymized_by']).toBe(usuario)
@@ -371,14 +375,14 @@ describe.skipIf(!DATABASE_URL)('privacidade — NR-086', () => {
         'settlements',
         'inventory_movements',
         'appointments',
-        'accounts',
+        'ledger_accounts',
         'bank_transactions',
-        'audit_log',
+        'audit_logs',
         'invoices',
         'sale_returns',
         'sale_return_items',
         'support_tickets',
-        'support_messages',
+        'ticket_messages',
       ])
 
       const orfas = tabelas
@@ -427,11 +431,11 @@ describe.skipIf(!DATABASE_URL)('privacidade — NR-086', () => {
         'phone',
         'email',
         'notes',
-        'zip_code',
+        'postal_code',
         'street',
-        'number',
+        'street_number',
         'complement',
-        'district',
+        'neighborhood',
         'city',
         'state',
       ])

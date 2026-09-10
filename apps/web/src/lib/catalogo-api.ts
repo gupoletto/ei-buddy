@@ -11,9 +11,8 @@ import { pedir, type Resultado } from './http'
  *
  * - **fornecedor**: nao ha coluna nenhuma em `products`. O dado nunca foi
  *   cadastrado; ele so existia nos exemplos.
- * - **categoria**: a tabela `categories` existe e `products.category_id` aponta
- *   para ela, mas nenhuma rota devolve o NOME. Volta quando houver rota de
- *   categorias.
+ * - **categoria**: `products.category` e texto livre (db_0909). A tela ainda
+ *   pode usar o nome direto, sem tabela `categories`.
  * - **diasSemVenda**: sai das vendas, e nao do cadastro. Seria uma agregacao
  *   propria.
  *

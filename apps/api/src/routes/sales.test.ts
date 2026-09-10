@@ -334,7 +334,7 @@ describe('historico de vendas — NR-027, US-021', () => {
     soldAt: '2026-09-06T15:00:00.000Z',
     customerId: null,
     customerName: null,
-    status: 'registered',
+    status: 'open',
     grossAmountCents: 1990,
     discountCents: 0,
     netAmountCents: 1990,

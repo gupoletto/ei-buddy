@@ -123,7 +123,7 @@ describe.skipIf(!DATABASE_URL)('baixa e estorno — NR-029', () => {
 
   beforeAll(async () => {
     const r = await migrate(MIGRATION_URL!)
-    expect([...r.aplicadas, ...r.jaEstavam]).toContain('0010_contas_a_pagar')
+    expect([...r.aplicadas, ...r.jaEstavam]).toContain('0002_dominio_0909')
 
     admin = postgres(DATABASE_URL!, { max: 4, onnotice: () => {} })
     aplicacao = await conectarComoAplicacao(admin, DATABASE_URL!)
@@ -149,7 +149,7 @@ describe.skipIf(!DATABASE_URL)('baixa e estorno — NR-029', () => {
     }
     for (const empresa of [empresaA, empresaB].filter(Boolean)) {
       await withTenant(sql, empresa, async (tx) => {
-        await tx`DELETE FROM payable_settlements`
+        await tx`DELETE FROM settlements`
         await tx`DELETE FROM settlements`
         await tx`DELETE FROM payables`
         await tx`DELETE FROM receivables`
@@ -299,7 +299,7 @@ describe.skipIf(!DATABASE_URL)('baixa e estorno — NR-029', () => {
         sql,
         empresaA,
         (tx) => tx<{ total: string }[]>`
-          SELECT count(*)::text AS total FROM payable_settlements WHERE payable_id = ${conta}
+          SELECT count(*)::text AS total FROM settlements WHERE payable_id = ${conta}
         `,
       )
       expect(Number(linhas[0]!.total)).toBe(2)

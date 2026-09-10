@@ -111,7 +111,7 @@ export async function gravarTrilha(
    * continuaria gravando e pararia de ser consultavel.
    */
   const [linha] = await tx<LinhaDaTrilha[]>`
-    INSERT INTO audit_log
+    INSERT INTO audit_logs
       (company_id, entity, entity_id, action, actor_id, channel, occurred_at, before, after)
     VALUES (
       ${entrada.companyId}, ${entrada.entity}, ${entrada.entityId}, ${entrada.action},
@@ -144,7 +144,7 @@ export async function gravarTrilha(
  * a excecao faz) e nao desfazer uma operacao que nao existe mais.
  *
  * Abre a propria transacao por causa do `withTenant`: e ele quem define
- * `app.company_id`, e sem isso a politica de `audit_log` recusa a escrita —
+ * `app.company_id`, e sem isso a politica de `audit_logs` recusa a escrita —
  * nao aceita em silencio, recusa. Ver ADR-0001.
  */
 export function createAuditTrail(sql: Sql): AuditTrail {

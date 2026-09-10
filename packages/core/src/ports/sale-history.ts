@@ -39,7 +39,7 @@ export type VendaDoHistorico = {
   readonly customerId: string | null
   /** `null` na venda de balcao sem identificacao — RF-033. */
   readonly customerName: string | null
-  readonly status: 'registered' | 'cancelled' | 'returned' | 'partially_returned'
+  readonly status: 'open' | 'settled' | 'cancelled' | 'returned'
   readonly grossAmountCents: number
   readonly discountCents: number
   readonly netAmountCents: number

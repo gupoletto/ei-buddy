@@ -19,10 +19,9 @@ import ChamadoDetalhe from './ChamadoDetalhe'
 import styles from './suporte.module.css'
 
 const TOM_STATUS: Record<string, 'neutral' | 'info' | 'warning' | 'success'> = {
-  aberto: 'neutral',
-  andamento: 'info',
-  respondido: 'warning',
-  encerrado: 'success',
+  open: 'neutral',
+  waiting: 'info',
+  closed: 'success',
 }
 
 export default function SuporteView() {
@@ -54,7 +53,7 @@ export default function SuporteView() {
     })()
   }, [buscar])
 
-  const emAndamento = chamados.filter((c) => c.status !== 'encerrado')
+  const emAndamento = chamados.filter((c) => c.status !== 'closed')
   const comResposta = chamados.filter((c) => c.naoLidas > 0)
 
   function atualizar(chamado: Chamado) {

@@ -47,7 +47,7 @@ PR**, e a linha sai da tabela de abertas.
 | 🔴 Aberta          |   9 | DEC-003, 005, 007, 009, 011, 012, 013, 016, 018 |
 | 🟡 Em análise      |   1 | DEC-001                                         |
 | ⚪ Adiada          |   1 | DEC-014                                         |
-| 🟢 Decidida        |   5 | DEC-002, 006, 008, 010, 015                     |
+| 🟢 Decidida        |   6 | DEC-002, 006, 008, 010, 015, 019                |
 | ❓ Pergunta aberta |  10 | QST-001 a QST-008, QST-011, QST-012             |
 
 **Bloqueando o MVP agora:** DEC-003, DEC-009.
@@ -445,6 +445,7 @@ links que já apontam para cá.
 | [ADR-0003](adr/0003-better-auth-como-prova-de-identidade.md) | Better Auth como prova de identidade, em schema próprio          | 2026-09-08 |
 | [ADR-0004](adr/0004-asaas.md)                                | Asaas como PSP das vendas e da assinatura SaaS                   | 2026-09-04 |
 | [ADR-0005](adr/0005-subconta-asaas-nao-baas.md)              | Subconta Asaas não-BaaS por lojista; KYC fora do caminho crítico | 2026-09-04 |
+| [ADR-0006](adr/0006-catalogo-0909-mais-plataforma.md)        | Catálogo 0909 no domínio; identidade, cofre e banco às margens   | 2026-09-09 |
 
 ### <a id="dec-002"></a>DEC-002 — Estratégia multi-tenant
 
@@ -515,6 +516,19 @@ exportação
 | **Data**    | 2026-09-04                                                       |
 
 Split por venda (take-rate) **não** entra aqui — [DEC-018](#dec-018).
+
+### <a id="dec-019"></a>DEC-019 — Catálogo PostgreSQL alvo
+
+|             |                                                                          |
+| ----------- | ------------------------------------------------------------------------ |
+| **Status**  | 🟢 Decidida — [ADR-0006](adr/0006-catalogo-0909-mais-plataforma.md)      |
+| **Escolha** | Domínio = `db_0909.sql`; plataforma da main (auth, sessão, cofre, banco) |
+| **Data**    | 2026-09-09                                                               |
+
+Baseline novo em `packages/db/src/migrations/`. O arquivo
+[`db_0909.sql`](../arquitetura/db_0909.sql) continua documental — não se aplica
+com `pnpm db:migrate`. Identidade Better Auth, sessão, cofre fiscal e extrato
+**não** são desfeitos. Retrabalho: NR-088 a NR-098.
 
 ## Documentos relacionados
 

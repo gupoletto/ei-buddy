@@ -47,7 +47,7 @@ const AMBIENTE = {
  * aqui, com folga cada vez menor. Um teto maior e a resposta certa: o que se
  * mede neste arquivo e a LOGICA dos tres desfechos, nunca o tempo de carga.
  */
-vi.setConfig({ testTimeout: 30_000 })
+vi.setConfig({ testTimeout: 60_000 })
 
 async function carregar() {
   vi.resetModules()

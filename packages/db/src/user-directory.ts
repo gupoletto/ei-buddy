@@ -10,11 +10,11 @@ import { withTenant } from './tenant.js'
  * ## Por que as leituras NAO passam por `withTenant`
  *
  * Porque nao existe empresa a passar. Descobrir a empresa e o que o login faz,
- * e a politica de `users` (0002) so mostra quem tem vinculo com a empresa do
- * contexto — enquanto a 0004 faz consulta sem `app.company_id` lancar, de
+ * e a politica de `users` (0003) so mostra quem tem vinculo com a empresa do
+ * contexto — enquanto a 0001 faz consulta sem `app.company_id` lancar, de
  * proposito.
  *
- * A saida sao as funcoes `auth_*` da migration 0009: `SECURITY DEFINER`, com
+ * A saida sao as funcoes `auth_*` da migration 0003: `SECURITY DEFINER`, com
  * `search_path` fixo, igualdade exata e retorno minimo. Elas sao o unico lugar
  * do sistema que atravessa a politica, e o motivo de cada restricao esta na
  * propria migration.

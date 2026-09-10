@@ -74,7 +74,7 @@ function escopo(tx: TransactionSql, companyId: string): SaleTransaction {
                  unit_of_measure  AS "unitOfMeasure",
                  sale_price_cents AS "salePriceCents",
                  cost_price_cents AS "costPriceCents",
-                 stock_quantity   AS "stockQuantity",
+                 stock   AS "stockQuantity",
                  tax_rate         AS "taxRate"
             FROM products
            WHERE id = ANY(${ids as unknown as string[]}::uuid[])
@@ -140,6 +140,7 @@ async function inserirVenda(
       number: numero,
       customer_id: venda.customerId ?? null,
       channel: venda.channel,
+      status: venda.receivables.some((r) => r.settledAt === undefined) ? 'open' : 'settled',
       gross_amount_cents: venda.grossAmountCents,
       discount_cents: venda.discountCents,
       tax_amount_cents: venda.taxAmountCents,
@@ -274,12 +275,12 @@ async function baixarEstoque(
   origem: StockMovementOrigin,
 ): Promise<void> {
   for (const item of itens) {
-    const [produto] = await tx<{ stock_quantity: number }[]>`
+    const [produto] = await tx<{ stock: number }[]>`
       UPDATE products
-         SET stock_quantity = stock_quantity - ${item.quantity},
+         SET stock = stock - ${item.quantity},
              updated_at = ${origem.createdAt}
        WHERE id = ${item.productId}
-      RETURNING stock_quantity
+      RETURNING stock
     `
 
     if (!produto) {
@@ -298,7 +299,7 @@ async function baixarEstoque(
         product_id: item.productId,
         kind: 'sale',
         quantity_delta: -item.quantity,
-        balance_after: produto.stock_quantity,
+        balance_after: produto.stock,
         reason: null,
         sale_id: origem.saleId,
         created_by: origem.createdBy,

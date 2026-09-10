@@ -97,8 +97,8 @@ describe.skipIf(!DATABASE_URL)('schema de agenda — NR-035', () => {
 
   beforeAll(async () => {
     const r = await migrate(MIGRATION_URL!)
-    expect([...r.aplicadas, ...r.jaEstavam]).toContain('0006_agenda')
-    expect([...r.aplicadas, ...r.jaEstavam]).toContain('0020_fim_e_local_do_compromisso')
+    expect([...r.aplicadas, ...r.jaEstavam]).toContain('0002_dominio_0909')
+    expect([...r.aplicadas, ...r.jaEstavam]).toContain('0002_dominio_0909')
 
     admin = postgres(DATABASE_URL!, { max: 3, onnotice: () => {} })
     aplicacao = await conectarComoAplicacao(admin, DATABASE_URL!)

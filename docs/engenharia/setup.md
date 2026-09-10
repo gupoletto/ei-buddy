@@ -108,6 +108,11 @@ ou `a` (emulador Android).
 | `pnpm infra:psql`  | abre o `psql` no banco local                       |
 | `pnpm infra:redis` | abre o `redis-cli`                                 |
 
+O baseline de schema é 0001–0007 (ADR-0006). Volume local que ainda tem
+`schema_migrations` 0001–0025 **não aplica**: o runner recusa checksum/versão
+que não existem mais. Depois de puxar o catálogo 0909, todo o time roda
+`pnpm infra:reset` e `pnpm db:migrate`.
+
 ### Serviços opcionais
 
 O perfil `full` adiciona object storage e servidor de e-mail locais:

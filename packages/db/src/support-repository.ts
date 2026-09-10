@@ -70,7 +70,7 @@ const paraMensagem = (l: LinhaMensagem): TicketMessage => ({
  * duas discordarem — e o badge some numa tela e continua na outra.
  */
 const NAO_LIDAS = (tx: Sql | TransactionSql) => tx`
-  (SELECT count(*) FROM support_messages m
+  (SELECT count(*) FROM ticket_messages m
     WHERE m.ticket_id = t.id
       AND m.author = 'suporte'
       AND (t.last_read_at IS NULL OR m.created_at > t.last_read_at))
@@ -82,7 +82,7 @@ async function mensagensDe(
 ): Promise<readonly TicketMessage[]> {
   const linhas = await tx<LinhaMensagem[]>`
     SELECT id, author, author_name, body, attachment, created_at
-    FROM support_messages
+    FROM ticket_messages
     WHERE ticket_id = ${ticketId}
     ORDER BY created_at, id
   `
@@ -152,7 +152,7 @@ export function createSupportRepository(sql: Sql): SupportRepository {
         `
 
         await tx`
-          INSERT INTO support_messages
+          INSERT INTO ticket_messages
             (company_id, ticket_id, author, author_name, body, attachment, created_at)
           VALUES (${chamado.companyId}, ${criado!.id}, 'cliente', ${chamado.authorName},
                   ${chamado.body}, ${chamado.attachment}, ${chamado.createdAt})
@@ -182,7 +182,7 @@ export function createSupportRepository(sql: Sql): SupportRepository {
         if (existe === undefined) return undefined
 
         await tx`
-          INSERT INTO support_messages
+          INSERT INTO ticket_messages
             (company_id, ticket_id, author, author_name, body, attachment, created_at)
           VALUES (${mensagem.companyId}, ${mensagem.ticketId}, 'cliente', ${mensagem.authorName},
                   ${mensagem.body}, ${mensagem.attachment}, ${mensagem.createdAt})
@@ -190,7 +190,7 @@ export function createSupportRepository(sql: Sql): SupportRepository {
 
         await tx`
           UPDATE support_tickets
-             SET status = 'andamento', updated_at = ${mensagem.createdAt}
+             SET status = 'waiting', updated_at = ${mensagem.createdAt}
            WHERE id = ${mensagem.ticketId}
         `
 

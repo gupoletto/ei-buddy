@@ -82,7 +82,7 @@ describe.skipIf(!DATABASE_URL)('trilha de auditoria — NR-087', () => {
 
   const contar = async (entityId: string): Promise<number> => {
     const [linha] = await admin<{ total: string }[]>`
-      SELECT count(*)::text AS total FROM audit_log WHERE entity_id = ${entityId}
+      SELECT count(*)::text AS total FROM audit_logs WHERE entity_id = ${entityId}
     `
     return Number(linha!.total)
   }
@@ -115,7 +115,7 @@ describe.skipIf(!DATABASE_URL)('trilha de auditoria — NR-087', () => {
 
       const [linha] = await admin<{ antes: string; depois: string }[]>`
         SELECT before ->> 'stockQuantity' AS antes, after ->> 'stockQuantity' AS depois
-          FROM audit_log
+          FROM audit_logs
          WHERE entity_id = ${e.entityId}
       `
 
@@ -153,7 +153,7 @@ describe.skipIf(!DATABASE_URL)('trilha de auditoria — NR-087', () => {
       const linhas = await withTenant(
         sql,
         outra,
-        (tx) => tx<{ id: string }[]>`SELECT id FROM audit_log WHERE entity_id = ${e.entityId}`,
+        (tx) => tx<{ id: string }[]>`SELECT id FROM audit_logs WHERE entity_id = ${e.entityId}`,
       )
 
       expect(linhas).toEqual([])
@@ -279,7 +279,7 @@ describe.skipIf(!DATABASE_URL)('trilha de auditoria — NR-087', () => {
           sql,
           empresa,
           (tx) =>
-            tx`UPDATE audit_log SET actor_id = ${randomUUID()} WHERE entity_id = ${e.entityId}`,
+            tx`UPDATE audit_logs SET actor_id = ${randomUUID()} WHERE entity_id = ${e.entityId}`,
         ),
       ).rejects.toThrow()
     })
@@ -289,7 +289,11 @@ describe.skipIf(!DATABASE_URL)('trilha de auditoria — NR-087', () => {
       await createAuditTrail(sql).record(e)
 
       await expect(
-        withTenant(sql, empresa, (tx) => tx`DELETE FROM audit_log WHERE entity_id = ${e.entityId}`),
+        withTenant(
+          sql,
+          empresa,
+          (tx) => tx`DELETE FROM audit_logs WHERE entity_id = ${e.entityId}`,
+        ),
       ).rejects.toThrow()
 
       expect(await contar(e.entityId)).toBe(1)

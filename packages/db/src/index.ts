@@ -1,17 +1,13 @@
 /**
- * Schema Drizzle, migrations, politicas RLS e repositorios.
+ * Schema SQL (baseline 0001–0007), politicas RLS e repositorios.
  *
  * A estrategia de isolamento esta decidida: RLS por linha, `company_id` em toda
  * tabela de negocio mais politica no PostgreSQL — ADR-0001, origem DEC-002.
  * Ver docs/arquitetura/dados.md#multi-tenant para as consequencias que valem
  * para todo o codigo (FORCE ROW LEVEL SECURITY, consulta sem `app.company_id`
- * falha, migrations com papel separado).
- *
- * O que existe hoje (NR-007): a conexao, a verificacao de saude, o runner de
- * migrations e o mecanismo de isolamento — a funcao `enable_tenant_isolation`
- * no banco e o `withTenant` aqui. As TABELAS de negocio nascem na NR-008
- * (cadastros) e na NR-020 (vendas e financeiro), e cada uma chama aquela
- * funcao.
+ * falha, migrations com papel separado). O catalogo de dominio segue o
+ * snapshot 0909; identidade, sessao, cofre e extrato entram as margens
+ * (ADR-0006). Nao ha `drizzle-kit`: o runner aplica SQL cru.
  */
 export { checkConnection, closeConnection, getClient } from './connection.js'
 export type { DatabaseHealth } from './connection.js'
@@ -39,7 +35,7 @@ export {
 export { createSaleUnitOfWork } from './sale-unit-of-work.js'
 
 /* Diretorio de usuarios — NR-014. Le por fora da RLS, pelas funcoes auth_* da
-   migration 0009; ver user-directory.ts sobre por que isso e necessario. */
+   migration 0003; ver user-directory.ts sobre por que isso e necessario. */
 export { createUserDirectory } from './user-directory.js'
 
 /* --- Guarda: a conexao da aplicacao pode ignorar RLS? --- */

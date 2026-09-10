@@ -23,10 +23,9 @@ import { formatDate, formatDateTime } from '@/lib/format'
 import { cores, espaco, fonte, peso, raio } from '@/theme/tokens'
 
 const TOM_STATUS: Record<StatusChamado, 'neutro' | 'sucesso' | 'atencao' | 'erro'> = {
-  aberto: 'atencao',
-  andamento: 'atencao',
-  respondido: 'sucesso',
-  encerrado: 'neutro',
+  open: 'atencao',
+  waiting: 'atencao',
+  closed: 'neutro',
 }
 
 const rotuloDaCategoria = (c: CategoriaChamado) =>
@@ -328,7 +327,7 @@ export default function Suporte() {
 
               {/* Chamado encerrado nao recebe resposta: o campo apareceria e o
                   servidor recusaria depois de a pessoa digitar. */}
-              {c.status !== 'encerrado' && c.mensagens.length > 0 ? (
+              {c.status !== 'closed' && c.mensagens.length > 0 ? (
                 <>
                   <Campo
                     rotulo="Responder"

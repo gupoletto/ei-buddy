@@ -61,7 +61,7 @@ export default function EtapaCatalogo({
    * conforme a loja cresce — o contrario do que deveria. Uma mercearia tem
    * milhares de itens.
    *
-   * Some com ele o filtro por CATEGORIA: a api guarda `categoryId` e nao ha
+   * Some com ele o filtro por CATEGORIA: a api guarda `category` texto e nao ha
    * cadastro de categoria com nome, entao o seletor so poderia mostrar uuid.
    * Filtro que o lojista nao consegue ler e pior que filtro nenhum — ele volta
    * quando as categorias existirem de verdade.

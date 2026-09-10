@@ -61,7 +61,7 @@ describe.skipIf(!DATABASE_URL)('suporte — NR-080', () => {
       sql,
       empresa,
       (tx) => tx`
-        INSERT INTO support_messages
+        INSERT INTO ticket_messages
           (company_id, ticket_id, author, author_name, body, created_at)
         VALUES (${empresa}, ${ticketId}, 'suporte', 'Equipe', 'Ja estamos vendo.', ${quando})
       `,
@@ -70,7 +70,7 @@ describe.skipIf(!DATABASE_URL)('suporte — NR-080', () => {
 
   beforeAll(async () => {
     const r = await migrate(MIGRATION_URL!)
-    expect([...r.aplicadas, ...r.jaEstavam]).toContain('0018_suporte')
+    expect([...r.aplicadas, ...r.jaEstavam]).toContain('0007_acrescimos')
 
     admin = postgres(DATABASE_URL!, { max: 4, onnotice: () => {} })
     aplicacao = await conectarComoAplicacao(admin, DATABASE_URL!)
@@ -94,7 +94,7 @@ describe.skipIf(!DATABASE_URL)('suporte — NR-080', () => {
     }
     for (const empresa of [empresaA, empresaB].filter(Boolean)) {
       await withTenant(sql, empresa, async (tx) => {
-        await tx`DELETE FROM support_messages`
+        await tx`DELETE FROM ticket_messages`
         await tx`DELETE FROM support_tickets`
         await tx`DELETE FROM companies`
       })
@@ -199,7 +199,7 @@ describe.skipIf(!DATABASE_URL)('suporte — NR-080', () => {
       await withTenant(
         sql,
         empresaA,
-        (tx) => tx`UPDATE support_tickets SET status = 'encerrado' WHERE id = ${c.id}`,
+        (tx) => tx`UPDATE support_tickets SET status = 'closed' WHERE id = ${c.id}`,
       )
 
       const depois = await repo.reply({
@@ -213,7 +213,7 @@ describe.skipIf(!DATABASE_URL)('suporte — NR-080', () => {
 
       /* Chamado encerrado em que o cliente escreve esta dizendo que o problema
          voltou. Obriga-lo a abrir outro perderia o historico que explica o caso. */
-      expect(depois?.status).toBe('andamento')
+      expect(depois?.status).toBe('waiting')
       expect(depois?.messages).toHaveLength(2)
     })
 

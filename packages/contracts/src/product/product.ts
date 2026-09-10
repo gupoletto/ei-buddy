@@ -55,7 +55,7 @@ export const createProductInputSchema = z
     stock: z.number().int('Estoque precisa ser inteiro.').nonnegative().default(0),
     /** Abaixo disto a tela avisa que precisa repor. */
     minStock: z.number().int('Estoque minimo precisa ser inteiro.').nonnegative().default(0),
-    categoryId: idSchema.optional(),
+    category: z.string().trim().max(80).optional(),
   })
   .strict()
   .refine((p) => p.salePriceCents >= p.costPriceCents, {
@@ -81,7 +81,7 @@ export const updateProductInputSchema = z
     costPriceCents: moneyCentsSchema,
     taxRate: rateSchema,
     minStock: z.number().int().nonnegative(),
-    categoryId: idSchema,
+    category: z.string().trim().max(80),
   })
   .partial()
   .strict()
@@ -110,7 +110,7 @@ export const productOutputSchema = z.object({
   taxSituationCode: z.string().nullable(),
   stock: z.number().int(),
   minStock: z.number().int(),
-  categoryId: idSchema.nullable(),
+  category: z.string().nullable(),
 })
 
 export type ProductOutput = z.infer<typeof productOutputSchema>

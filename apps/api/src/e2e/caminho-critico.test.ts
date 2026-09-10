@@ -416,7 +416,7 @@ describe.skipIf(!DATABASE_URL)('caminho critico — NR-049', () => {
         sql(),
         empresaId,
         (tx) => tx<{ total: string }[]>`
-          SELECT count(*) AS total FROM accounts WHERE company_id = ${empresaId}
+          SELECT count(*) AS total FROM ledger_accounts WHERE company_id = ${empresaId}
         `,
       )
 
@@ -477,7 +477,7 @@ describe.skipIf(!DATABASE_URL)('caminho critico — NR-049', () => {
         sql(),
         r.json().id,
         (tx) => tx<{ total: string }[]>`
-          SELECT count(*) AS total FROM accounts WHERE company_id = ${r.json().id}
+          SELECT count(*) AS total FROM ledger_accounts WHERE company_id = ${r.json().id}
         `,
       )
 

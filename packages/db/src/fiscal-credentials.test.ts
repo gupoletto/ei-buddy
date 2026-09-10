@@ -45,7 +45,7 @@ describe.skipIf(!DATABASE_URL)('credenciais fiscais — NR-042', () => {
 
   beforeAll(async () => {
     const r = await migrate(MIGRATION_URL!)
-    expect([...r.aplicadas, ...r.jaEstavam]).toContain('0015_credenciais_fiscais')
+    expect([...r.aplicadas, ...r.jaEstavam]).toContain('0005_cofre_fiscal')
 
     admin = postgres(DATABASE_URL!, { max: 4, onnotice: () => {} })
     aplicacao = await conectarComoAplicacao(admin, DATABASE_URL!)

@@ -20,12 +20,9 @@ import { withTenant } from './tenant.js'
  *
  * ## Duas tabelas, uma porta
  *
- * A baixa de RECEBIVEL vai para `settlements` e a de PAGAVEL para
- * `payable_settlements`. Sao tabelas separadas desde a 0003/0010 porque
- * guardam coisas diferentes: a do recebivel tem `method` (como o cliente
- * pagou) e a do pagavel tem `bank_account` (de qual conta saiu). Forcar as duas
- * numa tabela so deixaria metade das colunas nulas em cada linha, e ninguem
- * saberia quais.
+ * A baixa de RECEBIVEL e a de PAGAVEL vao para a mesma `settlements`, com
+ * `receivable_id` XOR `payable_id` (db_0909 / NR-092). As colunas que so um
+ * dos lados usa (`method`, `bank_account`) ficam nulas no outro.
  *
  * A porta e uma so porque a REGRA e uma so — parcial vira
  * `partially_settled`, completa vira `settled`, estorno e uma linha negativa —
@@ -174,19 +171,12 @@ function escopo(tx: TransactionSql, companyId: string): SettlementTransaction {
      * distincao que e detalhe de armazenamento.
      */
     findSettlement: async (_companyId, id) => {
-      const [doRecebivel] = await tx<LinhaBaixa[]>`
-        SELECT id, receivable_id, amount_cents, method, settled_at, notes,
-               reverses_id, created_at, created_by
+      const [linha] = await tx<LinhaBaixa[]>`
+        SELECT id, receivable_id, payable_id, amount_cents, method, bank_account,
+               settled_on, settled_at, notes, reverses_id, created_at, created_by
         FROM settlements WHERE id = ${id}
       `
-      if (doRecebivel !== undefined) return paraBaixa(doRecebivel)
-
-      const [doPagavel] = await tx<LinhaBaixa[]>`
-        SELECT id, payable_id, amount_cents, bank_account, settled_on, notes,
-               reverses_id, created_at, created_by
-        FROM payable_settlements WHERE id = ${id}
-      `
-      return doPagavel === undefined ? undefined : paraBaixa(doPagavel)
+      return linha === undefined ? undefined : paraBaixa(linha)
     },
 
     /**
@@ -199,42 +189,25 @@ function escopo(tx: TransactionSql, companyId: string): SettlementTransaction {
      */
     hasReversal: async (_companyId, settlementId) => {
       const [linha] = await tx<{ existe: boolean }[]>`
-        SELECT (
-          EXISTS (SELECT 1 FROM settlements WHERE reverses_id = ${settlementId})
-          OR
-          EXISTS (SELECT 1 FROM payable_settlements WHERE reverses_id = ${settlementId})
-        ) AS existe
+        SELECT EXISTS (SELECT 1 FROM settlements WHERE reverses_id = ${settlementId}) AS existe
       `
       return linha?.existe === true
     },
 
     insertSettlement: async (baixa: NewSettlement) => {
-      if (baixa.receivableId !== null) {
-        const [linha] = await tx<LinhaBaixa[]>`
-          INSERT INTO settlements
-            (company_id, receivable_id, amount_cents, method, settled_at, notes,
-             reverses_id, created_by, created_at)
-          VALUES (${companyId}, ${baixa.receivableId}, ${baixa.amountCents},
-                  ${baixa.method ?? 'cash'}, ${baixa.settledOn}, ${baixa.notes},
-                  ${baixa.reversesId}, ${baixa.createdBy}, ${baixa.createdAt})
-          RETURNING id, receivable_id, amount_cents, method, settled_at, notes,
-                    reverses_id, created_at, created_by
-        `
-        if (linha === undefined) throw new Error('A baixa do recebivel nao foi gravada.')
-        return paraBaixa(linha)
-      }
-
       const [linha] = await tx<LinhaBaixa[]>`
-        INSERT INTO payable_settlements
-          (company_id, payable_id, amount_cents, settled_on, bank_account, notes,
-           reverses_id, created_by, created_at)
-        VALUES (${companyId}, ${baixa.payableId}, ${baixa.amountCents},
-                ${baixa.settledOn}, ${baixa.bankAccount ?? 'nao informada'}, ${baixa.notes},
+        INSERT INTO settlements
+          (company_id, receivable_id, payable_id, amount_cents, method, bank_account,
+           settled_at, settled_on, notes, reverses_id, created_by, created_at)
+        VALUES (${companyId}, ${baixa.receivableId}, ${baixa.payableId}, ${baixa.amountCents},
+                ${baixa.method ?? (baixa.receivableId ? 'cash' : null)},
+                ${baixa.bankAccount ?? (baixa.payableId ? 'nao informada' : null)},
+                ${baixa.settledOn}, ${baixa.settledOn}, ${baixa.notes},
                 ${baixa.reversesId}, ${baixa.createdBy}, ${baixa.createdAt})
-        RETURNING id, payable_id, amount_cents, bank_account, settled_on, notes,
-                  reverses_id, created_at, created_by
+        RETURNING id, receivable_id, payable_id, amount_cents, method, bank_account,
+                  settled_on, settled_at, notes, reverses_id, created_at, created_by
       `
-      if (linha === undefined) throw new Error('A baixa da conta a pagar nao foi gravada.')
+      if (linha === undefined) throw new Error('A baixa nao foi gravada.')
       return paraBaixa(linha)
     },
 
@@ -335,11 +308,11 @@ export function createSettlementQueries(sql: Sql): SettlementQueries {
         const linhas =
           tipo === 'payable'
             ? await tx<LinhaBaixa[]>`
-                SELECT id, payable_id, amount_cents, bank_account, settled_on, notes,
+                SELECT id, payable_id, amount_cents, bank_account, settled_on, settled_at, notes,
                        reverses_id, created_at, created_by
-                  FROM payable_settlements
+                  FROM settlements
                  WHERE payable_id = ${tituloId}
-                 ORDER BY settled_on DESC, created_at DESC
+                 ORDER BY COALESCE(settled_on, settled_at::date) DESC, created_at DESC
               `
             : await tx<LinhaBaixa[]>`
                 SELECT id, receivable_id, amount_cents, method, settled_at, notes,

@@ -91,7 +91,7 @@ export function createChartOfAccountsRepository(sql: Sql): ChartOfAccountsReposi
         sql,
         companyId,
         (tx) => tx<LinhaConta[]>`
-          SELECT id, name, type, is_default FROM accounts
+          SELECT id, name, type, is_default FROM ledger_accounts
           /* A ordem da TELA, e nao a alfabetica pura: o plano se le de cima
              para baixo como o DRE — receita, deducao, custo, despesa. */
           ORDER BY CASE type
@@ -111,7 +111,7 @@ export function createChartOfAccountsRepository(sql: Sql): ChartOfAccountsReposi
         sql,
         companyId,
         (tx) => tx<LinhaConta[]>`
-          SELECT id, name, type, is_default FROM accounts WHERE id = ${accountId}
+          SELECT id, name, type, is_default FROM ledger_accounts WHERE id = ${accountId}
         `,
       )
       return linha === undefined ? undefined : paraConta(linha)
@@ -129,7 +129,7 @@ export function createChartOfAccountsRepository(sql: Sql): ChartOfAccountsReposi
         sql,
         companyId,
         (tx) => tx<LinhaConta[]>`
-          SELECT id, name, type, is_default FROM accounts WHERE lower(name) = lower(${name})
+          SELECT id, name, type, is_default FROM ledger_accounts WHERE lower(name) = lower(${name})
         `,
       )
       return linha === undefined ? undefined : paraConta(linha)
@@ -140,7 +140,7 @@ export function createChartOfAccountsRepository(sql: Sql): ChartOfAccountsReposi
         sql,
         conta.companyId,
         (tx) => tx<LinhaConta[]>`
-          INSERT INTO accounts (company_id, name, type, is_default, created_by, created_at)
+          INSERT INTO ledger_accounts (company_id, name, type, is_default, created_by, created_at)
           VALUES (${conta.companyId}, ${conta.name}, ${conta.type},
                   ${conta.isDefault}, ${conta.createdBy}, ${conta.createdAt})
           RETURNING id, name, type, is_default
@@ -154,7 +154,7 @@ export function createChartOfAccountsRepository(sql: Sql): ChartOfAccountsReposi
         sql,
         companyId,
         (tx) => tx<LinhaConta[]>`
-          UPDATE accounts SET name = ${name} WHERE id = ${accountId}
+          UPDATE ledger_accounts SET name = ${name} WHERE id = ${accountId}
           RETURNING id, name, type, is_default
         `,
       )
@@ -162,7 +162,11 @@ export function createChartOfAccountsRepository(sql: Sql): ChartOfAccountsReposi
     },
 
     remove: async (companyId, accountId) => {
-      await withTenant(sql, companyId, (tx) => tx`DELETE FROM accounts WHERE id = ${accountId}`)
+      await withTenant(
+        sql,
+        companyId,
+        (tx) => tx`DELETE FROM ledger_accounts WHERE id = ${accountId}`,
+      )
     },
 
     /**
@@ -209,7 +213,7 @@ export function createChartOfAccountsRepository(sql: Sql): ChartOfAccountsReposi
           ? tx<{ account_id: string; account_name: string; times: string }[]>`
               SELECT p.account_id, a.name AS account_name, count(*) AS times
               FROM payables p
-              JOIN accounts a ON a.id = p.account_id
+              JOIN ledger_accounts a ON a.id = p.account_id
               WHERE lower(p.supplier) = lower(${counterparty})
                 AND p.account_id IS NOT NULL
               GROUP BY p.account_id, a.name
@@ -218,7 +222,7 @@ export function createChartOfAccountsRepository(sql: Sql): ChartOfAccountsReposi
           : tx<{ account_id: string; account_name: string; times: string }[]>`
               SELECT r.account_id, a.name AS account_name, count(*) AS times
               FROM receivables r
-              JOIN accounts a ON a.id = r.account_id
+              JOIN ledger_accounts a ON a.id = r.account_id
               LEFT JOIN customers c ON c.id = r.customer_id
               WHERE lower(COALESCE(r.counterparty, c.name, '')) = lower(${counterparty})
                 AND r.account_id IS NOT NULL
@@ -264,7 +268,7 @@ export function createChartOfAccountsRepository(sql: Sql): ChartOfAccountsReposi
                  p.amount_cents,
                  p.due_date AS occurred_on
           FROM payables p
-          LEFT JOIN accounts a ON a.id = p.account_id
+          LEFT JOIN ledger_accounts a ON a.id = p.account_id
           WHERE p.due_date BETWEEN ${from} AND ${to}
             AND p.status <> 'cancelled'
 
@@ -278,7 +282,7 @@ export function createChartOfAccountsRepository(sql: Sql): ChartOfAccountsReposi
                  r.amount_cents,
                  r.due_date AS occurred_on
           FROM receivables r
-          LEFT JOIN accounts a ON a.id = r.account_id
+          LEFT JOIN ledger_accounts a ON a.id = r.account_id
           WHERE r.due_date BETWEEN ${from} AND ${to}
             AND r.status <> 'cancelled'
 
@@ -305,11 +309,13 @@ export function createChartOfAccountsRepository(sql: Sql): ChartOfAccountsReposi
         sql,
         companyId,
         (tx) => tx<{ id: string }[]>`
-          INSERT INTO accounts ${tx(
-            contas.map((c) => ({
+          INSERT INTO ledger_accounts ${tx(
+            contas.map((c, i) => ({
               company_id: companyId,
               name: c.name,
               type: c.type,
+              kind: c.type,
+              code: `${c.type.slice(0, 3).toUpperCase()}-${String(i + 1).padStart(2, '0')}`,
               is_default: true,
               created_by: createdBy,
               created_at: createdAt,

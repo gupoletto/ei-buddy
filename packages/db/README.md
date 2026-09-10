@@ -1,6 +1,6 @@
 # db
 
-Schema Drizzle, migrations, políticas RLS e repositórios.
+Schema SQL (baseline 0001–0007), políticas RLS e repositórios. Sem `drizzle-kit`.
 
 **Estado:** 🟢 isolamento (`NR-007`), cadastros (`NR-008`), vendas e financeiro (`NR-020`)
 
@@ -169,26 +169,25 @@ chamada veja uma exceção consciente e não um esquecimento.
 
 ## Tabelas
 
-| Tabela                | Tenant                | Migration                  |
-| --------------------- | --------------------- | -------------------------- |
-| `companies`           | **é** o tenant (`id`) | `0002_cadastros`           |
-| `users`               | via `company_users`   | `0002_cadastros`           |
-| `company_users`       | `company_id`          | `0002_cadastros`           |
-| `categories`          | `company_id`          | `0002_cadastros`           |
-| `customers`           | `company_id`          | `0002_cadastros`           |
-| `products`            | `company_id`          | `0002_cadastros`           |
-| `company_counters`    | `company_id`          | `0003_vendas_e_financeiro` |
-| `sales`               | `company_id`          | `0003_vendas_e_financeiro` |
-| `sale_items`          | `company_id`          | `0003_vendas_e_financeiro` |
-| `payments`            | `company_id`          | `0003_vendas_e_financeiro` |
-| `receivables`         | `company_id`          | `0003_vendas_e_financeiro` |
-| `settlements`         | `company_id`          | `0003_vendas_e_financeiro` |
-| `sale_returns`        | `company_id`          | `0003_vendas_e_financeiro` |
-| `sale_return_items`   | `company_id`          | `0003_vendas_e_financeiro` |
-| `appointments`        | `company_id`          | `0006_agenda`              |
-| `audit_log`           | `company_id` (sem FK) | `0007_auditoria`           |
-| `payables`            | `company_id`          | `0010_contas_a_pagar`      |
-| `payable_settlements` | `company_id`          | `0010_contas_a_pagar`      |
+Baseline 0001–0007 (ADR-0006 / NR-089). Volume antigo com `schema_migrations`
+0001–0025 **não serve**: `pnpm infra:reset` e depois `pnpm db:migrate`.
+
+| Recorte                 | Tabelas                                                                                                                                                          | Tenant                                              |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| Cadastro                | `companies`, `customers`, `products`, `categories`                                                                                                               | `companies` é o tenant (`id`); o resto `company_id` |
+| Identidade              | `users`, `company_users` + schema `identidade`                                                                                                                   | `users` via `company_users`                         |
+| Venda                   | `sales`, `sale_items`, `payments`, `invoices`, `company_counters`                                                                                                | `company_id`                                        |
+| Estoque                 | `inventory_movements` (somente-inserção)                                                                                                                         | `company_id`                                        |
+| Financeiro              | `ledger_accounts`, `receivables`, `payables`, `settlements`                                                                                                      | `company_id`                                        |
+| Banco                   | `bank_transactions`                                                                                                                                              | `company_id`                                        |
+| Agenda                  | `appointments`                                                                                                                                                   | `company_id`                                        |
+| Suporte                 | `support_tickets`, `ticket_messages`                                                                                                                             | `company_id`                                        |
+| Auditoria               | `audit_logs` (somente-inserção, sem FK para `companies`)                                                                                                         | `company_id`                                        |
+| Cofre                   | `company_fiscal_credentials`                                                                                                                                     | `company_id`                                        |
+| Satélite                | `company_integrations`                                                                                                                                           | `company_id` (= PK)                                 |
+| Sessão                  | `sessions`, `login_throttle`                                                                                                                                     | RLS sem política; acesso só por `auth_*`            |
+| Plataforma (sem tenant) | `partners`, `coupons`                                                                                                                                            | —                                                   |
+| Greenfield 0909         | `crm_cards`, `conversations`, `messages`, `confirmations`, `subscriptions`, `subscription_cycles`, `attachments`, `idempotency_keys`, `outbox`, `webhook_events` | `company_id`, exceto inbox de webhook               |
 
 Dois casos fogem do `company_id`, e os dois de propósito:
 
@@ -271,4 +270,8 @@ Os testes de isolamento são obrigatórios: um que tenta ler dado de outro
 pnpm infra:up      # sobe o Postgres
 pnpm infra:psql    # abre o psql
 pnpm infra:reset   # apaga os volumes e recria (perde os dados locais)
+pnpm db:migrate    # aplica o baseline 0001–0007
 ```
+
+Volume que ainda tem `schema_migrations` 0001–0025 **não aplica** o baseline
+novo. Depois de puxar o catálogo 0909, `pnpm infra:reset` e `pnpm db:migrate`.
