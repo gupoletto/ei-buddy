@@ -12,6 +12,7 @@ import BuscaGlobal from './BuscaGlobal'
 import PaymentOverdueBanner from '../billing/PaymentOverdueBanner'
 import PaymentRequiredModal from '../billing/PaymentRequiredModal'
 import { useSubscription } from '../billing/SubscriptionProvider'
+import ThemeToggle from './ThemeToggle'
 import {
   IconBag,
   IconBank,
@@ -309,6 +310,8 @@ export default function AppShell({ children }: { children: ReactNode }) {
           <BuscaGlobal />
 
           <div className={styles.topActions}>
+            <ThemeToggle />
+
             {/*
               O ponto so acende quando HA aviso.
               Antes ele era um <span> fixo no HTML: sempre aceso, em toda loja,

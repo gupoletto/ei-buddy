@@ -98,6 +98,15 @@ export const ARMAZENAMENTO_LOCAL: readonly ArmazenamentoLocal[] = [
     duracao: 'Ate voce limpar os dados do navegador',
   },
   {
+    chave: 'nr:tema-painel',
+    /* Mesma razao do aviso de cookies: nasce de um clique seu (o botao de
+       sol/lua no painel), e guarda-la e o que evita o painel voltar ao
+       escuro padrao a cada visita depois de voce escolher o claro. */
+    categoria: 'preferencia',
+    finalidade: 'Lembrar se voce escolheu o tema claro do painel, em vez do escuro padrao.',
+    duracao: 'Ate voce limpar os dados do navegador',
+  },
+  {
     chave: 'demo:subscription-status',
     categoria: 'essencial',
     finalidade:

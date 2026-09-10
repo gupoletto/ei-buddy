@@ -16,6 +16,20 @@ export const brand = {
   accent: '#39c8bd',
   accentDark: '#24a79d',
   accentSoft: '#e4f7f5',
+  /**
+   * O accent como TEXTO sobre superficie clara — NR-099.
+   *
+   * `accent` (2.06:1) e ate `accentDark` (2.96:1) falham o piso de 4.5:1 como
+   * texto sobre branco: sao tons pensados para POPAR sobre fundo escuro, o
+   * mesmo motivo por que `primary` e `highlight` nao servem como texto no
+   * escuro (ver color.test.ts). O painel ganhou tema claro opcional nesta
+   * tarefa, e precisava do equivalente para o outro sentido.
+   *
+   * `#0f766e` e o mesmo matiz, escurecido ate passar — 5.47:1 sobre branco.
+   * Nao e usado no site institucional (que nunca poe o accent como texto),
+   * so no tema claro do painel.
+   */
+  accentText: '#0f766e',
   highlight: '#6d33dd',
   highlightSoft: '#efe8fd',
 } as const

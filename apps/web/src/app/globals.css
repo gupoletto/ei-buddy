@@ -12,6 +12,10 @@
   --brand-accent: #39c8bd;
   --brand-accent-dark: #24a79d;
   --brand-accent-soft: #e4f7f5;
+  /* Mesmo matiz, escurecido ate passar AA como texto sobre claro — o
+     accent puro (2.06:1) e o accentDark (2.96:1) nao passam. Ver
+     packages/ui/src/tokens/color.ts e o teste que o acompanha. */
+  --brand-accent-text: #0f766e;
   --brand-highlight: #6d33dd;
   --brand-highlight-soft: #efe8fd;
 
@@ -305,6 +309,47 @@ svg {
 
   background: var(--app-bg);
   color: var(--app-text);
+}
+
+/* ==========================================================================
+   Tema claro do painel — NR-099
+   O padrao continua sendo o escuro do bloco acima (nada muda para quem nao
+   mexe no botao). Este bloco e o "remapear so este bloco" que o comentario
+   la em cima já previa.
+
+   O seletor e `:root[data-theme='light'] .appTheme`, e nao `.appTheme` com
+   uma classe extra: o `data-theme` mora no `<html>`, escrito por um script
+   inline ANTES da hidratacao (ver `app/layout.tsx`), para quem ja escolheu
+   claro numa visita anterior nao ver um flash escuro no primeiro paint.
+
+   Cada token aqui reusa uma cor JA testada para AA em `packages/ui` — nenhum
+   valor novo, exceto os dois `rgba` de campo, que sao uma diluicao pequena
+   demais do texto para mudar o contraste dele de forma perceptivel.
+   ========================================================================== */
+
+:root[data-theme='light'] .appTheme {
+  --app-bg: var(--bg-muted);
+  --app-surface: var(--surface);
+  --app-raised: var(--surface-raised);
+  --app-border: var(--border);
+  --app-text: var(--text);
+  --app-muted: var(--text-muted);
+
+  /* `accent-text`, e nao `accent`: o teal vibrante e pensado para POPAR sobre
+     fundo escuro e falha como texto sobre claro (2.06:1). Ver o token. */
+  --app-accent: var(--brand-accent-text);
+  --app-accent-soft: var(--brand-accent-soft);
+
+  --app-warn: var(--warning-text);
+  --app-warn-soft: var(--warning-bg);
+  --app-danger: var(--danger-text);
+  --app-danger-soft: var(--danger-bg);
+
+  --app-destaque: var(--brand-highlight);
+  --app-destaque-soft: var(--brand-highlight-soft);
+
+  --app-field: rgba(19, 23, 52, 0.035);
+  --app-field-hover: rgba(19, 23, 52, 0.06);
 }
 
 /* Linha de indicadores no topo das telas do painel */
