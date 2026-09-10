@@ -189,9 +189,14 @@ export default function AppShell({ children }: { children: ReactNode }) {
         className={`${styles.sidebar} ${navOpen ? styles.sidebarOpen : ''}`}
         id="navegacao-painel"
       >
-        <Link href="/" className={styles.brand}>
+        {/*
+          NAO e link para "/" — isso levaria pro site institucional, a unica
+          saida do app que deveria existir e o botao de Sair. Clicar aqui so
+          atualiza a tela atual, como um botao de refresh.
+        */}
+        <button type="button" className={styles.brand} onClick={() => router.refresh()}>
           <span className={styles.brandName}>{BRAND}</span>
-        </Link>
+        </button>
 
         <nav className={styles.nav} aria-label="Módulos do sistema">
           {navItems.map((item) => {
