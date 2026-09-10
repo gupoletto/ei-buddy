@@ -1,13 +1,17 @@
 # Esquema PostgreSQL
 
 Catálogo físico do recorte com `company_integrations` (Focus + Asaas),
-fotografado em 2026-09-09.
+fotografado em 2026-09-09 e adotado como domínio pelo baseline
+([ADR-0006](../decisoes/adr/0006-catalogo-0909-mais-plataforma.md)).
 
-**Isto não é o schema que roda hoje.** O banco em `packages/db` nasceu por
-migrations incrementais (`src/migrations/0001_tenant_isolation.sql` em diante)
-e já tem satélite fiscal próprio (`company_fiscal_credentials`), identidade,
-auditoria e o restante entregue na `main`. O SQL deste catálogo está em
-[`db_0909.sql`](db_0909.sql) — snapshot documental, **não** é migration.
+**O SQL deste arquivo não é migration.** Quem roda é
+`packages/db/src/migrations/` (`0001_tenant_isolation.sql` em diante, história
+nova). Identidade Better Auth, sessão, cofre fiscal (`company_fiscal_credentials`)
+e extrato bancário **não** estão neste snapshot e entram como acréscimo no
+baseline — lista em [`dados.md`](dados.md#multi-tenant).
+
+O SQL documental está em [`db_0909.sql`](db_0909.sql). Não aplicar com
+`pnpm db:migrate`.
 
 As **regras** (o que não gravar, convenções, estados da venda, retenção) ficam
 em [`dados.md`](dados.md).

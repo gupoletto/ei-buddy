@@ -1,3 +1,6 @@
+-- Baseline NR-089 / ADR-0006. Origem fundida: 0011_extrato_bancario.sql.
+-- Historia nova: nao editar as migrations 0001–0025 antigas — elas nao existem mais.
+
 -- Extrato bancario e conciliacao — NR-047 e NR-076. RF-076 a RF-080.
 --
 -- `core` desenhou a importacao (NR-047) e a conciliacao (NR-033) com

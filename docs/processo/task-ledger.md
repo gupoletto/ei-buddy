@@ -50,8 +50,8 @@ consome. A porta é declarada pelo núcleo; a seta aponta para dentro
 
 |                               | Tarefas | Dias |
 | ----------------------------- | ------: | ---: |
-| Total                         |      66 |  180 |
-| ✅ Concluídas                 |      56 |  145 |
+| Total                         |      77 |  200 |
+| ✅ Concluídas                 |      67 |  165 |
 | 🚧 Bloqueadas por decisão     |       7 |   25 |
 | 🚧 Bloqueadas por dependência |       1 |    2 |
 | ⬜ A fazer, pode começar hoje |       2 |    8 |
@@ -79,14 +79,9 @@ NR-022, NR-023), a agenda no schema (NR-035) e a trilha de auditoria
 (NR-025) e as contas a pagar com baixa e estorno (NR-028, NR-029) os
 consumidores de fila (NR-041) e o plano de contas com DRE (NR-032).
 
-Dos **35 dias que faltam, 8 podem começar hoje**: a [DEC-006](../decisoes/README.md#dec-006)
-e a [DEC-015](../decisoes/README.md#dec-015) fecharam com Asaas
-([ADR-0004](../decisoes/adr/0004-asaas.md),
-[ADR-0005](../decisoes/adr/0005-subconta-asaas-nao-baas.md)), e a
-[DEC-010](../decisoes/README.md#dec-010) fechou o provedor da mensalidade no
-mesmo lugar. Sobram 27 dias atrás de decisão (25) ou de dependência (2). As
-decisões em aberto estão em
-[Bloqueios por decisão](#bloqueios-por-decisão).
+Dos **35 dias que faltam, 8 podem começar hoje**: NR-044 e NR-063. A fila
+NR-088–098 (catálogo 0909) está ✅. Sobram 27 dias atrás de decisão (25) ou de
+dependência (2).
 
 ---
 
@@ -199,6 +194,26 @@ Objetivo: operar o ERP por mensagem e cobrar a mensalidade.
 | NR-086 | Direitos do titular: exportação completa e anonimização ligadas |   🔵   | `db` `api` `web`        |   3 | NR-031 | —           | RF-125, RF-127, RF-128 |   ✅   |
 | NR-087 | Trilha de auditoria persistente, e dentro da transação          |   🔵   | `db` `core` `api`       |   3 | NR-025 | —           | RF-123, RF-124, US-061 |   ✅   |
 
+## Sprint 6 — Catálogo 0909
+
+Objetivo: o banco vivo é o recorte `db_0909.sql` no domínio, com identidade,
+sessão, cofre e extrato da `main` às margens. Baseline novo; IDs antigos não
+voltam a ⬜.
+
+| ID     | Tarefa                                                                                  | Trilha | Módulo           | Est | Dep                                    | Bloq | US/RF                      | Status |
+| ------ | --------------------------------------------------------------------------------------- | :----: | ---------------- | --: | -------------------------------------- | ---- | -------------------------- | :----: |
+| NR-088 | Adendo oficial 0909 + plataforma, DEC-019/ADR-0006, abrir NR-089–098                    |   —    | `docs`           |   1 | —                                      | —    | RNF-048                    |   ✅   |
+| NR-089 | `db`: baseline 0001–0007 (0909 + identidade/sessão/cofre/banco); apaga 0001–0025 velhos |   🔵   | `db`             |   2 | NR-088                                 | —    | RF-121, RF-122, RNF-021    |   ✅   |
+| NR-090 | `db`: repositórios de cadastro no shape 0909 (endereço, produto, categoria)             |   🔵   | `db`             |   2 | NR-089                                 | —    | RF-001, RF-009, RF-017     |   ✅   |
+| NR-091 | `db` + `contracts`: venda, itens, pagamentos PSP, estoque, idempotência                 |   🔵   | `db` `contracts` |   2 | NR-089                                 | —    | RF-034–039, RNF-046        |   ✅   |
+| NR-092 | `db` + `contracts`: `ledger_accounts`, `outstanding_cents`, `settlements` unificados    |   🔵   | `db` `contracts` |   2 | NR-089                                 | —    | RF-055–067, RF-081         |   ✅   |
+| NR-093 | `db`: `invoices` 0909 + `company_integrations` convivendo com o cofre fiscal            |   🔵   | `db`             |   2 | NR-089                                 | —    | RF-004, RF-045–054         |   ✅   |
+| NR-094 | `db` + `contracts`: `ticket_messages`, status EN de suporte, `audit_logs`               |   🔵   | `db` `contracts` |   2 | NR-089                                 | —    | US-062, RF-123, RF-124     |   ✅   |
+| NR-095 | `db`: conciliação nas FKs novas + inventário da exportação LGPD                         |   🔵   | `db`             |   2 | NR-090, NR-092                         | —    | RF-078–080, RF-125, RF-127 |   ✅   |
+| NR-096 | `api`: composition e rotas cujo SQL/contrato mudou                                      |   🟠   | `api`            |   2 | NR-090, NR-091, NR-092, NR-093, NR-094 | —    | RF-001–019, RF-036         |   ✅   |
+| NR-097 | `web` + `mobile`: vocabulário e campos (venda, suporte, endereço, categoria)            |   🟢   | `web` `mobile`   |   2 | NR-096                                 | —    | US-014–019, US-062         |   ✅   |
+| NR-098 | Merge do baseline na `main` e `infra:reset` no setup                                    |   🟠   | `repo` `infra`   |   1 | NR-095, NR-096, NR-097                 | —    | RNF-048                    |   ✅   |
+
 ---
 
 ## Caminho crítico
@@ -278,9 +293,8 @@ esses repositórios, e uma rota ligada a um _fake_ não é uma rota.
 > 27 dias voltam ao quadro sem decidir nada. Ver
 > [destravar-os-bloqueios.md](destravar-os-bloqueios.md).
 
-**Dos 35 dias-desenvolvedor que restam, 8 estão liberados** — NR-044 (adapter
-Asaas) e NR-063 (billing, na fila atrás da NR-044). Os outros 27 continuam
-atrás de decisão (25) ou de dependência (2).
+**Dos 35 dias-desenvolvedor que restam, 8 estão liberados** — NR-044 e NR-063.
+Os outros 27 continuam atrás de decisão (25) ou de dependência (2).
 
 As duas de maior alcance que ainda travam são a
 [DEC-003](../decisoes/README.md#dec-003) (WhatsApp + fluxo 3 do E2E, 7 dias) e a
@@ -314,13 +328,13 @@ passou a ser retrabalho: trocar os tokens quando a marca fechar.
 
 | Trilha                          | Tarefas | Dias | Observação                                     |
 | ------------------------------- | ------: | ---: | ---------------------------------------------- |
-| 🔵 1 — Núcleo & Dados           |      23 |   59 | é o gargalo; a fila dela segue em NR-023       |
-| 🟠 2 — Plataforma & Integrações |      26 |   72 | a mais carregada; Asaas fechou 3 decisões dela |
-| 🟢 3 — Clientes                 |      16 |   45 | depende de schema, mas já não está bloqueada   |
-| Compartilhada                   |       1 |    4 | documentação (NR-002)                          |
+| 🔵 1 — Núcleo & Dados           |      30 |   73 | catálogo 0909 (NR-089–095) mesclado            |
+| 🟠 2 — Plataforma & Integrações |      28 |   75 | a mais carregada; Asaas fechou 3 decisões dela |
+| 🟢 3 — Clientes                 |      17 |   47 | vocabulário 0909 na web/mobile (NR-097)        |
+| Compartilhada                   |       2 |    5 | documentação (NR-002, NR-088)                  |
 
-Somando: **180 dias-desenvolvedor** em 66 tarefas. Com 3 pessoas, isso é cerca
-de 11 semanas de trabalho — desde que nada fique bloqueado, o que não é o caso
+Somando: **200 dias-desenvolvedor** em 77 tarefas. Com 3 pessoas, isso é cerca
+de 13 semanas de trabalho — desde que nada fique bloqueado, o que não é o caso
 hoje.
 
 A trilha 3 não está mais ociosa por falta de `ui`: NR-011 e NR-012 saíram com a

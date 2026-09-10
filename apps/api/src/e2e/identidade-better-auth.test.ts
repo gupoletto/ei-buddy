@@ -27,7 +27,7 @@ import { IdentidadeBetterAuth } from '../identidade-better-auth.js'
  * aplica-la. Um teste que le o banco nao faz canal nenhum pular regra, e a
  * excecao e a pasta justamente para nao virar "todo arquivo .test.ts".
  *
- * Este teste precisa dos dois: `migrate` cria o schema `identidade` (0023) e a
+ * Este teste precisa dos dois: `migrate` cria o schema `identidade` (0003) e a
  * consulta em `pg_class` confere onde as tabelas nasceram.
  *
  * Como as suites de `db`: pulada sem `DATABASE_URL`, executada na CI.
@@ -46,9 +46,15 @@ describe.skipIf(!DATABASE_URL)('provedor de identidade — NR-084', () => {
   let identidade: IdentidadeBetterAuth
 
   beforeAll(async () => {
-    admin = getClient(MIGRATION_URL!)
+    /* As tabelas do provedor nascem no papel de `DATABASE_URL` (dono do schema
+       `identidade`). O migrator nao tem GRANT — 0003 deixa o privilegio de
+       proposito para a implantacao. Consultar como migrator e "permission
+       denied for table session". O singleton de `getClient` pode ter ficado
+       no migrator por outro arquivo desta suite. */
+    await closeConnection()
+    admin = getClient(DATABASE_URL!)
 
-    /* A 0023 cria o schema `identidade`; sem ela o `search_path` aponta para
+    /* A 0003 cria o schema `identidade`; sem ela o `search_path` aponta para
        lugar nenhum e toda consulta do provedor falha. */
     await migrate(MIGRATION_URL!)
 

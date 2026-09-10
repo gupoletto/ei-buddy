@@ -75,7 +75,7 @@ describe.skipIf(!DATABASE_URL)('registerSale sobre o banco — NR-022, NR-027', 
 
   beforeAll(async () => {
     const r = await migrate(MIGRATION_URL!)
-    expect([...r.aplicadas, ...r.jaEstavam]).toContain('0008_movimentos_de_estoque')
+    expect([...r.aplicadas, ...r.jaEstavam]).toContain('0002_dominio_0909')
 
     admin = postgres(DATABASE_URL!, { max: 4, onnotice: () => {} })
     aplicacao = await conectarComoAplicacao(admin, DATABASE_URL!)
@@ -102,7 +102,7 @@ describe.skipIf(!DATABASE_URL)('registerSale sobre o banco — NR-022, NR-027', 
       empresa,
       (tx) => tx`
         INSERT INTO products (id, company_id, description, internal_code, unit_of_measure,
-                              sale_price_cents, cost_price_cents, stock_quantity)
+                              sale_price_cents, cost_price_cents, stock)
         VALUES (${produto}, ${empresa}, 'Cafe torrado 500g', 'PROD-0001', 'un', 1990, 1200, 10)
       `,
     )
@@ -159,8 +159,8 @@ describe.skipIf(!DATABASE_URL)('registerSale sobre o banco — NR-022, NR-027', 
       recebiveis: await tx<{ status: string; net_amount_cents: string }[]>`
         SELECT status, net_amount_cents FROM receivables WHERE sale_id = ${r.sale.id}
       `,
-      produto: await tx<{ stock_quantity: number }[]>`
-        SELECT stock_quantity FROM products WHERE id = ${produto}
+      produto: await tx<{ stock: number }[]>`
+        SELECT stock FROM products WHERE id = ${produto}
       `,
       movimentos: await tx<
         { kind: string; quantity_delta: number; balance_after: number; sale_id: string }[]
@@ -176,7 +176,7 @@ describe.skipIf(!DATABASE_URL)('registerSale sobre o banco — NR-022, NR-027', 
     expect(linhas.pagamentos).toHaveLength(1)
     /* `cash` nasce liquidado — RF-064. */
     expect(linhas.recebiveis[0]?.status).toBe('settled')
-    expect(linhas.produto[0]?.stock_quantity).toBe(8)
+    expect(linhas.produto[0]?.stock).toBe(8)
 
     /* A baixa da venda tambem e movimento de estoque — RF-024. */
     expect(linhas.movimentos).toHaveLength(1)
@@ -301,7 +301,7 @@ describe.skipIf(!DATABASE_URL)('registerSale sobre o banco — NR-022, NR-027', 
       outraEmpresa,
       (tx) => tx`
         INSERT INTO products (id, company_id, description, internal_code, unit_of_measure,
-                              sale_price_cents, stock_quantity)
+                              sale_price_cents, stock)
         VALUES (${alheio}, ${outraEmpresa}, 'Produto da vizinha', 'PROD-9999', 'un', 500, 5)
       `,
     )
@@ -318,11 +318,11 @@ describe.skipIf(!DATABASE_URL)('registerSale sobre o banco — NR-022, NR-027', 
     const [p] = await withTenant(
       sql,
       empresa,
-      (tx) => tx<{ stock_quantity: number }[]>`
-        SELECT stock_quantity FROM products WHERE id = ${produto}
+      (tx) => tx<{ stock: number }[]>`
+        SELECT stock FROM products WHERE id = ${produto}
       `,
     )
-    return p!.stock_quantity
+    return p!.stock
   }
 
   async function vendasDaEmpresa(): Promise<number> {

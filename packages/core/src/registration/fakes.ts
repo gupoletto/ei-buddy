@@ -250,7 +250,7 @@ export class InMemoryProductRepository implements ProductRepository {
       taxSituationCode: product.taxSituationCode,
       stock: 0,
       minStock: product.minStock,
-      categoryId: product.categoryId ?? null,
+      category: product.category ?? null,
     }
     this.registros.set(gravado.id, gravado)
     return this.semTenant(gravado)

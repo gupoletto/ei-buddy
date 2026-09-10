@@ -29,9 +29,9 @@ export const exportCollectionSchema = z.enum([
   'settlements',
   'inventory_movements',
   'appointments',
-  'accounts',
+  'ledger_accounts',
   'bank_transactions',
-  'audit_log',
+  'audit_logs',
   /*
    * Estas cinco entraram na NR-086, ao escrever o repositorio que le tudo.
    *
@@ -49,7 +49,7 @@ export const exportCollectionSchema = z.enum([
   'sale_returns',
   'sale_return_items',
   'support_tickets',
-  'support_messages',
+  'ticket_messages',
 ])
 
 export type ExportCollection = z.infer<typeof exportCollectionSchema>

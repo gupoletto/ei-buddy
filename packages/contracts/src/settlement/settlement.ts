@@ -69,7 +69,7 @@ export const settlementOutputSchema = z.object({
   reversesId: idSchema.nullable(),
   /**
    * Anulavel porque a COLUNA e anulavel: `created_by` e `ON DELETE SET NULL`
-   * em `settlements` e em `payable_settlements`.
+   * em `settlements`.
    *
    * Toda baixa nasce com autor. O nulo aparece depois, quando a pessoa que deu
    * a baixa sai da empresa e o cadastro dela e removido. Prometer nao-anulavel

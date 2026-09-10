@@ -17,7 +17,7 @@ import { createUserDirectory } from './user-directory.js'
  * - expirada e revogada nao voltam — e o filtro esta na FUNCAO, entao nenhum
  *   caminho em TypeScript pode esquecer dele;
  * - as duas tabelas negam tudo para o papel comum, e o acesso so acontece pelas
- *   funcoes `auth_*` (mesmo desenho da 0009);
+ *   funcoes `auth_*` (mesmo desenho da 0003);
  * - a desaceleracao conta, dobra, tem teto e esquece fora da janela.
  *
  * Como nas outras suites de `db`: pulada sem `DATABASE_URL`, executada na CI,

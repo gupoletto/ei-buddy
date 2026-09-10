@@ -68,7 +68,7 @@ describe.skipIf(!DATABASE_URL)('catalogo do backoffice — NR-072', () => {
       (tx) => tx`
         INSERT INTO products
           (id, company_id, description, internal_code, unit_of_measure,
-           sale_price_cents, cost_price_cents, stock_quantity, min_stock, deleted_at)
+           sale_price_cents, cost_price_cents, stock, min_stock, deleted_at)
         VALUES (${id}, ${empresa}, ${dados.description}, ${`P-${sequencia}-${id.slice(0, 6)}`},
                 'un', 1000, ${dados.costPriceCents ?? 400}, ${dados.stock},
                 ${dados.minStock ?? 5}, ${dados.apagado === true ? new Date() : null})
@@ -82,7 +82,7 @@ describe.skipIf(!DATABASE_URL)('catalogo do backoffice — NR-072', () => {
 
   beforeAll(async () => {
     const r = await migrate(MIGRATION_URL!)
-    expect([...r.aplicadas, ...r.jaEstavam]).toContain('0002_cadastros')
+    expect([...r.aplicadas, ...r.jaEstavam]).toContain('0002_dominio_0909')
 
     admin = postgres(DATABASE_URL!, { max: 6, onnotice: () => {} })
     aplicacao = await conectarComoAplicacao(admin, DATABASE_URL!)

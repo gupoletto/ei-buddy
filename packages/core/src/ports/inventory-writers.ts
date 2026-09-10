@@ -15,8 +15,8 @@ import type { TransactionalAuditTrail } from './audit-trail.js'
 /**
  * Produto do ponto de vista do estoque.
  *
- * **Duas colunas aqui nao existem no schema.** `products` (`0002_cadastros`)
- * tem `stock_quantity integer NOT NULL DEFAULT 0` e nao tem `location`. Logo:
+ * **Duas colunas aqui nao existem no schema.** `products` (`0002_dominio_0909`)
+ * tem `stock integer NOT NULL DEFAULT 0` e nao tem `location`. Logo:
  *
  * - **`stockQuantity` anulavel** exige uma coluna que aceite nulo, ou um flag
  *   `tracks_stock`. Hoje o banco nao sabe dizer "sem controle de estoque" —

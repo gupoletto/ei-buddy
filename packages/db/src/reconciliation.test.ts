@@ -98,7 +98,7 @@ describe.skipIf(!DATABASE_URL)('extrato e conciliacao — NR-076', () => {
 
   beforeAll(async () => {
     const r = await migrate(MIGRATION_URL!)
-    expect([...r.aplicadas, ...r.jaEstavam]).toContain('0011_extrato_bancario')
+    expect([...r.aplicadas, ...r.jaEstavam]).toContain('0006_extrato_bancario')
 
     admin = postgres(DATABASE_URL!, { max: 6, onnotice: () => {} })
     aplicacao = await conectarComoAplicacao(admin, DATABASE_URL!)
@@ -128,7 +128,7 @@ describe.skipIf(!DATABASE_URL)('extrato e conciliacao — NR-076', () => {
         await tx`DELETE FROM receivables`
         await tx`DELETE FROM payables`
         /* Depois dos lancamentos: `account_id` referencia com RESTRICT. */
-        await tx`DELETE FROM accounts`
+        await tx`DELETE FROM ledger_accounts`
         await tx`DELETE FROM companies`
       })
     }
@@ -342,7 +342,7 @@ describe.skipIf(!DATABASE_URL)('extrato e conciliacao — NR-076', () => {
         sql,
         empresaA,
         (tx) => tx<{ id: string }[]>`
-          INSERT INTO accounts (company_id, name, type)
+          INSERT INTO ledger_accounts (company_id, name, type)
           VALUES (${empresaA}, 'Tarifas bancarias', 'expense')
           RETURNING id
         `,

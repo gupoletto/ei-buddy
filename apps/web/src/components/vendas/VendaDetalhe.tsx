@@ -17,7 +17,7 @@ export default function VendaDetalhe({ venda }: { venda: VendaDoHistorico }) {
 
   /* Cancelada, devolvida ou devolvida em parte: nos tres o dinheiro nao ficou
      inteiro, e o destaque verde do liquido deixa de fazer sentido. */
-  const estornada = status !== 'registered'
+  const estornada = status === 'cancelled' || status === 'returned'
   const totalItens = venda.itens.reduce((acc, i) => acc + i.quantidade, 0)
 
   /*

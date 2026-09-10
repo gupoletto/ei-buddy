@@ -84,7 +84,7 @@ describe.skipIf(!DATABASE_URL)('lista de clientes — NR-072', () => {
           (company_id, number, customer_id, status, gross_amount_cents, discount_cents,
            net_amount_cents, created_at, cancelled_at)
         VALUES (${empresa}, ${sequencia}, ${clienteId},
-                ${cancelada ? 'cancelled' : 'registered'}, ${valorCents}, 0, ${valorCents},
+                ${cancelada ? 'cancelled' : 'open'}, ${valorCents}, 0, ${valorCents},
                 ${quando}, ${cancelada ? quando : null})
       `,
     )
@@ -92,7 +92,7 @@ describe.skipIf(!DATABASE_URL)('lista de clientes — NR-072', () => {
 
   beforeAll(async () => {
     const r = await migrate(MIGRATION_URL!)
-    expect([...r.aplicadas, ...r.jaEstavam]).toContain('0002_cadastros')
+    expect([...r.aplicadas, ...r.jaEstavam]).toContain('0002_dominio_0909')
 
     admin = postgres(DATABASE_URL!, { max: 4, onnotice: () => {} })
     aplicacao = await conectarComoAplicacao(admin, DATABASE_URL!)

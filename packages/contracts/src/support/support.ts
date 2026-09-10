@@ -22,7 +22,7 @@ export const ticketCategorySchema = z.enum(CATEGORIAS_DE_CHAMADO, {
 
 export type TicketCategory = z.infer<typeof ticketCategorySchema>
 
-export const STATUS_DE_CHAMADO = ['aberto', 'andamento', 'respondido', 'encerrado'] as const
+export const STATUS_DE_CHAMADO = ['open', 'waiting', 'closed'] as const
 
 export const ticketStatusSchema = z.enum(STATUS_DE_CHAMADO, {
   error: 'Estado de chamado invalido.',

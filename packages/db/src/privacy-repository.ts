@@ -70,14 +70,14 @@ const FONTES: Readonly<Record<ExportCollection, Fonte>> = {
   settlements: { tabela: 'settlements', escopo: 'company_id' },
   inventory_movements: { tabela: 'inventory_movements', escopo: 'company_id' },
   appointments: { tabela: 'appointments', escopo: 'company_id' },
-  accounts: { tabela: 'accounts', escopo: 'company_id' },
+  ledger_accounts: { tabela: 'ledger_accounts', escopo: 'company_id' },
   bank_transactions: { tabela: 'bank_transactions', escopo: 'company_id' },
-  audit_log: { tabela: 'audit_log', escopo: 'company_id' },
+  audit_logs: { tabela: 'audit_logs', escopo: 'company_id' },
   invoices: { tabela: 'invoices', escopo: 'company_id' },
   sale_returns: { tabela: 'sale_returns', escopo: 'company_id' },
   sale_return_items: { tabela: 'sale_return_items', escopo: 'company_id' },
   support_tickets: { tabela: 'support_tickets', escopo: 'company_id' },
-  support_messages: { tabela: 'support_messages', escopo: 'company_id' },
+  ticket_messages: { tabela: 'ticket_messages', escopo: 'company_id' },
 }
 
 /**
@@ -104,10 +104,22 @@ export const FORA_DA_EXPORTACAO: Readonly<Record<string, string>> = {
   /* Contagem de tentativa de login por chave. Nao pertence a empresa nenhuma —
      a chave pode ser um IP compartilhado. */
   login_throttle: 'Controle de forca bruta, sem vinculo com empresa.',
-  /* Baixas de conta a PAGAR. Saem dentro de `settlements`, com `kind`. */
-  payable_settlements: 'Sai junto de `settlements`, com o tipo na mesma linha.',
   /* Controle das migrations. */
   schema_migrations: 'Controle de versao do schema.',
+  /* Satelite 1:0..1: metadata de provedor, nao dado do titular. Segredo fica no cofre. */
+  company_integrations: 'Metadata de fiscal/pagamentos/billing. Token mora no cofre.',
+  crm_cards: 'CRM ainda sem caso de uso ligado — tabela vazia no baseline.',
+  conversations: 'Assistente ainda sem caso de uso ligado — tabela vazia no baseline.',
+  messages: 'Assistente ainda sem caso de uso ligado — tabela vazia no baseline.',
+  confirmations: 'Assistente ainda sem caso de uso ligado — tabela vazia no baseline.',
+  partners: 'Plataforma de cupom, sem tenant.',
+  coupons: 'Plataforma de cupom, sem tenant.',
+  subscriptions: 'Billing SaaS ainda sem caso de uso ligado — tabela vazia no baseline.',
+  subscription_cycles: 'Billing SaaS ainda sem caso de uso ligado — tabela vazia no baseline.',
+  attachments: 'Anexo de arquivo; DEC-009 ainda aberta.',
+  idempotency_keys: 'Controle de reenvio, nao dado do titular.',
+  outbox: 'Fila interna de publicacao.',
+  webhook_events: 'Inbox de provedor; payload de terceiro, nao do titular.',
 }
 
 /**
@@ -228,18 +240,10 @@ async function lerUsuarios(
 }
 
 /**
- * As baixas das DUAS tabelas, numa colecao so.
+ * As baixas, numa colecao so.
  *
- * `settlements` guarda as de recebivel e `payable_settlements` as de pagavel —
- * separadas desde a 0003/0010 porque guardam colunas diferentes. O contrato tem
- * uma colecao, e exportar apenas uma delas omitiria metade das baixas em
- * silencio.
- *
- * `kind` na linha e o que torna o pacote legivel: sem ele, quem recebe ve dois
- * conjuntos de colunas misturados e nao sabe qual e qual.
- *
- * O cursor cobre as duas: elas sao ordenadas juntas por `id`, entao a paginacao
- * atravessa a uniao como se fosse uma tabela.
+ * `kind` na linha diz se a baixa e de recebivel ou de pagavel — as duas
+ * moram em `settlements` (NR-092), com `receivable_id` XOR `payable_id`.
  */
 async function lerBaixas(
   sql: Sql,
@@ -251,19 +255,14 @@ async function lerBaixas(
     const parametros = cursor === undefined ? [companyId] : [companyId, cursor]
 
     return tx.unsafe<Record<string, unknown>[]>(
-      `SELECT * FROM (
-           SELECT id, company_id, 'receivable' AS kind, receivable_id AS titulo_id, amount_cents,
-                  method, NULL::text AS bank_account, settled_at::date AS settled_on, notes,
-                  reverses_id, created_at, created_by
-             FROM settlements
-            WHERE company_id = $1 ${corte}
-           UNION ALL
-           SELECT id, company_id, 'payable' AS kind, payable_id AS titulo_id, amount_cents,
-                  NULL::text AS method, bank_account, settled_on, notes,
-                  reverses_id, created_at, created_by
-             FROM payable_settlements
-            WHERE company_id = $1 ${corte}
-         ) baixas
+      `SELECT id, company_id,
+              CASE WHEN payable_id IS NOT NULL THEN 'payable' ELSE 'receivable' END AS kind,
+              COALESCE(payable_id, receivable_id) AS titulo_id,
+              amount_cents, method, bank_account,
+              COALESCE(settled_on, settled_at::date) AS settled_on,
+              notes, reverses_id, created_at, created_by
+         FROM settlements
+        WHERE company_id = $1 ${corte}
         ORDER BY id
         LIMIT ${LIMITE}`,
       parametros,
@@ -309,8 +308,8 @@ export function createDataSubjectRepository(sql: Sql): DataSubjectRepository {
           SELECT id, name, phone, email, document,
                  nullif(
                    concat_ws(', ',
-                     nullif(concat_ws(' ', street, number), ''),
-                     complement, district, city, state, zip_code
+                     nullif(concat_ws(' ', street, street_number), ''),
+                     complement, neighborhood, city, state, postal_code
                    ), ''
                  ) AS address,
                  wallet_balance_cents, anonymized_at
@@ -377,11 +376,11 @@ export function createDataSubjectRepository(sql: Sql): DataSubjectRepository {
                  phone = ${s['phone'] ?? null},
                  email = ${s['email'] ?? null},
                  notes = ${s['notes'] ?? null},
-                 zip_code = ${s['zip_code'] ?? null},
+                 postal_code = ${s['postal_code'] ?? null},
                  street = ${s['street'] ?? null},
-                 number = ${s['number'] ?? null},
+                 street_number = ${s['street_number'] ?? null},
                  complement = ${s['complement'] ?? null},
-                 district = ${s['district'] ?? null},
+                 neighborhood = ${s['neighborhood'] ?? null},
                  city = ${s['city'] ?? null},
                  state = ${s['state'] ?? null},
                  anonymized_at = ${pedido.anonymizedAt},

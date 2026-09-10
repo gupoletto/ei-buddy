@@ -22,6 +22,9 @@ END
 $$;
 
 GRANT ALL PRIVILEGES ON DATABASE naregua TO naregua_migrator;
+-- PG15+: CREATE no schema public nao e mais de PUBLIC. Sem isto o migrator
+-- falha com "permission denied for schema public" na primeira tabela.
+GRANT USAGE, CREATE ON SCHEMA public TO naregua_migrator;
 
 -- ---------------------------------------------------------------------------
 -- O papel da APLICACAO — o que faltava

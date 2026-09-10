@@ -70,7 +70,7 @@ describe.skipIf(!DATABASE_URL)('plano de contas e DRE — NR-077', () => {
 
   beforeAll(async () => {
     const r = await migrate(MIGRATION_URL!)
-    expect([...r.aplicadas, ...r.jaEstavam]).toContain('0012_plano_de_contas')
+    expect([...r.aplicadas, ...r.jaEstavam]).toContain('0002_dominio_0909')
 
     admin = postgres(DATABASE_URL!, { max: 6, onnotice: () => {} })
     aplicacao = await conectarComoAplicacao(admin, DATABASE_URL!)
@@ -103,7 +103,7 @@ describe.skipIf(!DATABASE_URL)('plano de contas e DRE — NR-077', () => {
       await withTenant(sql, empresa, async (tx) => {
         await tx`DELETE FROM payables`
         await tx`DELETE FROM receivables`
-        await tx`DELETE FROM accounts`
+        await tx`DELETE FROM ledger_accounts`
         await tx`DELETE FROM companies`
       })
     }

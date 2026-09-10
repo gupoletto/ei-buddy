@@ -42,7 +42,7 @@ export async function listTickets(
 
   return {
     tickets: [...tickets],
-    open: tickets.filter((t) => t.status !== 'encerrado').length,
+    open: tickets.filter((t) => t.status !== 'closed').length,
     unread: tickets.reduce((soma, t) => soma + t.unread, 0),
   }
 }

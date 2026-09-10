@@ -93,7 +93,7 @@ describe.skipIf(!DATABASE_URL)('relatorios de venda — NR-077', () => {
           (id, company_id, number, customer_id, status, gross_amount_cents, discount_cents,
            net_amount_cents, created_at, cancelled_at)
         VALUES (${id}, ${empresa}, ${numero}, ${opcoes.customerId ?? null},
-                ${opcoes.status ?? 'registered'}, ${opcoes.netCents}, 0, ${opcoes.netCents},
+    ${opcoes.status ?? 'open'}, ${opcoes.netCents}, 0, ${opcoes.netCents},
                 ${opcoes.createdAt}, ${cancelada ? opcoes.createdAt : null})
       `
 
@@ -113,7 +113,7 @@ describe.skipIf(!DATABASE_URL)('relatorios de venda — NR-077', () => {
 
   beforeAll(async () => {
     const r = await migrate(MIGRATION_URL!)
-    expect([...r.aplicadas, ...r.jaEstavam]).toContain('0003_vendas_e_financeiro')
+    expect([...r.aplicadas, ...r.jaEstavam]).toContain('0002_dominio_0909')
 
     admin = postgres(DATABASE_URL!, { max: 6, onnotice: () => {} })
     aplicacao = await conectarComoAplicacao(admin, DATABASE_URL!)

@@ -25,9 +25,9 @@ describe('colecoes da exportacao — RF-125', () => {
     'settlements',
     'inventory_movements',
     'appointments',
-    'accounts',
+    'ledger_accounts',
     'bank_transactions',
-    'audit_log',
+    'audit_logs',
   ])('cobre %s', (c) => {
     expect(exportCollectionSchema.parse(c)).toBe(c)
   })

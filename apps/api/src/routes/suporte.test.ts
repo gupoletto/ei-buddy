@@ -29,7 +29,7 @@ const resumo = (over: Partial<TicketSummary> = {}): TicketSummary => ({
   protocol: '2026-0001',
   subject: 'Nota saiu com CFOP errado',
   category: 'tecnico',
-  status: 'aberto',
+  status: 'open',
   createdAt: AGORA,
   updatedAt: AGORA,
   unread: 0,
@@ -105,9 +105,9 @@ describe('a lista — GET /suporte/chamados', () => {
   it('devolve os chamados com os dois numeros do topo', async () => {
     const c = await buildApp({
       list: async () => [
-        resumo({ id: 'a', status: 'aberto', unread: 2 }),
-        resumo({ id: 'b', status: 'encerrado', unread: 0 }),
-        resumo({ id: 'c', status: 'andamento', unread: 1 }),
+        resumo({ id: 'a', status: 'open', unread: 2 }),
+        resumo({ id: 'b', status: 'closed', unread: 0 }),
+        resumo({ id: 'c', status: 'waiting', unread: 1 }),
       ],
     })
     app = c.app

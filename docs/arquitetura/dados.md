@@ -60,12 +60,14 @@ E um teste automatizado, rodando na CI, que tenta ler dados de outro
 [RNF-021](../produto/requisitos-nao-funcionais.md).
 
 O satélite de credenciais fiscais que **já roda** é
-`company_fiscal_credentials` (NR-042). O catálogo alvo com Asaas une fiscal e
-pagamentos numa `company_integrations` 1:0..1 — fotografado em
-[`db_0909.sql`](db_0909.sql) e descrito em
-[`esquema-postgresql.md`](esquema-postgresql.md). Isso ainda **não** é
-migration: entra depois, sem reescrever o que já está em
-`packages/db/src/migrations/`.
+`company_fiscal_credentials` (NR-042). O catálogo de domínio com Asaas une
+fiscal e pagamentos numa `company_integrations` 1:0..1 — fotografado em
+[`db_0909.sql`](db_0909.sql), descrito em
+[`esquema-postgresql.md`](esquema-postgresql.md) e materializado pelo baseline
+em `packages/db/src/migrations/` ([ADR-0006](../decisoes/adr/0006-catalogo-0909-mais-plataforma.md),
+origem [DEC-019](../decisoes/README.md#dec-019)). Identidade, sessão, cofre e
+extrato da `main` **permanecem** como acréscimo. O SQL em `docs/` **não** se
+aplica com `pnpm db:migrate`.
 
 ## Modelo de dados
 

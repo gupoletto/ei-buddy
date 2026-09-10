@@ -39,7 +39,7 @@ describe.skipIf(!DATABASE_URL)('cadastro de conta sob RLS — NR-014', () => {
 
   beforeAll(async () => {
     const r = await migrate(MIGRATION_URL!)
-    expect([...r.aplicadas, ...r.jaEstavam]).toContain('0017_cnpj_no_cadastro_de_conta')
+    expect([...r.aplicadas, ...r.jaEstavam]).toContain('0003_identidade')
 
     admin = postgres(DATABASE_URL!, { max: 4, onnotice: () => {} })
     aplicacao = await conectarComoAplicacao(admin, DATABASE_URL!)

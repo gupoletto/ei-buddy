@@ -149,11 +149,8 @@ type ProdutoDaApi = { id: string; internalCode: string; description: string }
 /**
  * Cadastra o produto — RF-017, RF-019.
  *
- * **Fornecedor, categoria, NCM e imagem nao sao enviados.** O contrato e
- * `.strict()` e nao tem esses campos, entao manda-los faria a requisicao
- * INTEIRA ser recusada. `categoria` existe como `categoryId` na api, mas a
- * tela guarda o NOME — inventar a correspondencia aqui seria adivinhar. Mesma
- * lacuna registrada no web (NR-072).
+ * **Fornecedor e imagem nao sao enviados.** Categoria vai como texto
+ * (`category`) — o 0909 nao tem tabela `categories`. O contrato e `.strict()`.
  */
 export async function salvarProduto(
   dados: DadosProduto,
@@ -169,6 +166,7 @@ export async function salvarProduto(
       salePriceCents: Math.round(dados.precoVenda * 100),
       costPriceCents: Math.round(dados.precoCusto * 100),
       minStock: Math.round(dados.estoqueMinimo),
+      ...(dados.categoria.trim() === '' ? {} : { category: dados.categoria.trim() }),
     },
   })
 

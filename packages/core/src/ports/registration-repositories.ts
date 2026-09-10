@@ -167,7 +167,7 @@ export type NewProduct = {
   readonly costPriceCents: number
   readonly taxRate?: number | undefined
   readonly minStock: number
-  readonly categoryId?: string | undefined
+  readonly category?: string | undefined
   readonly createdBy: UserId
   readonly createdAt: Date
   /* Fiscais — RF-046. Nulos ate o lojista informar. */

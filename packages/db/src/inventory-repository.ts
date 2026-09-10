@@ -37,7 +37,7 @@ type LinhaProduto = {
   id: string
   description: string
   sale_price_cents: string | number
-  stock_quantity: number
+  stock: number
   min_stock: number
 }
 
@@ -45,7 +45,7 @@ const paraSnapshot = (l: LinhaProduto): InventoryProductSnapshot => ({
   id: l.id,
   description: l.description,
   salePriceCents: numero(l.sale_price_cents),
-  stockQuantity: l.stock_quantity,
+  stockQuantity: l.stock,
   /* Sem coluna no schema. `null` e a resposta honesta — ver o cabecalho. */
   location: null,
   minStock: l.min_stock,
@@ -89,7 +89,7 @@ function leitor(tx: Sql | TransactionSql) {
       productId: string,
     ): Promise<InventoryProductSnapshot | undefined> => {
       const [linha] = await tx<LinhaProduto[]>`
-        SELECT id, description, sale_price_cents, stock_quantity, min_stock
+        SELECT id, description, sale_price_cents, stock, min_stock
         FROM products
         WHERE id = ${productId} AND deleted_at IS NULL
       `
@@ -115,14 +115,14 @@ function escopo(tx: TransactionSql, companyId: string): InventoryTransaction {
      * Grava o saldo ABSOLUTO que passa a valer.
      *
      * Absoluto e nao incremento: o lojista contou dezoito, entao sao dezoito.
-     * Um `stock_quantity = stock_quantity + delta` reintroduziria a corrida que
+     * Um `stock = stock + delta` reintroduziria a corrida que
      * ler dentro da transacao evitou — o delta teria sido calculado sobre um
      * saldo que outra venda ja mudou.
      */
     setStock: async (productId, quantity) => {
       const linhas = await tx`
         UPDATE products
-           SET stock_quantity = ${quantity}, updated_at = now()
+           SET stock = ${quantity}, updated_at = now()
          WHERE id = ${productId} AND deleted_at IS NULL
         RETURNING id
       `

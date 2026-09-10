@@ -119,6 +119,10 @@ export const statusVendaLabel: Record<string, string> = {
   concluida: 'Concluida',
   cancelada: 'Cancelada',
   em_aberto: 'Em aberto',
+  open: 'Aberta',
+  settled: 'Quitada',
+  cancelled: 'Cancelada',
+  returned: 'Devolvida',
 }
 
 export const notaLabel: Record<string, string> = {

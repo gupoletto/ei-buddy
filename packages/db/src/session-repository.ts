@@ -21,7 +21,7 @@ import type { Sql } from 'postgres'
  * a quem ainda vai descobri-la.
  *
  * As tabelas ficam sob RLS sem politica (nega tudo) e o acesso passa pelas
- * funcoes `auth_session_*` e `auth_throttle_*`, no desenho da 0009. A migration
+ * funcoes `auth_session_*` e `auth_throttle_*`, no desenho da 0003. A migration
  * explica cada restricao.
  */
 

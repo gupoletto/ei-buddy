@@ -81,7 +81,7 @@ export async function registerProduct(
     cfop: input.cfop ?? null,
     taxSituationCode: input.taxSituationCode ?? null,
     minStock: input.minStock,
-    categoryId: input.categoryId,
+    category: input.category,
     createdBy: ctx.userId,
     createdAt: ctx.now,
   })

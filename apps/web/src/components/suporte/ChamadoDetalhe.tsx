@@ -109,7 +109,7 @@ export default function ChamadoDetalhe({
     setAnexo(null)
   }
 
-  const encerrado = chamado.status === 'encerrado'
+  const encerrado = chamado.status === 'closed'
 
   return (
     <div className={styles.dialogRoot}>

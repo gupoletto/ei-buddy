@@ -60,7 +60,7 @@ describe.skipIf(!DATABASE_URL)('isolamento entre empresas — RNF-021, RF-121, R
        claro que dezenove erros de "funcao current_company_id nao existe". */
     const todas = [...resultado.aplicadas, ...resultado.jaEstavam]
     expect(todas).toContain('0001_tenant_isolation')
-    expect(todas).toContain('0004_erro_claro_sem_tenant')
+    expect(todas).toContain('0004_sessao')
 
     admin = postgres(DATABASE_URL!, { max: 3, onnotice: () => {} })
 

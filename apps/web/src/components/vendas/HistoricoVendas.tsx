@@ -69,17 +69,17 @@ function periodoDe(dias: number): { de: string; ate: string } {
 }
 
 const ROTULO_DO_STATUS: Record<VendaDoHistorico['status'], string> = {
-  registered: 'Concluida',
+  open: 'Aberta',
+  settled: 'Quitada',
   cancelled: 'Cancelada',
   returned: 'Devolvida',
-  partially_returned: 'Devolvida em parte',
 }
 
 const TOM_DO_STATUS: Record<VendaDoHistorico['status'], 'success' | 'danger' | 'warning'> = {
-  registered: 'success',
+  open: 'warning',
+  settled: 'success',
   cancelled: 'danger',
   returned: 'danger',
-  partially_returned: 'warning',
 }
 
 export default function HistoricoVendas() {

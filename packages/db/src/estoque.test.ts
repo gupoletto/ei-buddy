@@ -75,7 +75,7 @@ describe.skipIf(!DATABASE_URL)('estoque — NR-023', () => {
       (tx) => tx`
         INSERT INTO products
           (id, company_id, description, internal_code, unit_of_measure,
-           sale_price_cents, cost_price_cents, stock_quantity, min_stock)
+           sale_price_cents, cost_price_cents, stock, min_stock)
         VALUES (${id}, ${empresa}, 'Cafe torrado', ${`E-${sequencia}-${id.slice(0, 6)}`},
                 'un', 1990, 1200, ${saldo}, ${minimo})
       `,
@@ -87,7 +87,7 @@ describe.skipIf(!DATABASE_URL)('estoque — NR-023', () => {
 
   beforeAll(async () => {
     const r = await migrate(MIGRATION_URL!)
-    expect([...r.aplicadas, ...r.jaEstavam]).toContain('0008_movimentos_de_estoque')
+    expect([...r.aplicadas, ...r.jaEstavam]).toContain('0002_dominio_0909')
 
     admin = postgres(DATABASE_URL!, { max: 6, onnotice: () => {} })
     aplicacao = await conectarComoAplicacao(admin, DATABASE_URL!)
