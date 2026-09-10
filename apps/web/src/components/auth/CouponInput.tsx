@@ -87,7 +87,7 @@ export default function CouponInput({
   return (
     <div className={formStyles.field}>
       <label className={formStyles.label} htmlFor={id}>
-        Cupom de indicacao <span className={styles.optional}>(opcional)</span>
+        Cupom de indicação <span className={styles.optional}>(opcional)</span>
       </label>
 
       <div className={styles.couponWrap}>
@@ -136,7 +136,7 @@ export default function CouponInput({
 
         {estado === 'vazio' ? (
           <span className={formStyles.hint}>
-            Se alguem indicou o sistema para voce, informe o cupom — e assim que identificamos e
+            Se alguém indicou o sistema para você, informe o cupom — é assim que identificamos e
             comissionamos o parceiro. Pode seguir sem preencher.
           </span>
         ) : null}

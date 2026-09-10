@@ -51,13 +51,13 @@ export default function LeitorCodigoBarras({
 
       if (!Detector) {
         setEstado('indisponivel')
-        setMensagem('Este navegador nao le codigo de barras pela camera. Digite o codigo abaixo.')
+        setMensagem('Este navegador não lê código de barras pela câmera. Digite o código abaixo.')
         return
       }
 
       if (!navigator.mediaDevices?.getUserMedia) {
         setEstado('indisponivel')
-        setMensagem('Camera indisponivel neste navegador. Digite o codigo abaixo.')
+        setMensagem('Câmera indisponível neste navegador. Digite o código abaixo.')
         return
       }
 
@@ -100,8 +100,8 @@ export default function LeitorCodigoBarras({
         setEstado('erro')
         setMensagem(
           e instanceof DOMException && e.name === 'NotAllowedError'
-            ? 'Permissao de camera negada. Libere o acesso ou digite o codigo.'
-            : 'Nao foi possivel abrir a camera. Digite o codigo abaixo.',
+            ? 'Permissão de câmera negada. Libere o acesso ou digite o código.'
+            : 'Não foi possível abrir a câmera. Digite o código abaixo.',
         )
       }
     }
@@ -132,12 +132,12 @@ export default function LeitorCodigoBarras({
         className={styles.painel}
         role="dialog"
         aria-modal="true"
-        aria-label="Ler codigo de barras"
+        aria-label="Ler código de barras"
       >
         <header className={styles.cabecalho}>
           <h2 className={styles.titulo}>
             <IconBarcode size={19} />
-            Ler codigo de barras
+            Ler código de barras
           </h2>
           <button type="button" className={styles.fechar} onClick={onClose} aria-label="Fechar">
             <IconClose size={18} />
@@ -151,10 +151,10 @@ export default function LeitorCodigoBarras({
             {estado === 'iniciando' ? (
               <p className={styles.aguardando}>
                 <Spinner size={16} />
-                Abrindo a camera...
+                Abrindo a câmera...
               </p>
             ) : (
-              <p className={styles.instrucao}>Aponte para o codigo de barras</p>
+              <p className={styles.instrucao}>Aponte para o código de barras</p>
             )}
           </div>
         ) : null}
@@ -168,7 +168,7 @@ export default function LeitorCodigoBarras({
         {/* Entrada manual: sempre disponivel, nao so no erro */}
         <form onSubmit={enviarManual} className={styles.manual}>
           <label className={styles.manualLabel} htmlFor="codigo-manual">
-            Digitar o codigo
+            Digitar o código
           </label>
           <div className={styles.manualLinha}>
             <input

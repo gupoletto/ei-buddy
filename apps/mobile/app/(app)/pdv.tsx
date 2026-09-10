@@ -64,12 +64,12 @@ export default function Pdv() {
     const r = await buscarEan(codigo)
 
     if (r.situacao === 'erro') {
-      Alert.alert('Nao deu para ler', r.mensagem)
+      Alert.alert('Não deu para ler', r.mensagem)
       return
     }
 
     if (r.situacao === 'novo') {
-      Alert.alert('Produto nao cadastrado', `O codigo ${r.ean} nao esta no catalogo desta loja.`, [
+      Alert.alert('Produto não cadastrado', `O código ${r.ean} não está no catálogo desta loja.`, [
         { text: 'Voltar', style: 'cancel' },
         {
           text: 'Cadastrar',
@@ -108,7 +108,7 @@ export default function Pdv() {
   }
 
   function cancelar() {
-    Alert.alert('Cancelar a venda', 'O carrinho sera esvaziado.', [
+    Alert.alert('Cancelar a venda', 'O carrinho será esvaziado.', [
       { text: 'Voltar', style: 'cancel' },
       {
         text: 'Cancelar venda',
@@ -142,9 +142,9 @@ export default function Pdv() {
      */
     if (forma === 'carteira') {
       Alert.alert(
-        'Fiado ainda nao pelo app',
+        'Fiado ainda não pelo app',
         'Venda no fiado precisa de cliente identificado, e a busca de clientes ' +
-          'ainda nao existe aqui. Feche esta venda pelo computador.',
+          'ainda não existe aqui. Feche esta venda pelo computador.',
       )
       return
     }
@@ -164,7 +164,7 @@ export default function Pdv() {
     if (!r.ok) {
       /* NAO limpa a chave: a proxima tentativa e do MESMO fechamento. */
       Alert.alert(
-        'Nao deu para fechar',
+        'Não deu para fechar',
         `${r.erro}
 
 O carrinho continua aqui. Tente de novo.`,
@@ -176,10 +176,10 @@ O carrinho continua aqui. Tente de novo.`,
     setItens([])
 
     Alert.alert(
-      r.venda.reenvio ? 'Venda ja registrada' : 'Venda registrada',
+      r.venda.reenvio ? 'Venda já registrada' : 'Venda registrada',
       r.venda.reenvio
-        ? `Esta venda ja tinha entrado (numero ${r.venda.numero}). Nada foi duplicado.`
-        : `Numero ${r.venda.numero}` +
+        ? `Esta venda já tinha entrado (número ${r.venda.numero}). Nada foi duplicado.`
+        : `Número ${r.venda.numero}` +
             (r.venda.trocoCentavos > 0
               ? `
 Troco: ${formatMoney(r.venda.trocoCentavos / 100)}`
@@ -215,7 +215,7 @@ Pagamento em ${rotulo}.`,
       {itens.length === 0 ? (
         <Vazio
           titulo="Nada no carrinho"
-          descricao="Bipe o codigo de barras do produto para comecar."
+          descricao="Bipe o código de barras do produto para começar."
           acao={<Botao onPress={() => setLendo(true)}>Bipar produto</Botao>}
         />
       ) : (
@@ -434,18 +434,18 @@ function ResumoDaVenda({ venda, onFechar }: { venda: VendaRegistrada; onFechar: 
   return (
     <View style={estilos.resumo}>
       <Text style={estilos.resumoTitulo}>
-        {venda.reenvio ? `Venda ${venda.numero} — ja registrada` : `Venda ${venda.numero}`}
+        {venda.reenvio ? `Venda ${venda.numero} — já registrada` : `Venda ${venda.numero}`}
       </Text>
 
       {venda.reenvio ? (
-        <Text style={estilos.resumoAviso}>Esta venda ja tinha entrado. Nada foi duplicado.</Text>
+        <Text style={estilos.resumoAviso}>Esta venda já tinha entrado. Nada foi duplicado.</Text>
       ) : null}
 
       <LinhaResumo rotulo="Bruto" centavos={venda.brutoCentavos} />
       <LinhaResumo rotulo="Custo" centavos={venda.custoCentavos} />
       <LinhaResumo rotulo="Imposto" centavos={venda.impostoCentavos} />
-      <LinhaResumo rotulo="Tarifa de cartao" centavos={venda.tarifaCentavos} />
-      <LinhaResumo rotulo="Liquido" centavos={venda.liquidoCentavos} destaque />
+      <LinhaResumo rotulo="Tarifa de cartão" centavos={venda.tarifaCentavos} />
+      <LinhaResumo rotulo="Líquido" centavos={venda.liquidoCentavos} destaque />
 
       <Text style={estilos.resumoMargem}>
         {/* Ponto e virgula na margem: 12,4% e 12,6% sao diferentes na conta do

@@ -77,7 +77,7 @@ export default function AnonimizarCliente({
 
   if (comprovante !== null) {
     return (
-      <Card title="Pedido de exclusao atendido">
+      <Card title="Pedido de exclusão atendido">
         <p className={styles.privacidadeTexto}>
           Anonimizado em {formatDateTime(comprovante.anonymizedAt)}. Guarde este comprovante: e com
           ele que voce responde ao titular.
@@ -119,7 +119,7 @@ export default function AnonimizarCliente({
       <Card title="Dados pessoais removidos">
         <p className={styles.privacidadeTexto}>
           Este cliente teve os dados pessoais anonimizados a pedido do titular. As vendas e os
-          titulos foram preservados sem identificacao — os totais e os relatorios continuam
+          títulos foram preservados sem identificação — os totais e os relatórios continuam
           corretos.
         </p>
       </Card>
@@ -127,21 +127,21 @@ export default function AnonimizarCliente({
   }
 
   return (
-    <Card title="Pedido de exclusao (LGPD)">
+    <Card title="Pedido de exclusão (LGPD)">
       <p className={styles.privacidadeTexto}>
-        Se <strong>{nome}</strong> pediu a exclusao dos dados dele, o sistema{' '}
-        <strong>anonimiza</strong> em vez de apagar: nome, documento, telefone, e-mail, endereco e
-        observacoes sao removidos, e as vendas ficam sem identificacao.
+        Se <strong>{nome}</strong> pediu a exclusão dos dados dele, o sistema{' '}
+        <strong>anonimiza</strong> em vez de apagar: nome, documento, telefone, e-mail, endereço e
+        observações são removidos, e as vendas ficam sem identificação.
       </p>
 
       <p className={styles.privacidadeTexto}>
-        As vendas ficam porque a lei fiscal obriga a guarda-las por cinco anos, e apagar mudaria
-        seus totais de periodos ja fechados. As notas fiscais nao sao alteradas — o XML e assinado,
-        e mexer nele destroi o documento.
+        As vendas ficam porque a lei fiscal obriga a guardá-las por cinco anos, e apagar mudaria
+        seus totais de períodos já fechados. As notas fiscais não são alteradas — o XML é assinado,
+        e mexer nele destrói o documento.
       </p>
 
       <p className={styles.privacidadeAviso}>
-        Nao ha como desfazer. Os valores originais nao ficam guardados em lugar nenhum.
+        Não há como desfazer. Os valores originais não ficam guardados em lugar nenhum.
       </p>
 
       {erro !== null ? (
@@ -158,7 +158,7 @@ export default function AnonimizarCliente({
               className={styles.privacidadeTextarea}
               value={motivo}
               onChange={(e) => setMotivo(e.target.value)}
-              placeholder="Ex.: cliente pediu exclusao por e-mail em 09/09, protocolo 1234"
+              placeholder="Ex.: cliente pediu exclusão por e-mail em 09/09, protocolo 1234"
               maxLength={500}
               disabled={enviando}
               autoFocus
@@ -185,7 +185,7 @@ export default function AnonimizarCliente({
       ) : (
         <div className={styles.privacidadeAcoes}>
           <Button variant="secondary" onClick={() => setAberto(true)}>
-            Atender pedido de exclusao
+            Atender pedido de exclusão
           </Button>
         </div>
       )}

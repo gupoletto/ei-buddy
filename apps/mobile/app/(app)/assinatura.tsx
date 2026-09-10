@@ -36,12 +36,12 @@ export default function Assinatura() {
 
   return (
     <SafeAreaView style={estilos.tela} edges={['top']}>
-      <Cabecalho titulo="Assinatura" subtitulo="Plano unico · R$ 149/mes" />
+      <Cabecalho titulo="Assinatura" subtitulo="Plano único · R$ 149/mês" />
 
       <ScrollView contentContainerStyle={estilos.conteudo}>
         <View style={estilos.situacao}>
           <View style={estilos.situacaoTopo}>
-            <Text style={estilos.situacaoRotulo}>Situacao</Text>
+            <Text style={estilos.situacaoRotulo}>Situação</Text>
             <Etiqueta tom={emAberto.length > 0 ? 'atencao' : 'sucesso'}>
               {emAberto.length > 0 ? 'Fatura em aberto' : 'Em dia'}
             </Etiqueta>
@@ -57,13 +57,13 @@ export default function Assinatura() {
         <View style={estilos.aviso}>
           <Text style={estilos.avisoTitulo}>Pagamento pelo site</Text>
           <Text style={estilos.avisoTexto}>
-            O pagamento da mensalidade e feito no site. Cobrar assinatura dentro do app na App Store
-            exige o sistema de pagamento da Apple — e uma decisao de produto que ainda nao foi
+            O pagamento da mensalidade é feito no site. Cobrar assinatura dentro do app na App Store
+            exige o sistema de pagamento da Apple — é uma decisão de produto que ainda não foi
             tomada.
           </Text>
         </View>
 
-        <Sanfona titulo="Faturas" resumo={`${FATURAS.length} no historico`} inicialAberta>
+        <Sanfona titulo="Faturas" resumo={`${FATURAS.length} no histórico`} inicialAberta>
           {FATURAS.map((f) => (
             <View key={f.id} style={estilos.fatura}>
               <View style={estilos.faturaInfo}>
@@ -82,14 +82,14 @@ export default function Assinatura() {
           ))}
         </Sanfona>
 
-        <Sanfona titulo="O que o plano inclui" resumo="todos os modulos">
+        <Sanfona titulo="O que o plano inclui" resumo="todos os módulos">
           {[
-            'Todos os modulos: vendas, financeiro, estoque e fiscal',
+            'Todos os módulos: vendas, financeiro, estoque e fiscal',
             'Assistente em linguagem natural, sem limite',
-            'Emissao ilimitada de NFC-e e NFS-e',
-            'Conciliacao bancaria automatica',
-            'Usuarios ilimitados por empresa',
-            'Suporte humano em horario comercial',
+            'Emissão ilimitada de NFC-e e NFS-e',
+            'Conciliação bancária automática',
+            'Usuários ilimitados por empresa',
+            'Suporte humano em horário comercial',
           ].map((item) => (
             <View key={item} style={estilos.beneficio}>
               <Text style={estilos.beneficioMarca}>✓</Text>

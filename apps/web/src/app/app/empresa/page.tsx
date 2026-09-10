@@ -5,7 +5,7 @@ import MeusDados from '@/components/empresa/MeusDados'
 
 export const metadata: Metadata = {
   title: `Empresa — ${BRAND}`,
-  description: 'Dados cadastrais, endereco, certificado digital e exportacao completa.',
+  description: 'Dados cadastrais, endereço, certificado digital e exportação completa.',
 }
 
 export default function EmpresaPage() {

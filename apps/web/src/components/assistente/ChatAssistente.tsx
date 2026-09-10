@@ -103,7 +103,7 @@ export default function ChatAssistente() {
 
   function executarAcao(acao: string) {
     if (acao === 'cancelar') {
-      setToast('Tudo bem, nao fiz nada.')
+      setToast('Tudo bem, não fiz nada.')
       return
     }
     if (acao === 'abrir_cadastro_cliente') {
@@ -134,7 +134,7 @@ export default function ChatAssistente() {
               <h2>Como posso ajudar?</h2>
               <p>
                 Pergunte sobre vendas, clientes, produtos ou contas. Se citar um cliente, eu guardo
-                o assunto — da para perguntar &ldquo;o que ele comprou&rdquo; logo em seguida.
+                o assunto — dá para perguntar &ldquo;o que ele comprou&rdquo; logo em seguida.
               </p>
             </div>
           ) : (
@@ -184,7 +184,7 @@ export default function ChatAssistente() {
         <div className={styles.sugestoes}>
           {sugeridos.length > 0 ? (
             <div className={styles.grupoSugestao}>
-              <span className={styles.grupoRotulo}>Voce costuma perguntar</span>
+              <span className={styles.grupoRotulo}>Você costuma perguntar</span>
               <div className={styles.chips}>
                 {sugeridos.map((c) => (
                   <button
@@ -284,8 +284,8 @@ export default function ChatAssistente() {
           <button
             type="button"
             className={styles.entradaBotao}
-            onClick={() => setToast('Gravacao de audio entra junto com o backend do assistente.')}
-            aria-label="Gravar audio"
+            onClick={() => setToast('Gravação de áudio entra junto com o backend do assistente.')}
+            aria-label="Gravar áudio"
           >
             <IconMicrofone />
           </button>

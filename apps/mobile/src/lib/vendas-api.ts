@@ -128,8 +128,8 @@ export const FORMAS: {
 }[] = [
   { valor: 'dinheiro', rotulo: 'Dinheiro', taxa: 0, online: false },
   { valor: 'pix', rotulo: 'Pix', taxa: 0.99, online: true },
-  { valor: 'debito', rotulo: 'Debito', taxa: 1.99, online: true },
-  { valor: 'credito', rotulo: 'Credito', taxa: 3.49, online: true },
+  { valor: 'debito', rotulo: 'Débito', taxa: 1.99, online: true },
+  { valor: 'credito', rotulo: 'Crédito', taxa: 3.49, online: true },
   { valor: 'carteira', rotulo: 'Carteira', taxa: 0, online: false },
 ]
 
@@ -205,7 +205,7 @@ export async function criarVenda(
   await delay(900)
 
   if (dados.itens.length === 0) {
-    return { ok: false, error: 'O carrinho esta vazio.' }
+    return { ok: false, error: 'O carrinho está vazio.' }
   }
 
   const numero = String(1843 + Math.floor(Math.random() * 50))
@@ -397,9 +397,9 @@ export async function estornarVenda(
   await delay(1200)
 
   const venda = listarVendas().find((v) => v.id === id)
-  if (!venda) return { ok: false, error: 'Venda nao encontrada.' }
+  if (!venda) return { ok: false, error: 'Venda não encontrada.' }
   if (venda.status === 'estornada') {
-    return { ok: false, error: 'Esta venda ja foi estornada.' }
+    return { ok: false, error: 'Esta venda já foi estornada.' }
   }
 
   const itensDevolvidos = venda.itens.reduce((acc, i) => acc + i.quantidade, 0)

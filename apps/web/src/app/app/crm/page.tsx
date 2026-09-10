@@ -4,7 +4,7 @@ import CrmQuadro from '@/components/crm/CrmQuadro'
 
 export const metadata: Metadata = {
   title: `CRM — ${BRAND}`,
-  description: 'Pendencias e contatos em quadro, alimentado pelo cadastro de clientes.',
+  description: 'Pendências e contatos em quadro, alimentado pelo cadastro de clientes.',
 }
 
 export default function CrmPage() {

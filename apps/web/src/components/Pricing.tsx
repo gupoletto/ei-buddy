@@ -10,11 +10,11 @@ export default function Pricing() {
         <header className={styles.head}>
           <span className="eyebrow">Planos</span>
           <h2 className="sectionTitle">
-            Um plano, todos os <span className="gradientText">modulos</span>
+            Um plano, todos os <span className="gradientText">módulos</span>
           </h2>
           <p className="sectionLead">
-            Sem escalonamento por funcionalidade e sem cobranca por usuario. Voce paga por empresa e
-            usa o sistema inteiro, do balcao ao assistente.
+            Sem escalonamento por funcionalidade e sem cobrança por usuário. Você paga por empresa e
+            usa o sistema inteiro, do balcão ao assistente.
           </p>
         </header>
 
@@ -35,7 +35,7 @@ export default function Pricing() {
               TODO: ler `plano` no formulario de criar conta (NR-075).
             */}
             <Link href="/criar-conta?plano=unico" className={`btn btnPrimary ${styles.cta}`}>
-              Comecar agora
+              Começar agora
               <IconArrowRight size={18} />
             </Link>
 
@@ -43,7 +43,7 @@ export default function Pricing() {
 
             <p className={styles.secure}>
               <IconShield size={16} />
-              Dados isolados por empresa e backup diario
+              Dados isolados por empresa e backup diário
             </p>
           </div>
 

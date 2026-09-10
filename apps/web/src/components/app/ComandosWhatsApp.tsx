@@ -17,7 +17,7 @@ import styles from './ComandosWhatsApp.module.css'
  */
 export default function ComandosWhatsApp({
   comandos,
-  descricao = 'Estas perguntas funcionam por mensagem, sem abrir o sistema. Toque para abrir no assistente — o texto tambem e copiado.',
+  descricao = 'Estas perguntas funcionam por mensagem, sem abrir o sistema. Toque para abrir no assistente — o texto também é copiado.',
 }: {
   comandos: string[]
   descricao?: string

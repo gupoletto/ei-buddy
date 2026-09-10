@@ -54,7 +54,7 @@ export default function LeitorCodigo({
     <Modal visible={aberto} animationType="slide" onRequestClose={onFechar} statusBarTranslucent>
       <SafeAreaView style={estilos.tela} edges={['top', 'bottom']}>
         <View style={estilos.cabecalho}>
-          <Text style={estilos.titulo}>Ler codigo de barras</Text>
+          <Text style={estilos.titulo}>Ler código de barras</Text>
           <Pressable onPress={onFechar} hitSlop={12} accessibilityRole="button">
             <Text style={estilos.fechar}>fechar</Text>
           </Pressable>
@@ -64,17 +64,17 @@ export default function LeitorCodigo({
           {!permissao ? (
             /* Ainda verificando a permissao. */
             <View style={estilos.aviso}>
-              <Text style={estilos.avisoTexto}>Verificando a camera...</Text>
+              <Text style={estilos.avisoTexto}>Verificando a câmera...</Text>
             </View>
           ) : !permissao.granted ? (
             <View style={estilos.aviso}>
-              <Text style={estilos.avisoTitulo}>Camera bloqueada</Text>
+              <Text style={estilos.avisoTitulo}>Câmera bloqueada</Text>
               <Text style={estilos.avisoTexto}>
-                Para bipar produtos, o app precisa da camera. Voce pode digitar o codigo abaixo
+                Para bipar produtos, o app precisa da câmera. Você pode digitar o código abaixo
                 enquanto isso.
               </Text>
               <Botao onPress={pedirPermissao} variante="secundario">
-                Liberar camera
+                Liberar câmera
               </Botao>
             </View>
           ) : (
@@ -89,21 +89,21 @@ export default function LeitorCodigo({
                 onBarcodeScanned={({ data }) => aoLer(data)}
               />
               <View style={estilos.mira} pointerEvents="none" />
-              <Text style={estilos.instrucao}>Aponte para o codigo de barras</Text>
+              <Text style={estilos.instrucao}>Aponte para o código de barras</Text>
             </>
           )}
         </View>
 
         <View style={estilos.manual}>
           <Campo
-            rotulo="Ou digite o codigo"
+            rotulo="Ou digite o código"
             valor={manual}
             onChange={setManual}
             placeholder="789..."
             tipoTeclado="numeric"
           />
           <Botao onPress={enviarManual} desabilitado={!manual.trim()} largura>
-            Usar codigo
+            Usar código
           </Botao>
         </View>
       </SafeAreaView>

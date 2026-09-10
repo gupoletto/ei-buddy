@@ -6,9 +6,9 @@ import styles from './FeatureVisuals.module.css'
    -------------------------------------------------------------------------- */
 
 const cartItems = [
-  { name: 'Cafe torrado 500g', qty: '2 un', value: 'R$ 43,80' },
+  { name: 'Café torrado 500g', qty: '2 un', value: 'R$ 43,80' },
   { name: 'Filtro de papel n103', qty: '1 un', value: 'R$ 8,90' },
-  { name: 'Acucar mascavo 1kg', qty: '3 un', value: 'R$ 38,70' },
+  { name: 'Açúcar mascavo 1kg', qty: '3 un', value: 'R$ 38,70' },
 ]
 
 export function SalesVisual() {
@@ -49,8 +49,8 @@ export function SalesVisual() {
 
       <div className={styles.payRow}>
         <span className={`${styles.payChip} ${styles.payActive}`}>Pix</span>
-        <span className={styles.payChip}>Debito</span>
-        <span className={styles.payChip}>Credito</span>
+        <span className={styles.payChip}>Débito</span>
+        <span className={styles.payChip}>Crédito</span>
         <span className={styles.payChip}>Dinheiro</span>
         <span className={styles.payChip}>Carteira</span>
       </div>
@@ -70,7 +70,7 @@ export function SalesVisual() {
 const bills = [
   { name: 'Fornecedor Aurora', due: 'Vence hoje', value: 'R$ 1.240,00', state: 'due' },
   { name: 'Aluguel do ponto', due: 'Vence em 3 dias', value: 'R$ 3.800,00', state: 'soon' },
-  { name: 'Energia eletrica', due: 'Vence em 8 dias', value: 'R$ 742,30', state: 'ok' },
+  { name: 'Energia elétrica', due: 'Vence em 8 dias', value: 'R$ 742,30', state: 'ok' },
 ]
 
 export function FinanceVisual() {
@@ -91,7 +91,7 @@ export function FinanceVisual() {
         viewBox="0 0 320 120"
         preserveAspectRatio="none"
         role="img"
-        aria-label="Evolucao do caixa previsto"
+        aria-label="Evolução do caixa previsto"
       >
         <defs>
           <linearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1">
@@ -156,14 +156,14 @@ export function AssistantVisual() {
 
       <div className={styles.chat}>
         <p className={`${styles.bubble} ${styles.bubbleUser}`}>
-          quais produtos precisam de reposicao?
+          quais produtos precisam de reposição?
         </p>
 
         <div className={`${styles.bubble} ${styles.bubbleBot}`}>
-          <p>3 itens abaixo do minimo:</p>
+          <p>3 itens abaixo do mínimo:</p>
           <ul className={styles.answerList}>
             <li>
-              <span>Cafe torrado 500g</span>
+              <span>Café torrado 500g</span>
               <strong>4 un</strong>
             </li>
             <li>
@@ -171,7 +171,7 @@ export function AssistantVisual() {
               <strong>6 un</strong>
             </li>
             <li>
-              <span>Acucar mascavo 1kg</span>
+              <span>Açúcar mascavo 1kg</span>
               <strong>2 un</strong>
             </li>
           </ul>
@@ -209,10 +209,10 @@ const board = [
   },
   {
     column: 'Em andamento',
-    cards: [{ title: 'Orcamento de reposicao', meta: 'Joana Ribeiro' }],
+    cards: [{ title: 'Orçamento de reposição', meta: 'Joana Ribeiro' }],
   },
   {
-    column: 'Concluido',
+    column: 'Concluído',
     cards: [{ title: 'Entrega confirmada', meta: 'Marcos Dias' }],
   },
 ]
@@ -221,7 +221,7 @@ export function CrmVisual() {
   return (
     <div className={styles.card}>
       <div className={styles.cardHead}>
-        <span className={styles.cardLabel}>Pendencias por cliente</span>
+        <span className={styles.cardLabel}>Pendências por cliente</span>
       </div>
 
       <div className={styles.board}>

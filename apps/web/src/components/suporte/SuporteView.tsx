@@ -80,7 +80,7 @@ export default function SuporteView() {
           <Stat
             label="Com resposta nova"
             value={String(comResposta.length)}
-            hint={comResposta.length ? 'aguardando voce' : 'nada novo'}
+            hint={comResposta.length ? 'aguardando você' : 'nada novo'}
             tone={comResposta.length ? 'warning' : 'neutral'}
           />
           <Stat label="Total" value={String(chamados.length)} />
@@ -98,7 +98,7 @@ export default function SuporteView() {
           <EmptyState title="Carregando seus chamados" description="Um instante." />
         ) : erroCarga !== null ? (
           <EmptyState
-            title="Nao deu para carregar os chamados"
+            title="Não deu para carregar os chamados"
             description={erroCarga}
             action={
               <Button
@@ -116,7 +116,7 @@ export default function SuporteView() {
         ) : chamados.length === 0 ? (
           <EmptyState
             title="Nenhum chamado por aqui"
-            description="Se algo nao funcionou como esperado, abra um chamado. O time responde por aqui mesmo e voce acompanha tudo nesta tela."
+            description="Se algo não funcionou como esperado, abra um chamado. O time responde por aqui mesmo e você acompanha tudo nesta tela."
             action={
               <Button onClick={() => setCriando(true)}>
                 <IconPlus size={16} />
@@ -164,7 +164,7 @@ export default function SuporteView() {
             setChamados((atual) => [novo, ...atual])
             setCriando(false)
             setToast({
-              msg: `Chamado #${novo.protocolo} aberto. Respondemos em ate 1 dia util.`,
+              msg: `Chamado #${novo.protocolo} aberto. Respondemos em até 1 dia útil.`,
               tone: 'success',
             })
           }}
@@ -265,7 +265,7 @@ function FormChamado({
               className={`${styles.input} ${styles.textarea}`}
               value={descricao}
               onChange={(e) => setDescricao(e.target.value)}
-              placeholder="Conte o que voce fez, o que esperava e o que aconteceu."
+              placeholder="Conte o que você fez, o que esperava e o que aconteceu."
               rows={5}
             />
           </label>

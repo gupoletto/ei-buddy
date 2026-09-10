@@ -54,20 +54,20 @@ export default function MeusDados() {
     <>
       <PageHeader
         title="Seus dados"
-        subtitle="Exportacao completa, em formato aberto — LGPD art. 18"
+        subtitle="Exportação completa, em formato aberto — LGPD art. 18"
       />
 
       <Card>
         <p className={styles.privacidadeTexto}>
-          Voce pode levar todos os dados desta empresa para outro sistema quando quiser: vendas,
+          Você pode levar todos os dados desta empresa para outro sistema quando quiser: vendas,
           clientes, produtos, financeiro, estoque, notas fiscais e a trilha de auditoria. O pacote
           vem com um <strong>manifesto</strong> que diz quantos registros de cada tipo foram gerados
           — para dar para conferir se veio tudo, em vez de ter de confiar.
         </p>
 
         <p className={styles.privacidadeTexto}>
-          A exportacao continua disponivel mesmo com a conta suspensa por falta de pagamento. Seus
-          dados nao servem de garantia de cobranca.
+          A exportação continua disponível mesmo com a conta suspensa por falta de pagamento. Seus
+          dados não servem de garantia de cobrança.
         </p>
 
         {/*
@@ -75,7 +75,7 @@ export default function MeusDados() {
           registrados. Dizer isso aqui e mais honesto que registrar em silencio.
         */}
         <p className={styles.privacidadeNota}>
-          Cada exportacao fica registrada na trilha de auditoria, com quem gerou e quando.
+          Cada exportação fica registrada na trilha de auditoria, com quem gerou e quando.
         </p>
 
         {erro !== null ? (
@@ -99,7 +99,7 @@ export default function MeusDados() {
 
             <p className={styles.privacidadeNota}>
               Escrito no servidor, em <code>{resultado.location}</code>. O download direto pelo
-              navegador entra quando o armazenamento de producao for definido — enquanto isso, peca
+              navegador entra quando o armazenamento de produção for definido — enquanto isso, peça
               o arquivo pelo Suporte citando este caminho.
             </p>
 
@@ -107,7 +107,7 @@ export default function MeusDados() {
               <table className={styles.privacidadeTabela}>
                 <thead>
                   <tr>
-                    <th>Colecao</th>
+                    <th>Coleção</th>
                     <th>Registros</th>
                     <th>Arquivo</th>
                   </tr>

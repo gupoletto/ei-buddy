@@ -47,7 +47,7 @@ const emReais = (centavos: number) => centavos / 100
 
 const ROTULO_DO_TIPO: Record<TipoDeConta, string> = {
   revenue: 'Receita',
-  deduction: 'Deducao',
+  deduction: 'Dedução',
   cost: 'Custo',
   expense: 'Despesa',
 }
@@ -107,7 +107,7 @@ export default function Relatorio() {
 
   return (
     <SafeAreaView style={estilos.tela} edges={['top']}>
-      <Cabecalho titulo="Resultado" subtitulo="Quanto sobrou no periodo" />
+      <Cabecalho titulo="Resultado" subtitulo="Quanto sobrou no período" />
 
       <View style={estilos.abas}>
         {(['atual', 'anterior'] as const).map((qual) => (
@@ -119,7 +119,7 @@ export default function Relatorio() {
             accessibilityState={{ selected: recorte === qual }}
           >
             <Text style={[estilos.abaTexto, recorte === qual && estilos.abaTextoAtivo]}>
-              {qual === 'atual' ? 'Este mes' : 'Mes passado'}
+              {qual === 'atual' ? 'Este mês' : 'Mês passado'}
             </Text>
           </Pressable>
         ))}
@@ -132,7 +132,7 @@ export default function Relatorio() {
       ) : erro !== null ? (
         <View style={estilos.centro}>
           <Vazio
-            titulo="Nao deu para montar o resultado"
+            titulo="Não deu para montar o resultado"
             descricao={erro}
             acao={
               <Botao
@@ -165,7 +165,7 @@ export default function Relatorio() {
             levam ate ele vem abaixo, para quem quiser conferir.
           */}
           <Cartao>
-            <Text style={estilos.resultadoRotulo}>Resultado do periodo</Text>
+            <Text style={estilos.resultadoRotulo}>Resultado do período</Text>
             <Text
               style={[estilos.resultadoValor, dre.resultCents < 0 && estilos.resultadoNegativo]}
             >
@@ -173,7 +173,7 @@ export default function Relatorio() {
             </Text>
             <Text style={estilos.margem}>
               {dre.grossMarginPoints === null
-                ? 'Sem receita no periodo'
+                ? 'Sem receita no período'
                 : `Margem bruta de ${dre.grossMarginPoints}%`}
             </Text>
           </Cartao>
@@ -183,11 +183,11 @@ export default function Relatorio() {
             estado vazio: "Receita R$ 0,00" responde a pergunta, "sem dados"
             deixa o lojista sem saber se o mes foi parado ou se o app quebrou.
           */}
-          <Cartao titulo="Como se chega la">
+          <Cartao titulo="Como se chega lá">
             {[
               { rotulo: 'Receita bruta', valor: dre.grossRevenueCents },
-              { rotulo: 'Deducoes', valor: dre.deductionsCents, subtrai: true },
-              { rotulo: 'Receita liquida', valor: dre.netRevenueCents, total: true },
+              { rotulo: 'Deduções', valor: dre.deductionsCents, subtrai: true },
+              { rotulo: 'Receita líquida', valor: dre.netRevenueCents, total: true },
               { rotulo: 'Custo', valor: dre.costCents, subtrai: true },
               { rotulo: 'Lucro bruto', valor: dre.grossProfitCents, total: true },
               { rotulo: 'Despesas', valor: dre.expensesCents, subtrai: true },
@@ -242,7 +242,7 @@ function Detalhe({
   if (comMovimento.length === 0) {
     return (
       <Cartao>
-        <Text style={estilos.aviso}>Nenhum lancamento neste periodo.</Text>
+        <Text style={estilos.aviso}>Nenhum lançamento neste período.</Text>
       </Cartao>
     )
   }
@@ -275,7 +275,7 @@ function Detalhe({
                         {l.accountName}
                       </Text>
                       <Text style={estilos.contaContagem}>
-                        {l.entryCount} {l.entryCount === 1 ? 'lancamento' : 'lancamentos'}
+                        {l.entryCount} {l.entryCount === 1 ? 'lançamento' : 'lançamentos'}
                       </Text>
                     </View>
                     <Text style={estilos.contaValor}>{formatMoney(emReais(l.amountCents))}</Text>

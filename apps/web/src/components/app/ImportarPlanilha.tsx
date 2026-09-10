@@ -273,7 +273,7 @@ export default function ImportarPlanilha({
           <div className={styles.corpo}>
             <p className={styles.texto}>
               Envie um arquivo <strong>.csv</strong> ou <strong>.xlsx</strong> com uma linha de
-              cabecalho. Na proxima etapa voce diz qual coluna corresponde a cada campo.
+              cabeçalho. Na próxima etapa você diz qual coluna corresponde a cada campo.
             </p>
 
             <label className={styles.dropzone}>
@@ -318,7 +318,7 @@ export default function ImportarPlanilha({
                     <span className={styles.mapaCampo}>
                       {campo.label}
                       {campo.obrigatorio ? (
-                        <span className={styles.obrigatorio}>obrigatorio</span>
+                        <span className={styles.obrigatorio}>obrigatório</span>
                       ) : null}
                     </span>
                     <select
@@ -326,7 +326,7 @@ export default function ImportarPlanilha({
                       value={mapa[campo.key] ?? ''}
                       onChange={(e) => setMapa((m) => ({ ...m, [campo.key]: e.target.value }))}
                     >
-                      <option value="">— nao importar —</option>
+                      <option value="">— não importar —</option>
                       {planilha.colunas.map((col) => (
                         <option key={col} value={col}>
                           {col}
@@ -340,7 +340,7 @@ export default function ImportarPlanilha({
 
             <section>
               <h3 className={styles.subtitulo}>
-                Previa · {planilha.linhas.length} linha(s) no arquivo
+                Prévia · {planilha.linhas.length} linha(s) no arquivo
               </h3>
 
               <div className={styles.tabelaWrap}>
@@ -381,7 +381,7 @@ export default function ImportarPlanilha({
 
             {!obrigatoriosOk ? (
               <p className={styles.erro} role="alert">
-                Escolha as colunas dos campos obrigatorios para continuar.
+                Escolha as colunas dos campos obrigatórios para continuar.
               </p>
             ) : null}
 
@@ -396,7 +396,7 @@ export default function ImportarPlanilha({
                     Importando...
                   </>
                 ) : (
-                  'Confirmar importacao'
+                  'Confirmar importação'
                 )}
               </Button>
             </div>
@@ -436,7 +436,7 @@ export default function ImportarPlanilha({
                   ))}
                 </ul>
                 <p className={styles.nota}>
-                  Corrija estas linhas na planilha e importe de novo — quem ja entrou nao sera
+                  Corrija estas linhas na planilha e importe de novo — quem já entrou não será
                   duplicado.
                 </p>
               </section>

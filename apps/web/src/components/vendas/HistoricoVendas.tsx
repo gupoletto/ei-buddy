@@ -161,7 +161,7 @@ export default function HistoricoVendas() {
     <>
       <PageHeader
         title="Vendas"
-        subtitle="Historico de vendas fechadas"
+        subtitle="Histórico de vendas fechadas"
         actions={
           <ButtonLink href="/app/vendas/nova">
             <IconPlus size={17} />
@@ -183,7 +183,7 @@ export default function HistoricoVendas() {
           tone="positive"
         />
         <Stat
-          label="Ticket medio"
+          label="Ticket médio"
           /* Nulo, e nao zero: "ticket medio R$ 0,00" diria que houve venda de
              valor nenhum. O travessao diz que nao houve venda. */
           value={resumo?.ticketMedio == null ? '—' : formatMoney(resumo.ticketMedio)}
@@ -198,7 +198,7 @@ export default function HistoricoVendas() {
               type="search"
               value={busca}
               onChange={(e) => mudarBusca(e.target.value)}
-              placeholder="Buscar por cliente, numero ou produto"
+              placeholder="Buscar por cliente, número ou produto"
               aria-label="Buscar venda"
             />
           </label>
@@ -219,7 +219,7 @@ export default function HistoricoVendas() {
 
         {erro !== null ? (
           <EmptyState
-            title="Nao deu para carregar o historico"
+            title="Não deu para carregar o histórico"
             description={erro}
             action={
               <Button
@@ -235,12 +235,12 @@ export default function HistoricoVendas() {
             }
           />
         ) : carregando && dados === null ? (
-          <EmptyState title="Carregando as vendas" description="Buscando o historico." />
+          <EmptyState title="Carregando as vendas" description="Buscando o histórico." />
         ) : total === 0 ? (
           <EmptyState
             title={filtrando ? 'Nenhuma venda encontrada' : 'Nenhuma venda ainda'}
             description={
-              filtrando ? 'Ajuste a busca ou o periodo.' : 'Abra o PDV e registre a primeira venda.'
+              filtrando ? 'Ajuste a busca ou o período.' : 'Abra o PDV e registre a primeira venda.'
             }
             action={
               filtrando ? (
@@ -367,7 +367,7 @@ function Paginacao({
           onClick={() => onIr(pagina + 1)}
           disabled={pagina >= ultimaPagina || carregando}
         >
-          Proxima
+          Próxima
         </Button>
       </div>
     </div>

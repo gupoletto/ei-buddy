@@ -36,7 +36,7 @@ export default function Vendas() {
     <SafeAreaView style={estilos.tela} edges={['top']}>
       <Cabecalho
         titulo="Vendas"
-        subtitulo={`${resumo.concluidas.length} concluidas`}
+        subtitulo={`${resumo.concluidas.length} concluídas`}
         acao={<Botao onPress={() => router.push('/pdv')}>Nova</Botao>}
       />
 
@@ -47,13 +47,13 @@ export default function Vendas() {
             <Text style={estilos.resumoValor}>{formatMoney(resumo.total)}</Text>
           </View>
           <View style={estilos.resumoItem}>
-            <Text style={estilos.resumoRotulo}>Liquido</Text>
+            <Text style={estilos.resumoRotulo}>Líquido</Text>
             <Text style={[estilos.resumoValor, estilos.liquido]}>
               {formatMoney(resumo.liquido)}
             </Text>
           </View>
           <View style={estilos.resumoItem}>
-            <Text style={estilos.resumoRotulo}>Ticket medio</Text>
+            <Text style={estilos.resumoRotulo}>Ticket médio</Text>
             <Text style={estilos.resumoValor}>{formatMoney(resumo.ticket)}</Text>
           </View>
         </View>
@@ -95,7 +95,7 @@ export default function Vendas() {
                 .map((p) => FORMAS.find((f) => f.valor === p.forma)?.rotulo ?? p.forma)
                 .join(' + ')}
             />
-            <Detalhe rotulo="Liquido" valor={formatMoney(v.valorLiquido)} />
+            <Detalhe rotulo="Líquido" valor={formatMoney(v.valorLiquido)} />
             <Detalhe
               rotulo="Nota fiscal"
               valor={

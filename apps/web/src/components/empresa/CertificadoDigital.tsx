@@ -91,23 +91,23 @@ export default function CertificadoDigital({
             {/* O titular saiu: sem abrir o arquivo, exibi-lo seria inventar. */}
           </div>
 
-          {expirado ? <Badge tone="warning">Expirado</Badge> : <Badge tone="success">Valido</Badge>}
+          {expirado ? <Badge tone="warning">Expirado</Badge> : <Badge tone="success">Válido</Badge>}
         </div>
 
         <dl className={styles.certMeta}>
           <div>
-            <dt>Valido ate</dt>
+            <dt>Válido até</dt>
             <dd>{formatDate(certificado.validoAte)}</dd>
           </div>
           <div>
-            <dt>Emissao fiscal</dt>
+            <dt>Emissão fiscal</dt>
             <dd>{expirado ? 'Bloqueada' : 'Liberada'}</dd>
           </div>
         </dl>
 
         {expirado ? (
           <p className={styles.certAlert}>
-            O certificado venceu. Ate enviar um novo, nao e possivel emitir NFC-e nem NFS-e.
+            O certificado venceu. Até enviar um novo, não é possível emitir NFC-e nem NFS-e.
           </p>
         ) : null}
 
@@ -128,9 +128,9 @@ export default function CertificadoDigital({
         </span>
         <div className={styles.certInfo}>
           <strong>Nenhum certificado enviado</strong>
-          <span>Necessario para emitir NFC-e e NFS-e</span>
+          <span>Necessário para emitir NFC-e e NFS-e</span>
         </div>
-        <Badge>Nao enviado</Badge>
+        <Badge>Não enviado</Badge>
       </div>
 
       <div className={styles.certForm}>
@@ -167,13 +167,13 @@ export default function CertificadoDigital({
             }}
             disabled={enviando}
             autoComplete="off"
-            placeholder="Senha definida na emissao"
+            placeholder="Senha definida na emissão"
           />
         </div>
 
         <div className={styles.certField}>
           <label className={styles.certLabel} htmlFor={validadeId}>
-            Valido ate
+            Válido até
           </label>
           <input
             id={validadeId}
@@ -192,7 +192,7 @@ export default function CertificadoDigital({
             leitor de PKCS#12: sem ela nao ha como avisar antes do vencimento.
           */}
           <span className={styles.certAjuda}>
-            Esta na propria emissao do certificado. Sem ela nao conseguimos avisar antes de vencer.
+            Está na própria emissão do certificado. Sem ela não conseguimos avisar antes de vencer.
           </span>
         </div>
       </div>
@@ -218,7 +218,7 @@ export default function CertificadoDigital({
       </Button>
 
       <p className={styles.certNota}>
-        O arquivo e a senha sao enviados direto ao servidor por conexao segura. A senha nao fica
+        O arquivo e a senha são enviados direto ao servidor por conexão segura. A senha não fica
         guardada no navegador.
       </p>
     </div>

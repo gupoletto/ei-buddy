@@ -78,7 +78,7 @@ function paraLinhaAPagar(c: ContaAPagar): Linha {
 function paraLinhaAReceber(c: ContaAReceber): Linha {
   return {
     id: c.id,
-    contraparte: c.customerName ?? 'Cliente nao identificado',
+    contraparte: c.customerName ?? 'Cliente não identificado',
     descricao: c.description,
     vencimento: c.dueDate,
     /* Bruto, e nao `netAmountCents`: e sobre o bruto que a baixa e conferida no
@@ -292,7 +292,7 @@ export default function ContasView({ tipo }: { tipo: 'pagar' | 'receber' }) {
     setBaixando(null)
     setToast({
       msg: quitou
-        ? `Titulo quitado: ${formatMoney(r.dados.amountCents / 100)}.`
+        ? `Título quitado: ${formatMoney(r.dados.amountCents / 100)}.`
         : `Baixa parcial de ${formatMoney(r.dados.amountCents / 100)} registrada.`,
       tone: 'success',
     })
@@ -319,7 +319,7 @@ export default function ContasView({ tipo }: { tipo: 'pagar' | 'receber' }) {
     <>
       <PageHeader
         title={pagar ? 'Contas a pagar' : 'Contas a receber'}
-        subtitle={pagar ? 'Titulos, vencimentos e baixas' : 'Recebiveis, cobranca e baixas'}
+        subtitle={pagar ? 'Títulos, vencimentos e baixas' : 'Recebíveis, cobrança e baixas'}
         actions={
           <>
             <Button variant="secondary" onClick={() => exportarLista('csv')}>
@@ -431,7 +431,7 @@ export default function ContasView({ tipo }: { tipo: 'pagar' | 'receber' }) {
           <EmptyState title="Carregando contas" description="Buscando os titulos em aberto." />
         ) : erroCarga !== null ? (
           <EmptyState
-            title="Nao deu para carregar as contas"
+            title="Não deu para carregar as contas"
             description={erroCarga}
             action={
               <Button variant="secondary" onClick={tentarDeNovo}>
@@ -446,11 +446,11 @@ export default function ContasView({ tipo }: { tipo: 'pagar' | 'receber' }) {
                 ? pagar
                   ? 'Nenhuma conta a pagar'
                   : 'Nenhuma conta a receber'
-                : 'Nenhum titulo encontrado'
+                : 'Nenhum título encontrado'
             }
             description={
               linhas.length === 0
-                ? 'Lance o primeiro titulo para acompanhar vencimentos e baixas.'
+                ? 'Lance o primeiro título para acompanhar vencimentos e baixas.'
                 : 'Nenhum resultado para estes filtros.'
             }
             action={

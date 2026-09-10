@@ -31,7 +31,7 @@ export default function PaymentOverdueBanner({ diasEmAtraso = 14 }: { diasEmAtra
       </span>
 
       <p className={styles.bannerText}>
-        <strong>Seu pagamento esta pendente.</strong> Regularize para manter acesso completo
+        <strong>Seu pagamento está pendente.</strong> Regularize para manter acesso completo
         {diasEmAtraso > 0 ? ` — ${diasEmAtraso} dias em atraso` : ''}.
       </p>
 

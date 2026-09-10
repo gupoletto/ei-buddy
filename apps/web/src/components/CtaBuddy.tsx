@@ -24,13 +24,13 @@ export default function CtaBuddy() {
             </h2>
 
             <p className={styles.lead}>
-              Crie sua conta em dois minutos e use todos os modulos desde o primeiro dia. Sem
-              instalacao, sem contrato de fidelidade e sem cobranca por usuario.
+              Crie sua conta em dois minutos e use todos os módulos desde o primeiro dia. Sem
+              instalação, sem contrato de fidelidade e sem cobrança por usuário.
             </p>
 
             <div className={styles.ctas}>
               <Link href="/criar-conta" className="btn btnPrimary">
-                Comecar agora
+                Começar agora
                 <IconArrowRight size={18} />
               </Link>
               <a href="#planos" className="btn btnGhost">

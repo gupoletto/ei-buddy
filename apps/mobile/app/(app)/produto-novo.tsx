@@ -61,7 +61,7 @@ export default function ProdutoNovoScreen() {
       return
     }
     if (venda === null || venda <= 0) {
-      setErro('Informe o preco de venda.')
+      setErro('Informe o preço de venda.')
       return
     }
 
@@ -99,7 +99,7 @@ export default function ProdutoNovoScreen() {
 
   return (
     <SafeAreaView style={estilos.tela} edges={['top']}>
-      <Cabecalho titulo="Novo produto" subtitulo={ean ? `Codigo ${ean}` : 'Cadastro rapido'} />
+      <Cabecalho titulo="Novo produto" subtitulo={ean ? `Código ${ean}` : 'Cadastro rápido'} />
 
       <KeyboardAvoidingView
         style={estilos.flex}
@@ -109,14 +109,14 @@ export default function ProdutoNovoScreen() {
           {erro !== null ? <Text style={estilos.erro}>{erro}</Text> : null}
 
           <Campo
-            rotulo="Descricao"
+            rotulo="Descrição"
             valor={descricao}
             onChange={setDescricao}
-            placeholder="Cafe torrado 500g"
+            placeholder="Café torrado 500g"
           />
 
           <Campo
-            rotulo="Preco de venda"
+            rotulo="Preço de venda"
             valor={precoVenda}
             onChange={setPrecoVenda}
             placeholder="19,90"
@@ -124,7 +124,7 @@ export default function ProdutoNovoScreen() {
           />
 
           <Campo
-            rotulo="Preco de custo"
+            rotulo="Preço de custo"
             valor={precoCusto}
             onChange={setPrecoCusto}
             placeholder="12,00"
@@ -138,7 +138,7 @@ export default function ProdutoNovoScreen() {
           </View>
 
           <Text style={estilos.nota}>
-            Fornecedor, categoria e foto ficam no computador. Aqui e o basico para o produto ja
+            Fornecedor, categoria e foto ficam no computador. Aqui é o básico para o produto já
             poder ser vendido.
           </Text>
         </ScrollView>

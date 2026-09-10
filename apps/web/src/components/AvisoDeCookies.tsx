@@ -95,8 +95,8 @@ export default function AvisoDeCookies() {
      */
     <section className={styles.aviso} role="region" aria-label="Aviso sobre cookies">
       <p className={styles.texto}>
-        Usamos um cookie, e ele e necessario para manter voce autenticado. Nao usamos cookie de
-        analise, de publicidade ou de rastreamento.{' '}
+        Usamos um cookie, e ele é necessário para manter você autenticado. Não usamos cookie de
+        análise, de publicidade ou de rastreamento.{' '}
         <a href="/politica-de-cookies" className={styles.link}>
           Ver detalhes
         </a>

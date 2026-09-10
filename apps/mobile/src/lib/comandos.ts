@@ -14,51 +14,51 @@ export type GrupoComandos = {
 }
 
 export const COMANDOS_EMPRESA = [
-  'Qual foi o faturamento mes a mes dos ultimos meses',
+  'Qual foi o faturamento mês a mês dos últimos meses',
   'Ranking dos clientes',
   'Ranking dos produtos',
-  'Gerar DRE do mes',
+  'Gerar DRE do mês',
 ]
 
 export const COMANDOS_CLIENTES = [
   'Cadastra um cliente para mim',
-  'O cliente X esta cadastrado',
-  'Quando foi a ultima compra do cliente X',
+  'O cliente X está cadastrado',
+  'Quando foi a última compra do cliente X',
   'O que ele comprou',
-  'O que o cliente X esta devendo',
+  'O que o cliente X está devendo',
   'Envie um WhatsApp para o cliente dizendo...',
-  'Quais clientes nao compram ha muito tempo',
-  'Lancar uma pendencia',
-  'Lancar um contato',
+  'Quais clientes não compram há muito tempo',
+  'Lançar uma pendência',
+  'Lançar um contato',
 ]
 
 export const COMANDOS_PRODUTOS = [
-  'Quais produtos estao sem venda ha muito tempo',
-  'Envie WhatsApp oferecendo esses produtos para quem ja comprou',
+  'Quais produtos estão sem venda há muito tempo',
+  'Envie WhatsApp oferecendo esses produtos para quem já comprou',
   'Ranking de produtos',
   'Produtos lucrativos',
-  'Quais produtos precisam de reposicao de estoque',
-  'Gerar link com o catalogo e enviar para o cliente X',
+  'Quais produtos precisam de reposição de estoque',
+  'Gerar link com o catálogo e enviar para o cliente X',
 ]
 
 export const COMANDOS_PAGAR = [
-  'O que ha para pagar hoje',
-  'O que ha para pagar ate sexta',
+  'O que há para pagar hoje',
+  'O que há para pagar até sexta',
   'Qual o total a pagar',
   'Resuma o total a pagar por plano de conta',
   'Baixe as contas a pagar para mim',
 ]
 
 export const COMANDOS_RECEBER = [
-  'O que ha a receber, envie aviso para esses clientes',
-  'O que esta vencido, envie aviso para esses clientes',
+  'O que há a receber, envie aviso para esses clientes',
+  'O que está vencido, envie aviso para esses clientes',
   'Ranking por cliente',
   'Baixe para mim',
 ]
 
 export const COMANDOS_PLANO_CONTAS = [
   'Ranking dos planos de conta',
-  'Gastos mes a mes',
+  'Gastos mês a mês',
   'Gastos do plano de conta Fornecedores',
   'Gerar contas a pagar',
 ]
@@ -66,7 +66,7 @@ export const COMANDOS_PLANO_CONTAS = [
 export const COMANDOS_VENDAS = [
   'Quanto vendi hoje',
   'Ranking de produtos mais vendidos',
-  'Qual o ticket medio da semana',
+  'Qual o ticket médio da semana',
   'Quais vendas foram estornadas',
 ]
 
@@ -83,8 +83,8 @@ export const GRUPOS_COMANDOS: GrupoComandos[] = [
 /** Sugestoes iniciais mostradas com a conversa vazia. */
 export const COMANDOS_DESTAQUE = [
   'Quanto vendi hoje',
-  'O que ha para pagar hoje',
-  'Quais produtos precisam de reposicao de estoque',
+  'O que há para pagar hoje',
+  'Quais produtos precisam de reposição de estoque',
   'Ranking dos clientes',
-  'Quais clientes nao compram ha muito tempo',
+  'Quais clientes não compram há muito tempo',
 ]

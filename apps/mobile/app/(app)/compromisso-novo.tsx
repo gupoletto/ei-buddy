@@ -40,7 +40,7 @@ export default function CompromissoNovoScreen() {
 
     const minutos = lembrete.trim() === '' ? undefined : Number(lembrete)
     if (minutos !== undefined && (!Number.isInteger(minutos) || minutos < 1)) {
-      setErro('O lembrete e em minutos inteiros, a partir de 1.')
+      setErro('O lembrete é em minutos inteiros, a partir de 1.')
       return
     }
 
@@ -80,7 +80,7 @@ export default function CompromissoNovoScreen() {
           {erro !== null ? <Text style={estilos.erro}>{erro}</Text> : null}
 
           <Campo
-            rotulo="O que e"
+            rotulo="O que é"
             valor={titulo}
             onChange={setTitulo}
             placeholder="Entrega da Padaria Sol"
@@ -100,7 +100,7 @@ export default function CompromissoNovoScreen() {
             rotulo="Lembrar quantos minutos antes"
             valor={lembrete}
             onChange={setLembrete}
-            dica="Deixe em branco para nao lembrar."
+            dica="Deixe em branco para não lembrar."
             tipoTeclado="numeric"
           />
 

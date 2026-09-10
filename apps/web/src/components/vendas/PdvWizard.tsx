@@ -111,7 +111,7 @@ export default function PdvWizard() {
       /* RF-028: vender sem saldo nao e recusado, mas o operador precisa saber. */
       setToast({ msg: r.avisosDeEstoque.join(' '), tone: 'error' })
     } else if (r.reenvio) {
-      setToast({ msg: `Esta venda ja tinha sido fechada (nº ${r.numero}).`, tone: 'success' })
+      setToast({ msg: `Esta venda já tinha sido fechada (nº ${r.numero}).`, tone: 'success' })
     }
 
     setVendaId(r.id)
@@ -294,10 +294,10 @@ function EtapaCliente({
           <EmptyState title="Carregando" description="Buscando os clientes da loja." />
         ) : erro !== null ? (
           <EmptyState
-            title="Nao foi possivel buscar"
+            title="Não foi possível buscar"
             /* O caminho de seguir sem identificar continua aberto: a venda nao
                pode parar porque a busca de cliente falhou. */
-            description={`${erro} Voce ainda pode seguir sem identificar o cliente.`}
+            description={`${erro} Você ainda pode seguir sem identificar o cliente.`}
           />
         ) : encontrados.length === 0 ? (
           <EmptyState
@@ -466,7 +466,7 @@ function CadastroRapido({
        uma ida a rede para receber "telefone invalido" de volta. */
     const so = digitos(celular)
     if (so !== '' && so.length !== 10 && so.length !== 11) {
-      setErro('Telefone incompleto. Informe DDD e numero.')
+      setErro('Telefone incompleto. Informe DDD e número.')
       return
     }
 
@@ -492,14 +492,14 @@ function CadastroRapido({
           Cadastro rapido
         </h2>
         <p className={styles.dialogTexto}>
-          So o essencial para nao segurar a fila. O cadastro completo pode ser feito depois em
+          Só o essencial para não segurar a fila. O cadastro completo pode ser feito depois em
           Clientes.
         </p>
 
         {duplicados !== null ? (
           <div className={styles.duplicados} role="alert">
             <p>
-              Ja existe cliente com este telefone ou documento. Escolha um deles ou cadastre mesmo
+              Já existe cliente com este telefone ou documento. Escolha um deles ou cadastre mesmo
               assim.
             </p>
             <ul>
@@ -527,7 +527,7 @@ function CadastroRapido({
                     Salvando...
                   </>
                 ) : (
-                  'E outra pessoa, cadastrar'
+                  'É outra pessoa, cadastrar'
                 )}
               </Button>
             </div>

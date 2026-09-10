@@ -4,7 +4,7 @@ import ContasView from '@/components/financeiro/ContasView'
 
 export const metadata: Metadata = {
   title: `Contas a receber — ${BRAND}`,
-  description: 'Recebiveis, cobranca e baixas.',
+  description: 'Recebíveis, cobrança e baixas.',
 }
 
 export default function ContasReceberPage() {

@@ -87,7 +87,7 @@ export default function CobrancaPix({
         setEstado('aguardando')
       } catch {
         if (cancelado) return
-        setErro('Nao foi possivel gerar o codigo de pagamento.')
+        setErro('Não foi possível gerar o código de pagamento.')
         setEstado('erro')
       }
     }
@@ -176,7 +176,7 @@ export default function CobrancaPix({
       setCopiado(true)
       setTimeout(() => setCopiado(false), 2200)
     } catch {
-      setErro('Nao foi possivel copiar. Selecione o codigo manualmente.')
+      setErro('Não foi possível copiar. Selecione o código manualmente.')
     }
   }
 
@@ -212,16 +212,16 @@ export default function CobrancaPix({
     return (
       <div className={styles.card}>
         <div className={`${styles.notice} ${expirou ? styles.noticeWarn : styles.noticeError}`}>
-          <strong>{expirou ? 'O codigo expirou' : 'Algo deu errado'}</strong>
+          <strong>{expirou ? 'O código expirou' : 'Algo deu errado'}</strong>
           <p>
             {expirou
-              ? `Cada codigo Pix vale ${PIX_EXPIRATION_MINUTES} minutos. Gere um novo para continuar — nada foi cobrado.`
-              : (erro ?? 'Nao foi possivel gerar o codigo de pagamento.')}
+              ? `Cada código Pix vale ${PIX_EXPIRATION_MINUTES} minutos. Gere um novo para continuar — nada foi cobrado.`
+              : (erro ?? 'Não foi possível gerar o código de pagamento.')}
           </p>
         </div>
 
         <button type="button" className={styles.primaryButton} onClick={gerarNovoCodigo}>
-          Gerar novo codigo
+          Gerar novo código
         </button>
       </div>
     )
@@ -250,7 +250,7 @@ export default function CobrancaPix({
         {estado === 'carregando' || !qrDataUrl ? (
           <div className={styles.qrLoading}>
             <Spinner size={26} />
-            <span>Gerando codigo...</span>
+            <span>Gerando código...</span>
           </div>
         ) : (
           <>
@@ -262,7 +262,7 @@ export default function CobrancaPix({
               width={230}
               height={230}
             />
-            <p className={styles.qrHint}>Abra o app do seu banco, escolha Pix e aponte a camera.</p>
+            <p className={styles.qrHint}>Abra o app do seu banco, escolha Pix e aponte a câmera.</p>
           </>
         )}
       </div>
@@ -270,7 +270,7 @@ export default function CobrancaPix({
       {/* Contador */}
       {estado === 'aguardando' ? (
         <p className={`${styles.timer} ${expirandoLogo ? styles.timerUrgent : ''}`}>
-          Este codigo expira em{' '}
+          Este código expira em{' '}
           <strong>
             {minutos}:{segundos}
           </strong>
@@ -307,7 +307,7 @@ export default function CobrancaPix({
          ---------------------------------------------------------------- */}
       {estado === 'aguardando' ? (
         <button type="button" className={styles.demoButton} onClick={() => setEstado('confirmado')}>
-          Simular pagamento confirmado (demonstracao)
+          Simular pagamento confirmado (demonstração)
         </button>
       ) : null}
     </div>

@@ -56,9 +56,9 @@ const navItems: NavItem[] = [
       { href: '/app/financeiro/plano-de-contas', label: 'Plano de contas' },
       { href: '/app/financeiro/contas-a-pagar', label: 'Contas a pagar' },
       { href: '/app/financeiro/contas-a-receber', label: 'Contas a receber' },
-      { href: '/app/financeiro/conciliacao', label: 'Conciliacao' },
+      { href: '/app/financeiro/conciliacao', label: 'Conciliação' },
       { href: '/app/financeiro/dre', label: 'DRE' },
-      { href: '/app/financeiro/relatorios', label: 'Relatorios' },
+      { href: '/app/financeiro/relatorios', label: 'Relatórios' },
     ],
   },
   { href: '/app/crm', label: 'CRM', icon: IconList },
@@ -177,7 +177,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
           type="button"
           className={styles.backdrop}
           onClick={() => setNavOpen(false)}
-          aria-label="Fechar navegacao"
+          aria-label="Fechar navegação"
         />
       ) : null}
 
@@ -189,7 +189,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
           <span className={styles.brandName}>{BRAND}</span>
         </Link>
 
-        <nav className={styles.nav} aria-label="Modulos do sistema">
+        <nav className={styles.nav} aria-label="Módulos do sistema">
           {navItems.map((item) => {
             const Icon = item.icon
 
@@ -300,7 +300,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
             onClick={() => setNavOpen((v) => !v)}
             aria-expanded={navOpen}
             aria-controls="navegacao-painel"
-            aria-label={navOpen ? 'Fechar navegacao' : 'Abrir navegacao'}
+            aria-label={navOpen ? 'Fechar navegação' : 'Abrir navegação'}
           >
             {navOpen ? <IconClose size={20} /> : <IconMenu size={20} />}
           </button>
@@ -324,8 +324,8 @@ export default function AppShell({ children }: { children: ReactNode }) {
                 className={styles.iconButton}
                 aria-label={
                   avisos.length === 0
-                    ? 'Notificacoes — nada pendente'
-                    : `Notificacoes — ${avisos.length} pendente(s)`
+                    ? 'Notificações — nada pendente'
+                    : `Notificações — ${avisos.length} pendente(s)`
                 }
                 aria-expanded={avisosAbertos}
                 onClick={() => setAvisosAbertos((v) => !v)}
@@ -335,7 +335,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
               </button>
 
               {avisosAbertos ? (
-                <div className={styles.avisosPainel} role="dialog" aria-label="Notificacoes">
+                <div className={styles.avisosPainel} role="dialog" aria-label="Notificações">
                   {avisos.length === 0 ? (
                     <p className={styles.avisoVazio}>Nada pendente por aqui.</p>
                   ) : (

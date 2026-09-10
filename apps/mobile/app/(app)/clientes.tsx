@@ -47,7 +47,7 @@ export default function Clientes() {
     <SafeAreaView style={estilos.tela} edges={['top']}>
       <Cabecalho
         titulo="Clientes"
-        subtitulo={`${clientes.length} cadastrados · ${comPendencia} com pendencia`}
+        subtitulo={`${clientes.length} cadastrados · ${comPendencia} com pendência`}
       />
 
       <View style={estilos.barra}>
@@ -73,7 +73,7 @@ export default function Clientes() {
           style={[estilos.chip, soPendencia && estilos.chipAtivo]}
         >
           <Text style={[estilos.chipTexto, soPendencia && estilos.chipTextoAtivo]}>
-            Com pendencia
+            Com pendência
           </Text>
         </Pressable>
       </View>
@@ -137,7 +137,7 @@ function LinhaCliente({ cliente }: { cliente: Cliente }) {
       <View style={estilos.clienteRodape}>
         <Text style={estilos.clienteUltima}>
           {cliente.ultimaCompra
-            ? `Ultima compra ${formatDate(cliente.ultimaCompra)}`
+            ? `Última compra ${formatDate(cliente.ultimaCompra)}`
             : 'Nunca comprou'}
           {inativo ? ' · sumiu' : ''}
         </Text>

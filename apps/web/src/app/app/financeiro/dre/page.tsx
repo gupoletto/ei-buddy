@@ -4,7 +4,7 @@ import DreView from '@/components/financeiro/DreView'
 
 export const metadata: Metadata = {
   title: `DRE simplificado — ${BRAND}`,
-  description: 'Receita, custo, despesa e resultado do periodo.',
+  description: 'Receita, custo, despesa e resultado do período.',
 }
 
 export default function DrePage() {

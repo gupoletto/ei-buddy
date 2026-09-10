@@ -12,10 +12,10 @@ export default function FAQ() {
     <section className="section" id="duvidas">
       <div className="container">
         <header className={styles.head}>
-          <span className="eyebrow">Duvidas</span>
+          <span className="eyebrow">Dúvidas</span>
           <h2 className="sectionTitle">Perguntas frequentes</h2>
           <p className="sectionLead">
-            O que costumam perguntar antes de comecar. Se ficar faltando algo, o time responde
+            O que costumam perguntar antes de começar. Se ficar faltando algo, o time responde
             direto no chat.
           </p>
         </header>

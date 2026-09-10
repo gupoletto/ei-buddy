@@ -4,7 +4,7 @@ import HistoricoVendas from '@/components/vendas/HistoricoVendas'
 
 export const metadata: Metadata = {
   title: `Vendas — ${BRAND}`,
-  description: 'Historico de vendas fechadas.',
+  description: 'Histórico de vendas fechadas.',
 }
 
 export default function VendasPage() {

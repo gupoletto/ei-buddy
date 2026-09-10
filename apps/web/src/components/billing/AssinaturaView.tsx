@@ -33,7 +33,7 @@ const faturas: Fatura[] = [
 ]
 
 const colunas: Column<Fatura>[] = [
-  { key: 'comp', header: 'Competencia', render: (f) => <strong>{f.competencia}</strong> },
+  { key: 'comp', header: 'Competência', render: (f) => <strong>{f.competencia}</strong> },
   { key: 'venc', header: 'Vencimento', render: (f) => formatDate(f.vencimento) },
   {
     key: 'status',
@@ -61,7 +61,7 @@ export default function AssinaturaView() {
 
   /* Estavel: o CobrancaPix usa esta funcao como dependencia de efeito. */
   const criarCobrancaFatura = useCallback(
-    (valor: number) => createPixCharge('Plano unico', valor),
+    (valor: number) => createPixCharge('Plano único', valor),
     [],
   )
 
@@ -73,9 +73,9 @@ export default function AssinaturaView() {
       <PageHeader title="Assinatura" subtitle="Plano, faturas e formas de pagamento" />
 
       <div className="statRow">
-        <Stat label="Plano atual" value="Plano unico" hint="todos os modulos inclusos" />
+        <Stat label="Plano atual" value="Plano único" hint="todos os módulos inclusos" />
         <Stat
-          label="Situacao"
+          label="Situação"
           value={bloqueado ? 'Pagamento pendente' : 'Em dia'}
           hint={bloqueado ? 'acesso restrito' : 'acesso completo'}
           tone={bloqueado ? 'warning' : 'positive'}
@@ -90,7 +90,7 @@ export default function AssinaturaView() {
               Regularize para liberar o acesso completo
             </strong>
             <p className={styles.calloutText}>
-              Assim que o pagamento cair, os modulos voltam automaticamente — nenhum dado seu foi
+              Assim que o pagamento cair, os módulos voltam automaticamente — nenhum dado seu foi
               apagado.
             </p>
           </div>
@@ -101,7 +101,7 @@ export default function AssinaturaView() {
       {pagando ? (
         <div className={styles.pixWrap}>
           <CobrancaPix
-            titulo="Plano unico"
+            titulo="Plano único"
             subtitulo="Fatura em aberto"
             amount={total || 149}
             criarCobranca={criarCobrancaFatura}
@@ -117,7 +117,7 @@ export default function AssinaturaView() {
         </div>
       ) : null}
 
-      <Card title="Historico de faturas">
+      <Card title="Histórico de faturas">
         <DataTable columns={colunas} rows={faturas} getKey={(f) => f.id} />
       </Card>
     </>

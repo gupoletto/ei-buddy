@@ -31,7 +31,7 @@ import styles from './clientes.module.css'
 const CAMPOS_PLANILHA = [
   {
     key: 'nome',
-    label: 'Nome / Razao social',
+    label: 'Nome / Razão social',
     obrigatorio: true,
     reconhece: (c: string) => c.includes('nome') || c.includes('razao'),
   },
@@ -125,7 +125,7 @@ export default function ClientesLista() {
     <>
       <PageHeader
         title="Clientes"
-        subtitle="Base de clientes, pendencias e historico"
+        subtitle="Base de clientes, pendências e histórico"
         actions={
           <>
             <Button variant="secondary" onClick={() => setImportando(true)}>
@@ -143,7 +143,7 @@ export default function ClientesLista() {
       <div className="statRow">
         <Stat label="Clientes cadastrados" value={carregando ? '—' : String(total)} />
         <Stat
-          label="Com pendencia"
+          label="Com pendência"
           value={String(comPendencia.length)}
           hint={formatMoney(totalPendente)}
           tone={comPendencia.length ? 'warning' : 'neutral'}
@@ -154,7 +154,7 @@ export default function ClientesLista() {
           os 24 clientes carregados, numa base de tres mil.
         */}
         <Stat
-          label="Sem comprar ha 60 dias"
+          label="Sem comprar há 60 dias"
           value={filtro === 'inativos' && !carregando ? String(total) : '—'}
           hint={filtro === 'inativos' ? 'vale mandar um Whats' : 'abra o filtro para ver'}
         />
@@ -178,7 +178,7 @@ export default function ClientesLista() {
             {(
               [
                 ['todos', 'Todos'],
-                ['pendencia', 'Com pendencia'],
+                ['pendencia', 'Com pendência'],
                 ['inativos', 'Sem compras recentes'],
               ] as const
             ).map(([valor, rotulo]) => (
@@ -200,7 +200,7 @@ export default function ClientesLista() {
           <EmptyState title="Carregando seus clientes" description="Um instante." />
         ) : erroCarga !== null ? (
           <EmptyState
-            title="Nao deu para carregar os clientes"
+            title="Não deu para carregar os clientes"
             description={erroCarga}
             action={
               <Button
@@ -279,7 +279,7 @@ export default function ClientesLista() {
 
                     <span className={styles.itemUltima}>
                       {cliente.ultimaCompra
-                        ? `Ultima: ${formatDate(cliente.ultimaCompra)}`
+                        ? `Última: ${formatDate(cliente.ultimaCompra)}`
                         : 'Nunca comprou'}
                     </span>
 
@@ -322,7 +322,7 @@ export default function ClientesLista() {
             if (!doc) return 'CPF/CNPJ vazio'
             const ok =
               doc.length === 11 ? isValidCPF(doc) : doc.length === 14 ? isValidCNPJ(doc) : false
-            return ok ? null : 'CPF/CNPJ invalido'
+            return ok ? null : 'CPF/CNPJ inválido'
           }}
           onConfirmar={confirmarImportacaoClientes}
           onClose={() => setImportando(false)}

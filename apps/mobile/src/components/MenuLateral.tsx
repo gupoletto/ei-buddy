@@ -19,7 +19,7 @@ type Grupo = { grupo: string; itens: Item[] }
  */
 const GRUPOS: Grupo[] = [
   {
-    grupo: 'Operacao',
+    grupo: 'Operação',
     itens: [
       { rota: '/inicio', rotulo: 'Tela principal' },
       { rota: '/pdv', rotulo: 'Nova venda' },
@@ -42,7 +42,7 @@ const GRUPOS: Grupo[] = [
       { rota: '/contas-a-receber', rotulo: 'Contas a receber' },
       { rota: '/plano-de-contas', rotulo: 'Plano de contas' },
       { rota: '/dre', rotulo: 'Resultado' },
-      { rota: '/relatorios', rotulo: 'Relatorios' },
+      { rota: '/relatorios', rotulo: 'Relatórios' },
     ],
   },
   {
@@ -64,7 +64,7 @@ export default function MenuLateral(props: DrawerContentComponentProps) {
   /* Abre ja no grupo onde a pessoa esta, para ela se localizar. */
   const [abertos, setAbertos] = useState<Set<string>>(() => {
     const atual = GRUPOS.find((g) => g.itens.some((i) => caminho.endsWith(i.rota)))
-    return new Set([atual?.grupo ?? 'Operacao'])
+    return new Set([atual?.grupo ?? 'Operação'])
   })
 
   function alternarGrupo(grupo: string) {

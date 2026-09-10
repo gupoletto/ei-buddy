@@ -13,7 +13,7 @@ export default function Footer() {
             <span className={styles.brandName}>{BRAND}</span>
           </span>
           <p className={styles.aboutText}>
-            Modulos integrados de vendas, financeiro, estoque e fiscal para quem toca o comercio no
+            Módulos integrados de vendas, financeiro, estoque e fiscal para quem toca o comércio no
             dia a dia — com um assistente que responde em linguagem natural.
           </p>
 

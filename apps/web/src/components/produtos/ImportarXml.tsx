@@ -114,7 +114,7 @@ export default function ImportarXml({ onClose }: { onClose: () => void }) {
             <div className={styles.sucesso}>
               <strong>{resultado} item(ns) lancado(s)</strong>
               <p>
-                O estoque e o preco de custo foram atualizados a partir da nota
+                O estoque e o preço de custo foram atualizados a partir da nota
                 {nota ? ` ${nota.numero}` : ''}.
               </p>
             </div>
@@ -128,7 +128,7 @@ export default function ImportarXml({ onClose }: { onClose: () => void }) {
         {resultado === null && !nota ? (
           <div className={styles.corpo}>
             <p className={styles.texto}>
-              Envie o XML da nota fiscal de compra. Os itens sao lidos automaticamente e voce
+              Envie o XML da nota fiscal de compra. Os itens são lidos automaticamente e você
               escolhe, item a item, o que fazer com cada um antes de confirmar.
             </p>
 

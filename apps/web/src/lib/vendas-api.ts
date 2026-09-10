@@ -156,8 +156,8 @@ export const FORMAS: {
 }[] = [
   { valor: 'dinheiro', rotulo: 'Dinheiro', taxa: 0, online: false },
   { valor: 'pix', rotulo: 'Pix', taxa: 0.99, online: true },
-  { valor: 'debito', rotulo: 'Debito', taxa: 1.99, online: true },
-  { valor: 'credito', rotulo: 'Credito', taxa: 3.49, online: true },
+  { valor: 'debito', rotulo: 'Débito', taxa: 1.99, online: true },
+  { valor: 'credito', rotulo: 'Crédito', taxa: 3.49, online: true },
   { valor: 'carteira', rotulo: 'Carteira', taxa: 0, online: false },
 ]
 
@@ -281,7 +281,7 @@ export async function criarVenda(
   chaveDeIdempotencia: string,
 ): Promise<ResultadoDaVenda> {
   if (dados.itens.length === 0) {
-    return { ok: false, error: 'O carrinho esta vazio.' }
+    return { ok: false, error: 'O carrinho está vazio.' }
   }
 
   const subtotal = subtotalCarrinho(dados.itens)
@@ -313,7 +313,7 @@ export async function criarVenda(
       body: JSON.stringify(corpo),
     })
   } catch {
-    return { ok: false, error: 'Sem conexao. A venda nao foi fechada — tente de novo.' }
+    return { ok: false, error: 'Sem conexão. A venda não foi fechada — tente de novo.' }
   }
 
   const json = (await resposta.json().catch(() => ({}))) as {
@@ -324,7 +324,7 @@ export async function criarVenda(
   }
 
   if (!resposta.ok || json.sale === undefined) {
-    return { ok: false, error: json.error?.message ?? 'Nao foi possivel fechar a venda.' }
+    return { ok: false, error: json.error?.message ?? 'Não foi possível fechar a venda.' }
   }
 
   return {
@@ -555,7 +555,7 @@ export async function carregarHistorico(
       credentials: 'same-origin',
     })
   } catch {
-    return { ok: false, error: 'Sem conexao. Verifique sua internet.' }
+    return { ok: false, error: 'Sem conexão. Verifique sua internet.' }
   }
 
   const json = (await resposta.json().catch(() => ({}))) as {
@@ -573,7 +573,7 @@ export async function carregarHistorico(
   }
 
   if (!resposta.ok || json.sales === undefined || json.summary === undefined) {
-    return { ok: false, error: json.error?.message ?? 'Nao foi possivel carregar o historico.' }
+    return { ok: false, error: json.error?.message ?? 'Não foi possível carregar o histórico.' }
   }
 
   return {
@@ -621,7 +621,7 @@ export async function estornarVenda(
   return {
     ok: false,
     error:
-      'O estorno de venda ainda nao esta disponivel. Para corrigir agora, ajuste o estoque ' +
+      'O estorno de venda ainda não está disponível. Para corrigir agora, ajuste o estoque ' +
       'pelo produto e cancele a nota pela tela da venda.',
   }
 }
@@ -665,7 +665,7 @@ export async function carregarCatalogo(
       },
     )
   } catch {
-    return { ok: false, error: 'Sem conexao. Verifique sua internet.' }
+    return { ok: false, error: 'Sem conexão. Verifique sua internet.' }
   }
 
   const json = (await resposta.json().catch(() => ({}))) as {
@@ -682,7 +682,7 @@ export async function carregarCatalogo(
   }
 
   if (!resposta.ok || json.products === undefined) {
-    return { ok: false, error: json.error?.message ?? 'Nao foi possivel carregar o catalogo.' }
+    return { ok: false, error: json.error?.message ?? 'Não foi possível carregar o catálogo.' }
   }
 
   return {
@@ -731,13 +731,13 @@ export async function pedirNota(
       credentials: 'same-origin',
     })
   } catch {
-    return { ok: false, error: 'Sem conexao. A venda esta registrada — tente a nota de novo.' }
+    return { ok: false, error: 'Sem conexão. A venda está registrada — tente a nota de novo.' }
   }
 
   if (resposta.ok) return { ok: true }
 
   const corpo = (await resposta.json().catch(() => ({}))) as { error?: { message?: string } }
-  return { ok: false, error: corpo.error?.message ?? 'Nao foi possivel pedir a nota.' }
+  return { ok: false, error: corpo.error?.message ?? 'Não foi possível pedir a nota.' }
 }
 
 /** O estado fiscal da venda — RF-054. */

@@ -8,7 +8,7 @@ const chartBars = [38, 52, 44, 68, 57, 82, 71]
 
 const recentSales = [
   { label: 'Venda #1842', meta: 'Pix · 3 itens', value: 'R$ 268,90' },
-  { label: 'Venda #1841', meta: 'Credito · 1 item', value: 'R$ 89,00' },
+  { label: 'Venda #1841', meta: 'Crédito · 1 item', value: 'R$ 89,00' },
   { label: 'Venda #1840', meta: 'Dinheiro · 6 itens', value: 'R$ 412,50' },
 ]
 
@@ -19,23 +19,23 @@ export default function Hero() {
         <div className={styles.copy}>
           <span className={styles.badge}>
             <IconBolt size={15} />
-            Gestao para pequenos e medios negocios
+            Gestão para pequenos e médios negócios
           </span>
 
           <h1 className={styles.title}>
-            Seu negocio inteiro,
-            <br />a um <span className="gradientText">WhatsApp</span> de distancia
+            Seu negócio inteiro,
+            <br />a um <span className="gradientText">WhatsApp</span> de distância
           </h1>
 
           <p className={styles.lead}>
-            Empresa, clientes, produtos, financeiro, vendas e CRM num sistema so. E o que voce
-            precisa saber — faturamento, quem deve, o que repor — voce pergunta por mensagem e
+            Empresa, clientes, produtos, financeiro, vendas e CRM num sistema só. É o que você
+            precisa saber — faturamento, quem deve, o que repor — você pergunta por mensagem e
             recebe a resposta pronta.
           </p>
 
           <div className={styles.ctas}>
             <Link href="/criar-conta" className="btn btnPrimary">
-              Comecar agora
+              Começar agora
               <IconArrowRight size={18} />
             </Link>
             <a href="#painel" className="btn btnGhost">
@@ -43,19 +43,19 @@ export default function Hero() {
             </a>
           </div>
 
-          <p className={styles.note}>Plano unico, sem fidelidade. Cancele quando quiser.</p>
+          <p className={styles.note}>Plano único, sem fidelidade. Cancele quando quiser.</p>
         </div>
 
         {/* Mockup ilustrativo do produto */}
         <div className={styles.mockupWrap}>
           <div className={styles.glow} aria-hidden="true" />
 
-          <div className={styles.mockup} role="img" aria-label="Previa do painel do produto">
+          <div className={styles.mockup} role="img" aria-label="Prévia do painel do produto">
             <div className={styles.mockupBar}>
               <span className={styles.dot} />
               <span className={styles.dot} />
               <span className={styles.dot} />
-              <span className={styles.mockupTitle}>Visao geral</span>
+              <span className={styles.mockupTitle}>Visão geral</span>
             </div>
 
             <div className={styles.mockupBody}>
@@ -70,7 +70,7 @@ export default function Hero() {
                 <div className={styles.stat}>
                   <span className={styles.statLabel}>A receber</span>
                   <strong className={styles.statValue}>R$ 23.180</strong>
-                  <span className={styles.statMeta}>18 titulos</span>
+                  <span className={styles.statMeta}>18 títulos</span>
                 </div>
               </div>
 

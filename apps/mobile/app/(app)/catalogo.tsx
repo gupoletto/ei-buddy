@@ -72,7 +72,7 @@ export default function Catalogo() {
          so dizer que nao achou. */
       setAvisoLeitura({
         tom: 'novo',
-        texto: `Codigo ${r.ean} ainda nao esta cadastrado.`,
+        texto: `Código ${r.ean} ainda não está cadastrado.`,
         ean: r.ean,
       })
       return
@@ -83,7 +83,7 @@ export default function Catalogo() {
 
   return (
     <SafeAreaView style={estilos.tela} edges={['top']}>
-      <Cabecalho titulo="Catalogo" subtitulo={`${produtos.length} produtos`} />
+      <Cabecalho titulo="Catálogo" subtitulo={`${produtos.length} produtos`} />
 
       <View style={estilos.barra}>
         <TextInput
@@ -134,8 +134,8 @@ export default function Catalogo() {
 
       {encontrado === null && busca.trim() && lista.length === 0 ? (
         <Vazio
-          titulo="Produto nao encontrado"
-          descricao="Nenhum item com esse termo ou codigo."
+          titulo="Produto não encontrado"
+          descricao="Nenhum item com esse termo ou código."
           acao={
             <Botao variante="secundario" onPress={() => setBusca('')}>
               Limpar busca

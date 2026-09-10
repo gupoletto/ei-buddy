@@ -85,7 +85,7 @@ export default function Agenda() {
   function cancelar(c: CompromissoDaApi) {
     Alert.alert(
       'Cancelar compromisso',
-      `${c.title}\n\nEle sai da agenda, mas continua no historico.`,
+      `${c.title}\n\nEle sai da agenda, mas continua no histórico.`,
       [
         { text: 'Voltar', style: 'cancel' },
         {
@@ -95,7 +95,7 @@ export default function Agenda() {
             void (async () => {
               const r = await cancelarCompromisso(c.id)
               if (!r.ok) {
-                Alert.alert('Nao deu para cancelar', r.erro)
+                Alert.alert('Não deu para cancelar', r.erro)
                 return
               }
               /* Recarrega em vez de tirar da lista na mao: o servidor e a
@@ -112,7 +112,7 @@ export default function Agenda() {
   const subtitulo = carregando
     ? 'Carregando...'
     : erro !== null
-      ? 'Nao foi possivel carregar'
+      ? 'Não foi possível carregar'
       : hoje.length === 0
         ? 'Nada marcado para hoje'
         : `${hoje.length} hoje`
@@ -134,7 +134,7 @@ export default function Agenda() {
         {carregando && hoje.length === 0 ? (
           <ActivityIndicator color={cores.acento} style={estilos.espera} />
         ) : erro !== null ? (
-          <Vazio titulo="Nao deu para carregar" descricao={erro} />
+          <Vazio titulo="Não deu para carregar" descricao={erro} />
         ) : (
           <>
             <Secao titulo="Hoje">
@@ -154,7 +154,7 @@ export default function Agenda() {
             </Secao>
 
             {amanha.length > 0 ? (
-              <Secao titulo="Amanha">
+              <Secao titulo="Amanhã">
                 {amanha.map((c) => (
                   <LinhaCompromisso
                     key={c.id}

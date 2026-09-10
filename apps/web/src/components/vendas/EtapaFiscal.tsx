@@ -116,7 +116,7 @@ export default function EtapaFiscal({
     }
 
     setErro(
-      'A nota ainda esta sendo processada. A venda esta registrada — confira o estado dela em Vendas daqui a pouco.',
+      'A nota ainda está sendo processada. A venda está registrada — confira o estado dela em Vendas daqui a pouco.',
     )
     setEstado('erro')
   }
@@ -160,8 +160,8 @@ export default function EtapaFiscal({
                   : 'Nenhum certificado digital cadastrado'}
               </strong>
               <p>
-                A emissao de NFC-e e NFS-e depende de um certificado A1 valido. A venda ja esta
-                registrada — assim que o certificado for enviado, da para emitir a nota por esta
+                A emissão de NFC-e e NFS-e depende de um certificado A1 válido. A venda já está
+                registrada — assim que o certificado for enviado, dá para emitir a nota por esta
                 mesma tela.
               </p>
             </div>
@@ -218,7 +218,7 @@ export default function EtapaFiscal({
           <>
             {estado === 'erro' ? (
               <p className={styles.erro} role="alert">
-                {erro ?? 'Nao foi possivel emitir a nota.'}
+                {erro ?? 'Não foi possível emitir a nota.'}
               </p>
             ) : null}
 

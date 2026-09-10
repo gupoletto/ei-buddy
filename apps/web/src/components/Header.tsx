@@ -58,7 +58,7 @@ export default function Header() {
           <span className={styles.brandName}>{BRAND}</span>
         </a>
 
-        <nav className={styles.nav} aria-label="Secoes do site">
+        <nav className={styles.nav} aria-label="Seções do site">
           {nav.map((item) => (
             <a key={item.href} href={item.href} className={styles.navLink}>
               {item.label}
@@ -71,7 +71,7 @@ export default function Header() {
             Entrar
           </Link>
           <Link href="/criar-conta" className="btn btnPrimary">
-            Comecar agora
+            Começar agora
           </Link>
         </div>
 
@@ -92,7 +92,7 @@ export default function Header() {
         className={`${styles.mobilePanel} ${open ? styles.mobileOpen : ''}`}
         hidden={!open}
       >
-        <nav className={styles.mobileNav} aria-label="Secoes do site">
+        <nav className={styles.mobileNav} aria-label="Seções do site">
           {nav.map((item) => (
             <a
               key={item.href}
@@ -109,7 +109,7 @@ export default function Header() {
           className={`btn btnPrimary ${styles.mobileCta}`}
           onClick={() => setOpen(false)}
         >
-          Comecar agora
+          Começar agora
         </Link>
         <Link
           href="/login"

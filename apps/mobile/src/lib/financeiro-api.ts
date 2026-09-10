@@ -38,8 +38,8 @@ export const NOMES_FORNECEDORES = [...new Set(contasPagar.map((c) => c.fornecedo
 export const NOMES_CLIENTES = clientes.map((c) => c.nome)
 
 export const TIPOS_RECEBIMENTO = [
-  { valor: 'debito', rotulo: 'Cartao de debito' },
-  { valor: 'credito', rotulo: 'Cartao de credito' },
+  { valor: 'debito', rotulo: 'Cartão de débito' },
+  { valor: 'credito', rotulo: 'Cartão de crédito' },
   { valor: 'pix', rotulo: 'Pix' },
   { valor: 'carteira', rotulo: 'Carteira' },
 ] as const
@@ -174,7 +174,7 @@ export async function listarContasReceber(): Promise<Resposta<ListaDeTitulos>> {
           id: rec.id,
           /* Venda sem identificar o cliente e caminho normal no balcao: o
              rotulo diz isso em vez de deixar a linha sem contraparte. */
-          contraparte: rec.customerName ?? 'Cliente nao identificado',
+          contraparte: rec.customerName ?? 'Cliente não identificado',
           descricao: rec.description,
           vencimento: rec.dueDate,
           valorCents: rec.amountCents,
@@ -235,8 +235,8 @@ export type FormaDeRecebimento = 'cash' | 'pix' | 'debit' | 'credit' | 'wallet'
 export const FORMAS_DE_RECEBIMENTO: readonly { valor: FormaDeRecebimento; rotulo: string }[] = [
   { valor: 'pix', rotulo: 'Pix' },
   { valor: 'cash', rotulo: 'Dinheiro' },
-  { valor: 'debit', rotulo: 'Debito' },
-  { valor: 'credit', rotulo: 'Credito' },
+  { valor: 'debit', rotulo: 'Débito' },
+  { valor: 'credit', rotulo: 'Crédito' },
   { valor: 'wallet', rotulo: 'Carteira' },
 ]
 
@@ -424,7 +424,7 @@ export async function exportar(formato: FormatoExportacao): Promise<{ ok: false;
   await delay(400)
   return {
     ok: false,
-    error: `Exportacao em ${formato.toUpperCase()} entra quando o backend expuser o endpoint.`,
+    error: `Exportação em ${formato.toUpperCase()} entra quando o backend expuser o endpoint.`,
   }
 }
 

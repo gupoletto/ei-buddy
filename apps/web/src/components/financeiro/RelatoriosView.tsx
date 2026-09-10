@@ -147,8 +147,8 @@ export default function RelatoriosView() {
   return (
     <>
       <PageHeader
-        title="Relatorios"
-        subtitle="Faturamento mes a mes, e quem e o que puxou esse dinheiro"
+        title="Relatórios"
+        subtitle="Faturamento mês a mês, e quem é o que puxou esse dinheiro"
       />
 
       <Card>
@@ -165,14 +165,14 @@ export default function RelatoriosView() {
         </div>
 
         {periodoInvalido && de !== '' && ate !== '' ? (
-          <p className={styles.aviso}>O inicio do periodo nao pode ser depois do fim.</p>
+          <p className={styles.aviso}>O início do período não pode ser depois do fim.</p>
         ) : null}
 
         {carregando ? (
           <EmptyState title="Montando os relatorios" description="Somando as vendas do periodo." />
         ) : erro !== null ? (
           <EmptyState
-            title="Nao deu para montar os relatorios"
+            title="Não deu para montar os relatórios"
             description={erro}
             action={
               <Button variant="secondary" onClick={aplicarPeriodo}>
@@ -207,7 +207,7 @@ function Faturamento({ dados }: { dados: Faturamento }) {
   return (
     <section className={styles.bloco}>
       <header className={styles.blocoCabecalho}>
-        <h2 className={styles.blocoTitulo}>Faturamento mes a mes</h2>
+        <h2 className={styles.blocoTitulo}>Faturamento mês a mês</h2>
         <span className={styles.blocoTotal}>
           Total: <strong>{formatMoney(emReais(dados.totalNetCents))}</strong>
         </span>
@@ -216,9 +216,9 @@ function Faturamento({ dados }: { dados: Faturamento }) {
       <table className={styles.meses}>
         <thead>
           <tr>
-            <th scope="col">Mes</th>
+            <th scope="col">Mês</th>
             <th scope="col">Vendas</th>
-            <th scope="col">Ticket medio</th>
+            <th scope="col">Ticket médio</th>
             <th scope="col">Faturamento</th>
           </tr>
         </thead>
@@ -275,7 +275,7 @@ function Clientes({ dados }: { dados: RankingDeClientes }) {
       <h2 className={styles.blocoTitulo}>Clientes que mais compraram</h2>
 
       {dados.customers.length === 0 ? (
-        <p className={styles.aviso}>Nenhuma venda com cliente identificado neste periodo.</p>
+        <p className={styles.aviso}>Nenhuma venda com cliente identificado neste período.</p>
       ) : (
         <ol className={styles.ranking}>
           {dados.customers.map((c, i) => (
@@ -283,7 +283,7 @@ function Clientes({ dados }: { dados: RankingDeClientes }) {
               <span className={styles.lugar}>{i + 1}</span>
               <span className={styles.nome}>{c.customerName}</span>
               <span className={styles.detalhe}>
-                {c.salesCount} {c.salesCount === 1 ? 'compra' : 'compras'} · ultima em{' '}
+                {c.salesCount} {c.salesCount === 1 ? 'compra' : 'compras'} · última em{' '}
                 {formatarDia(c.lastSaleOn)}
               </span>
               <span className={styles.valor}>{formatMoney(emReais(c.netCents))}</span>
@@ -303,7 +303,7 @@ function Produtos({ dados }: { dados: RankingDeProdutos }) {
       <h2 className={styles.blocoTitulo}>Produtos mais vendidos</h2>
 
       {dados.products.length === 0 ? (
-        <p className={styles.aviso}>Nenhum produto do cadastro foi vendido neste periodo.</p>
+        <p className={styles.aviso}>Nenhum produto do cadastro foi vendido neste período.</p>
       ) : (
         <ol className={styles.ranking}>
           {dados.products.map((p, i) => (

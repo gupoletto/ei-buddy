@@ -8,17 +8,17 @@ export function validateCredential(value: string): FieldError {
 
   const isEmail = trimmed.includes('@')
   if (isEmail) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(trimmed) ? null : 'E-mail invalido.'
+    return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(trimmed) ? null : 'E-mail inválido.'
   }
 
   const digits = trimmed.replace(/\D/g, '')
-  return digits.length >= 10 && digits.length <= 11 ? null : 'Telefone invalido. Use DDD + numero.'
+  return digits.length >= 10 && digits.length <= 11 ? null : 'Telefone inválido. Use DDD + número.'
 }
 
 export function validateEmail(value: string): FieldError {
   const trimmed = value.trim()
   if (!trimmed) return 'Informe seu e-mail.'
-  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(trimmed) ? null : 'E-mail invalido.'
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(trimmed) ? null : 'E-mail inválido.'
 }
 
 export function validateName(value: string): FieldError {
@@ -32,14 +32,14 @@ export function validateName(value: string): FieldError {
 export function validatePhone(value: string): FieldError {
   const digits = value.replace(/\D/g, '')
   if (!digits) return 'Informe seu telefone.'
-  return digits.length >= 10 && digits.length <= 11 ? null : 'Telefone invalido. Use DDD + numero.'
+  return digits.length >= 10 && digits.length <= 11 ? null : 'Telefone inválido. Use DDD + número.'
 }
 
 export function validatePassword(value: string): FieldError {
   if (!value) return 'Crie uma senha.'
   if (value.length < 8) return 'A senha precisa ter ao menos 8 caracteres.'
   if (!/[a-zA-Z]/.test(value) || !/\d/.test(value)) {
-    return 'Use letras e numeros.'
+    return 'Use letras e números.'
   }
   return null
 }
@@ -51,7 +51,7 @@ export function validateLoginPassword(value: string): FieldError {
 
 export function validatePasswordConfirm(password: string, confirm: string): FieldError {
   if (!confirm) return 'Repita a senha.'
-  return password === confirm ? null : 'As senhas nao conferem.'
+  return password === confirm ? null : 'As senhas não conferem.'
 }
 
 /** Forca da senha, usada apenas como feedback visual. */
@@ -112,7 +112,7 @@ export function validateCNPJ(value: string): FieldError {
   const d = value.replace(/\D/g, '')
   if (!d) return 'Informe o CNPJ.'
   if (d.length !== 14) return 'CNPJ incompleto.'
-  return isValidCNPJ(value) ? null : 'CNPJ invalido.'
+  return isValidCNPJ(value) ? null : 'CNPJ inválido.'
 }
 
 /** Mascara progressiva de CPF: 123.456.789-00 */
@@ -146,7 +146,7 @@ export function validateCPF(value: string): FieldError {
   const d = value.replace(/\D/g, '')
   if (!d) return 'Informe o CPF.'
   if (d.length !== 11) return 'CPF incompleto.'
-  return isValidCPF(value) ? null : 'CPF invalido.'
+  return isValidCPF(value) ? null : 'CPF inválido.'
 }
 
 /** Valida CPF ou CNPJ conforme o tipo escolhido. */
@@ -185,13 +185,13 @@ export function maskCelular(value: string): string {
 export function validateCelular(value: string): FieldError {
   const d = value.replace(/\D/g, '')
   if (!d) return 'Informe o celular.'
-  return d.length >= 8 && d.length <= 9 ? null : 'Celular invalido.'
+  return d.length >= 8 && d.length <= 9 ? null : 'Celular inválido.'
 }
 
 export function validateDDD(value: string): FieldError {
   const d = value.replace(/\D/g, '')
   if (!d) return 'DDD.'
-  return d.length === 2 ? null : 'DDD invalido.'
+  return d.length === 2 ? null : 'DDD inválido.'
 }
 
 /** Mascara progressiva de telefone: (41) 99876-5432 */

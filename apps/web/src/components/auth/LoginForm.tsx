@@ -12,7 +12,7 @@ import loginStyles from './login.module.css'
 /** O papel na tela e em portugues, nao o valor do contrato. */
 const PAPEL: Record<string, string> = {
   owner: 'Dono',
-  staff: 'Funcionario',
+  staff: 'Funcionário',
   accountant: 'Contador',
   platform_admin: 'Administrador',
 }
@@ -88,7 +88,7 @@ export default function LoginForm() {
     if (sessao.memberships.length === 0) {
       /* Conta sem vinculo nenhum: entrar levaria a um painel vazio e sem
          explicacao. Melhor dizer o que aconteceu. */
-      setFormError(`Sua conta ainda nao esta ligada a nenhuma loja. Fale com quem administra.`)
+      setFormError(`Sua conta ainda não está ligada a nenhuma loja. Fale com quem administra.`)
       setLoading(false)
       return
     }
@@ -126,7 +126,7 @@ export default function LoginForm() {
       <>
         <FormHeader
           title="Qual loja?"
-          subtitle={`Ola, ${escolhendo.userName}. Voce tem acesso a mais de uma.`}
+          subtitle={`Ola, ${escolhendo.userName}. Você tem acesso a mais de uma.`}
         />
 
         {formError ? <Alert tone="error">{formError}</Alert> : null}
@@ -152,7 +152,7 @@ export default function LoginForm() {
 
   return (
     <>
-      <FormHeader title="Entrar" subtitle="Acesse o painel do seu negocio." />
+      <FormHeader title="Entrar" subtitle="Acesse o painel do seu negócio." />
 
       {formError ? <Alert tone="error">{formError}</Alert> : null}
 
@@ -197,7 +197,7 @@ export default function LoginForm() {
       </form>
 
       <FormFooter>
-        Nao tem conta? <Link href="/criar-conta">Criar conta</Link>
+        Não tem conta? <Link href="/criar-conta">Criar conta</Link>
       </FormFooter>
     </>
   )

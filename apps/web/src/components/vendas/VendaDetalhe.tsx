@@ -163,7 +163,7 @@ export default function VendaDetalhe({ venda }: { venda: VendaDoHistorico }) {
       {estornando ? (
         <ConfirmarDialog
           titulo="Estornar a venda"
-          descricao="Os itens voltam ao estoque, o titulo em contas a receber e revertido e a nota fiscal e cancelada. A venda continua no historico, marcada como estornada."
+          descricao="Os itens voltam ao estoque, o título em contas a receber é revertido e a nota fiscal é cancelada. A venda continua no histórico, marcada como estornada."
           tom="perigo"
           rotuloConfirmar="Estornar"
           processando={processando}

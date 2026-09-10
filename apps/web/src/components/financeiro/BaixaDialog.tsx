@@ -197,7 +197,7 @@ export default function BaixaDialog({
 
         <div className={styles.baixaLinha}>
           <label className={styles.baixaCampo}>
-            <span>Data da {pagar ? 'saida' : 'entrada'}</span>
+            <span>Data da {pagar ? 'saída' : 'entrada'}</span>
             <input
               type="date"
               className={styles.baixaInput}

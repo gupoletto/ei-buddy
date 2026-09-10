@@ -173,13 +173,13 @@ export default function EstornoDialog({
         </div>
 
         {baixas === null ? (
-          <EmptyState title="Carregando o historico" description="Buscando as baixas do titulo." />
+          <EmptyState title="Carregando o histórico" description="Buscando as baixas do título." />
         ) : erroCarga !== null ? (
-          <EmptyState title="Nao deu para carregar as baixas" description={erroCarga} />
+          <EmptyState title="Não deu para carregar as baixas" description={erroCarga} />
         ) : baixas.length === 0 ? (
           <EmptyState
-            title="Este titulo nao tem baixas"
-            description="Nao ha nada para estornar. Se o saldo parece errado, recarregue a lista."
+            title="Este título não tem baixas"
+            description="Não há nada para estornar. Se o saldo parece errado, recarregue a lista."
           />
         ) : (
           <>
@@ -234,7 +234,7 @@ export default function EstornoDialog({
                         {negativa
                           ? 'Estorno'
                           : jaEstornadas.has(b.id)
-                            ? 'Baixa ja estornada'
+                            ? 'Baixa já estornada'
                             : [rotuloDaForma(b.method), b.bankAccount]
                                 .filter(Boolean)
                                 .join(' · ') || 'Baixa'}
@@ -248,8 +248,8 @@ export default function EstornoDialog({
 
             {estornaveis.length === 0 ? (
               <p className={styles.baixaRestante}>
-                Todas as baixas deste titulo ja foram estornadas. Para baixar de novo, lance uma
-                baixa — o estorno de um estorno nao existe.
+                Todas as baixas deste título já foram estornadas. Para baixar de novo, lance uma
+                baixa — o estorno de um estorno não existe.
               </p>
             ) : (
               <label className={styles.estornoMotivo}>

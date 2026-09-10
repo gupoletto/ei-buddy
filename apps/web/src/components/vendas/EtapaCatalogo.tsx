@@ -118,7 +118,7 @@ export default function EtapaCatalogo({
          sistema ainda nao registrou. Avisa e deixa seguir. */
       if (existente.quantidade + 1 > existente.estoqueDisponivel) {
         setToast({
-          msg: `Estoque de ${produto.descricao} e ${produto.estoque} un. Seguindo mesmo assim.`,
+          msg: `Estoque de ${produto.descricao} é ${produto.estoque} un. Seguindo mesmo assim.`,
           tone: 'error',
         })
       }
@@ -142,7 +142,7 @@ export default function EtapaCatalogo({
   async function lerCodigo(codigo: string) {
     const produto = await buscarPorEan(codigo)
     if (produto === null) {
-      setToast({ msg: `Codigo ${codigo} nao esta no catalogo.`, tone: 'error' })
+      setToast({ msg: `Código ${codigo} não está no catálogo.`, tone: 'error' })
       return
     }
 
@@ -204,7 +204,7 @@ export default function EtapaCatalogo({
   function gerarOrcamento() {
     const janela = window.open('', '_blank', 'width=800,height=900')
     if (!janela) {
-      setToast({ msg: 'Libere as janelas pop-up para gerar o orcamento.', tone: 'error' })
+      setToast({ msg: 'Libere as janelas pop-up para gerar o orçamento.', tone: 'error' })
       return
     }
 
@@ -220,7 +220,7 @@ export default function EtapaCatalogo({
 
     janela.document.write(
       `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">` +
-        `<title>Orcamento</title><style>` +
+        `<title>Orçamento</title><style>` +
         `body{font-family:system-ui,sans-serif;padding:32px;color:#131734}` +
         `h1{font-size:20px;margin:0 0 4px}` +
         `p{margin:0 0 18px;color:#4b5171;font-size:14px}` +
@@ -229,7 +229,7 @@ export default function EtapaCatalogo({
         `td{border-bottom:1px solid #e6e8ef;padding:8px 6px}` +
         `tfoot td{border:none;padding-top:10px;font-weight:600}` +
         `</style></head><body>` +
-        `<h1>Orcamento</h1><p>${escaparHtml(clienteNome)} · ${new Date().toLocaleDateString('pt-BR')}</p>` +
+        `<h1>Orçamento</h1><p>${escaparHtml(clienteNome)} · ${new Date().toLocaleDateString('pt-BR')}</p>` +
         `<table><thead><tr><th>Produto</th><th style="text-align:center">Qtd</th>` +
         `<th style="text-align:right">Unitario</th><th style="text-align:right">Subtotal</th></tr></thead>` +
         `<tbody>${linhas}</tbody><tfoot>` +
@@ -239,7 +239,7 @@ export default function EtapaCatalogo({
           : '') +
         `<tr><td colspan="3" style="text-align:right;font-size:16px">Total</td><td style="text-align:right;font-size:16px">${formatMoney(total)}</td></tr>` +
         `</tfoot></table>` +
-        `<p style="margin-top:24px;font-size:12px">Este orcamento nao e documento fiscal.</p>` +
+        `<p style="margin-top:24px;font-size:12px">Este orçamento não é documento fiscal.</p>` +
         `</body></html>`,
     )
     janela.document.close()
@@ -295,8 +295,8 @@ export default function EtapaCatalogo({
               title="Nenhum produto encontrado"
               description={
                 busca.trim() === ''
-                  ? 'Cadastre produtos para vender pelo balcao.'
-                  : 'Tente outro termo, ou leia o codigo de barras.'
+                  ? 'Cadastre produtos para vender pelo balcão.'
+                  : 'Tente outro termo, ou leia o código de barras.'
               }
             />
           ) : (
@@ -367,7 +367,7 @@ export default function EtapaCatalogo({
             <div className={styles.carrinhoVazio}>
               <IconBox size={28} />
               <p>Nada no carrinho ainda</p>
-              <span>Toque em um produto ou leia o codigo de barras.</span>
+              <span>Toque em um produto ou leia o código de barras.</span>
             </div>
           ) : (
             <ul className={styles.carrinhoItens}>
@@ -461,7 +461,7 @@ export default function EtapaCatalogo({
               onClick={gerarOrcamento}
               disabled={itens.length === 0}
             >
-              Enviar orcamento
+              Enviar orçamento
             </Button>
             <Button
               variant="danger"

@@ -49,7 +49,7 @@ export async function buscarCpf(cpf: string): Promise<CpfResult> {
   if (!nome) {
     return {
       ok: false,
-      error: 'Consulta de CPF indisponivel. Preencha o nome manualmente.',
+      error: 'Consulta de CPF indisponível. Preencha o nome manualmente.',
       indisponivel: true,
     }
   }
@@ -163,7 +163,7 @@ export async function salvarCliente(
       }),
     })
   } catch {
-    return { ok: false, error: 'Sem conexao. Verifique sua internet.' }
+    return { ok: false, error: 'Sem conexão. Verifique sua internet.' }
   }
 
   const corpo = (await resposta.json().catch(() => ({}))) as {

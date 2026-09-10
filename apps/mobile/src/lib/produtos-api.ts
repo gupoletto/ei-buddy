@@ -31,7 +31,7 @@ const delay = (ms: number) => new Promise((r) => setTimeout(r, ms))
 /** SUBSTITUIR POR: GET /produtos/categorias */
 export const CATEGORIAS_INICIAIS = [
   'Mercearia',
-  'Laticinios',
+  'Laticínios',
   'Bebidas',
   'Utilidades',
   'Limpeza',
@@ -40,9 +40,9 @@ export const CATEGORIAS_INICIAIS = [
 
 /** SUBSTITUIR POR: GET /fornecedores */
 export const FORNECEDORES_INICIAIS = [
-  'Torrefacao Aurora',
+  'Torrefação Aurora',
   'Engenho Doce',
-  'Laticinios Campo Verde',
+  'Laticínios Campo Verde',
   'Alimentos Boa Safra',
   'Importadora Oliva',
   'Distribuidora Sul',
@@ -85,7 +85,7 @@ export async function buscarEan(ean: string): Promise<LeituraDeCodigo> {
   /* Confere antes de ir a rede: EAN tem 8, 12, 13 ou 14 digitos, e leitura
      truncada e comum quando a etiqueta esta amassada. */
   if (![8, 12, 13, 14].includes(limpo.length)) {
-    return { situacao: 'erro', mensagem: 'Codigo de barras incompleto. Tente ler de novo.' }
+    return { situacao: 'erro', mensagem: 'Código de barras incompleto. Tente ler de novo.' }
   }
 
   const r = await chamarApi<ProdutoDaApi>(`/produtos/codigo-de-barras/${limpo}`)
@@ -111,13 +111,13 @@ export async function buscarNcm(termo: string): Promise<SugestaoNcm[]> {
   if (t.length < 3) return []
 
   const tabela: SugestaoNcm[] = [
-    { codigo: '0901.21.00', descricao: 'Cafe torrado, nao descafeinado' },
+    { codigo: '0901.21.00', descricao: 'Café torrado, não descafeinado' },
     { codigo: '0402.99.00', descricao: 'Leite condensado e outros leites' },
-    { codigo: '0401.20.10', descricao: 'Leite UHT, teor de gordura ate 3%' },
-    { codigo: '1701.13.00', descricao: 'Acucar de cana em bruto' },
+    { codigo: '0401.20.10', descricao: 'Leite UHT, teor de gordura até 3%' },
+    { codigo: '1701.13.00', descricao: 'Açúcar de cana em bruto' },
     { codigo: '1905.31.00', descricao: 'Bolachas e biscoitos doces' },
     { codigo: '1509.10.00', descricao: 'Azeite de oliva virgem' },
-    { codigo: '2202.10.00', descricao: 'Aguas com adicao de acucar, refrigerantes' },
+    { codigo: '2202.10.00', descricao: 'Águas com adição de açúcar, refrigerantes' },
     { codigo: '3401.11.00', descricao: 'Sabonetes de toucador' },
     { codigo: '4823.20.90', descricao: 'Papel-filtro em folhas ou tiras' },
   ]
@@ -233,7 +233,7 @@ export function movimentacoesEstoque(produtoId: string): MovimentoEstoque[] {
         tipo: 'entrada',
         quantidade: 24,
         saldo: 14,
-        origem: 'NF-e 4471 · Torrefacao Aurora',
+        origem: 'NF-e 4471 · Torrefação Aurora',
       },
     ],
     'prod-2': [

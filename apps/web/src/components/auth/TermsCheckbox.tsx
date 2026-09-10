@@ -40,7 +40,7 @@ export default function TermsCheckbox({
         </a>{' '}
         e a{' '}
         <a href="/politica-de-privacidade" target="_blank" rel="noreferrer noopener">
-          Politica de Privacidade
+          Política de Privacidade
         </a>
         .
       </label>

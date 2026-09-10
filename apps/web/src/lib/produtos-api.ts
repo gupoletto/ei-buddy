@@ -65,7 +65,7 @@ export async function buscarEan(ean: string): Promise<EanResult> {
 
   const limpo = ean.replace(/\D/g, '')
   if (limpo.length < 8) {
-    return { ok: false, error: 'Codigo de barras incompleto.' }
+    return { ok: false, error: 'Código de barras incompleto.' }
   }
 
   /* Primeiro procura no proprio catalogo — se o produto ja existe, o mais
@@ -95,7 +95,7 @@ export async function buscarEan(ean: string): Promise<EanResult> {
   if (!dados) {
     return {
       ok: false,
-      error: 'Codigo nao encontrado na base. Preencha os dados manualmente.',
+      error: 'Código não encontrado na base. Preencha os dados manualmente.',
     }
   }
 
@@ -390,11 +390,11 @@ export function lerXmlNfe(
   try {
     doc = new DOMParser().parseFromString(texto, 'application/xml')
   } catch {
-    return { ok: false, error: 'Nao foi possivel ler o XML.' }
+    return { ok: false, error: 'Não foi possível ler o XML.' }
   }
 
   if (doc.querySelector('parsererror')) {
-    return { ok: false, error: 'O arquivo nao e um XML valido.' }
+    return { ok: false, error: 'O arquivo não é um XML válido.' }
   }
 
   const texto1 = (el: Element | null | undefined, tag: string): string =>
@@ -402,7 +402,7 @@ export function lerXmlNfe(
 
   const infNFe = doc.getElementsByTagName('infNFe')[0]
   if (!infNFe) {
-    return { ok: false, error: 'Este XML nao parece ser de uma NF-e.' }
+    return { ok: false, error: 'Este XML não parece ser de uma NF-e.' }
   }
 
   const ide = infNFe.getElementsByTagName('ide')[0]
@@ -410,7 +410,7 @@ export function lerXmlNfe(
 
   const dets = Array.from(infNFe.getElementsByTagName('det'))
   if (dets.length === 0) {
-    return { ok: false, error: 'A nota nao tem itens.' }
+    return { ok: false, error: 'A nota não tem itens.' }
   }
 
   const itens: ItemXml[] = dets.map((det) => {
