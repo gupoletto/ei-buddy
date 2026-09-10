@@ -18,6 +18,14 @@ import { pedir } from './http'
  *
  * - resposta nova em chamado de suporte, de `GET /suporte/chamados`.
  *
+ * - cliente sem comprar ha muito tempo, de `GET /clientes?filter=inativos`.
+ *   O "muito tempo" NAO e definido aqui: `filter=inativos` ja aplica
+ *   `DIAS_PARA_INATIVO` (o mesmo limite que a tela de Clientes usa), entao os
+ *   dois lugares nunca podem discordar sobre quem esta inativo.
+ *
+ * Cada regra e codigo comum, sem IA — o texto ja sai pronto do dado, entao nao
+ * ha o que um modelo de linguagem precisaria decidir aqui.
+ *
  * O suporte entrou agora que ele tem banco (NR-080). Antes o numero vinha de
  * `lib/mock-data`, e alimentar o sino com ele seria trocar um ponto sempre
  * aceso por um ponto que mente com mais conviccao.
@@ -50,6 +58,7 @@ type ContasAgrupadas = {
 }
 
 type ChamadosDaApi = { unread: number }
+type ClientesInativos = { total: number }
 
 const plural = (n: number, um: string, muitos: string) => (n === 1 ? um : muitos)
 
@@ -61,10 +70,11 @@ const plural = (n: number, um: string, muitos: string) => (n === 1 ? um : muitos
  * vender. Quem falhou simplesmente nao aparece.
  */
 export async function carregarAvisos(): Promise<Aviso[]> {
-  const [catalogo, contas, chamados] = await Promise.all([
+  const [catalogo, contas, chamados, inativos] = await Promise.all([
     pedir<ResumoDoCatalogo>('/api/produtos/resumo'),
     pedir<ContasAgrupadas>('/api/contas-a-pagar'),
     pedir<ChamadosDaApi>('/api/suporte/chamados'),
+    pedir<ClientesInativos>('/api/clientes?filter=inativos&pageSize=1'),
   ])
 
   const avisos: Aviso[] = []
@@ -101,6 +111,16 @@ export async function carregarAvisos(): Promise<Aviso[]> {
     avisos.push({
       texto: `${n} ${plural(n, 'resposta do suporte', 'respostas do suporte')}`,
       href: '/app/suporte',
+      tom: 'atencao',
+      contagem: n,
+    })
+  }
+
+  if (inativos.ok && inativos.dados.total > 0) {
+    const n = inativos.dados.total
+    avisos.push({
+      texto: `${n} ${plural(n, 'cliente sem comprar há muito tempo', 'clientes sem comprar há muito tempo')}`,
+      href: '/app/clientes?filtro=inativos',
       tom: 'atencao',
       contagem: n,
     })

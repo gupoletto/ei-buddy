@@ -117,6 +117,23 @@ export const ARMAZENAMENTO_LOCAL: readonly ArmazenamentoLocal[] = [
     duracao: 'Ate voce limpar os dados do navegador',
   },
   {
+    chave: 'nr:checklist-dispensado',
+    /* Nasce de um clique seu (o X no cartao de primeiros passos) — dispensa
+       consentimento pela mesma razao do aviso de cookies. */
+    categoria: 'preferencia',
+    finalidade:
+      'Lembrar que voce dispensou o cartao de primeiros passos, para ele nao voltar a aparecer.',
+    duracao: 'Ate voce limpar os dados do navegador',
+  },
+  {
+    chave: 'nr:meta-diaria',
+    /* Nasce de um numero que voce mesmo digita, na tela do painel — dispensa
+       consentimento pela mesma razao do tema e do som. */
+    categoria: 'preferencia',
+    finalidade: 'Lembrar a meta diaria de faturamento que voce definiu, para calcular o progresso.',
+    duracao: 'Ate voce limpar os dados do navegador',
+  },
+  {
     chave: 'nr:som',
     /* Mesma razao do tema: nasce de um clique seu (o botao de alto-falante no
        painel), e guarda-la e o que evita o bipe e a confirmacao de venda

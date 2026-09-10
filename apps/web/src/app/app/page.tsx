@@ -5,6 +5,8 @@ import { ButtonLink } from '@/components/ui/Button'
 import { IconArrowRight, IconPlus } from '@/components/Icons'
 import { carregarPainel, type DiaDoGrafico } from '@/lib/painel-server'
 import { describeDueDate, formaPagamentoLabel, formatMoney } from '@/lib/format'
+import ChecklistInicial from '@/components/app/ChecklistInicial'
+import MetaDiaria from '@/components/app/MetaDiaria'
 import styles from './painel.module.css'
 
 export const metadata: Metadata = {
@@ -59,6 +61,12 @@ export default async function VisaoGeralPage() {
             Nova venda
           </ButtonLink>
         }
+      />
+
+      <ChecklistInicial
+        totalProdutos={painel.totalProdutos}
+        totalClientes={painel.totalClientes}
+        temVenda={painel.ultimasVendas !== null && painel.ultimasVendas.length > 0}
       />
 
       <div className={styles.stats} data-tutorial="dashboard-stats">
@@ -119,6 +127,8 @@ export default async function VisaoGeralPage() {
           tone={painel.aPagar !== null && painel.aPagar.vencidas > 0 ? 'warning' : undefined}
         />
       </div>
+
+      <MetaDiaria faturamentoHojeCents={painel.hoje === null ? null : painel.hoje.netCents} />
 
       <div className={styles.grid}>
         <Card

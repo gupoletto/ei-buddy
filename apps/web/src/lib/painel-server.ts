@@ -80,6 +80,9 @@ type Catalogo = {
   products: { id: string; description: string; stock: number; minStock: number }[]
 }
 
+type ResumoDoCatalogo = { total: number }
+type ListaDeClientes = { total: number }
+
 export type DiaDoGrafico = {
   readonly dia: string
   /** Rotulo curto: "seg", "ter". */
@@ -98,6 +101,9 @@ export type Painel = {
   readonly aReceber: { readonly totalCents: number } | null
   readonly vencimentos: readonly Titulo[] | null
   readonly reposicao: Catalogo['products'] | null
+  /** Nulo = nao deu para saber. Alimenta o checklist inicial — ver ChecklistInicial. */
+  readonly totalProdutos: number | null
+  readonly totalClientes: number | null
 }
 
 const DIAS_CURTOS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'] as const
@@ -190,23 +196,28 @@ export async function carregarPainel(agora: Date = new Date()): Promise<Painel> 
    *
    * O paralelismo e o mesmo: tudo dispara junto.
    */
-  const [perfil, porDia, [ultimas, aPagar, aReceber, catalogo]] = await Promise.all([
-    chamarApi<Perfil>('/auth/perfil', { token }),
+  const [perfil, porDia, [ultimas, aPagar, aReceber, catalogo, resumo, clientes]] =
+    await Promise.all([
+      chamarApi<Perfil>('/auth/perfil', { token }),
 
-    Promise.all(
-      dias.map((d) => {
-        const dia = diaLocal(d)
-        return chamarApi<PaginaDeVendas>(`/sales?from=${dia}&to=${dia}&pageSize=1`, { token })
-      }),
-    ),
+      Promise.all(
+        dias.map((d) => {
+          const dia = diaLocal(d)
+          return chamarApi<PaginaDeVendas>(`/sales?from=${dia}&to=${dia}&pageSize=1`, { token })
+        }),
+      ),
 
-    Promise.all([
-      chamarApi<PaginaDeVendas>('/sales?pageSize=4', { token }),
-      chamarApi<Agrupadas>('/contas-a-pagar', { token }),
-      chamarApi<Agrupadas>('/contas-a-receber', { token }),
-      chamarApi<Catalogo>('/produtos/catalogo?stock=baixo&pageSize=5', { token }),
-    ]),
-  ])
+      Promise.all([
+        chamarApi<PaginaDeVendas>('/sales?pageSize=4', { token }),
+        chamarApi<Agrupadas>('/contas-a-pagar', { token }),
+        chamarApi<Agrupadas>('/contas-a-receber', { token }),
+        chamarApi<Catalogo>('/produtos/catalogo?stock=baixo&pageSize=5', { token }),
+        /* So para o total — o mesmo numero que alimenta o sino de avisos
+           (`avisos-api.ts`), aqui pelo caminho do servidor. */
+        chamarApi<ResumoDoCatalogo>('/produtos/resumo', { token }),
+        chamarApi<ListaDeClientes>('/clientes?pageSize=1', { token }),
+      ]),
+    ])
 
   /* O ultimo dia da serie E hoje: o resumo dele serve os indicadores do topo
      sem custar outra chamada. */
@@ -251,6 +262,8 @@ export async function carregarPainel(agora: Date = new Date()): Promise<Painel> 
       ? aPagar.dados.grupos.flatMap((g) => g.payables ?? []).slice(0, 4)
       : null,
     reposicao: catalogo.ok ? catalogo.dados.products : null,
+    totalProdutos: resumo.ok ? resumo.dados.total : null,
+    totalClientes: clientes.ok ? clientes.dados.total : null,
   }
 }
 
