@@ -175,7 +175,7 @@
   padding: 7px 14px;
   border: none;
   border-radius: var(--radius-full);
-  background: var(--app-accent);
+  background: var(--brand-accent);
   color: #06312e;
   font-family: var(--font-display);
   font-size: 13px;

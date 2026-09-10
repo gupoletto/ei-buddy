@@ -104,7 +104,7 @@
 
 .daPessoa .balao {
   border-radius: var(--radius) var(--radius) 4px var(--radius);
-  background: var(--app-accent);
+  background: var(--brand-accent);
   color: #06312e;
 }
 

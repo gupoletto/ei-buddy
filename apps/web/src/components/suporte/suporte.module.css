@@ -67,8 +67,8 @@
   height: 22px;
   padding: 0 7px;
   border-radius: var(--radius-full);
-  background: var(--app-warn);
-  color: #3a2400;
+  background: var(--badge-warn-bg);
+  color: var(--badge-warn-text);
   font-family: var(--font-display);
   font-size: 12px;
   font-weight: 700;
@@ -235,7 +235,7 @@
 
 .daPessoa .balao {
   border-radius: var(--radius) var(--radius) 4px var(--radius);
-  background: var(--app-accent);
+  background: var(--brand-accent);
   color: #06312e;
 }
 

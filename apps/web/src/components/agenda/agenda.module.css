@@ -117,7 +117,7 @@
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: var(--app-accent);
+  background: var(--brand-accent);
 }
 
 /* ===================== Eventos do dia ===================== */

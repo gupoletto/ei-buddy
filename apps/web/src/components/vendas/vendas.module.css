@@ -25,7 +25,7 @@
 }
 
 .stepFeito:not(:last-child)::after {
-  background: var(--app-accent);
+  background: var(--brand-accent);
 }
 
 .stepMarca {
@@ -45,8 +45,8 @@
 }
 
 .stepAtual .stepMarca {
-  border-color: var(--app-accent);
-  background: var(--app-accent);
+  border-color: var(--brand-accent);
+  background: var(--brand-accent);
   color: #06312e;
 }
 
@@ -341,7 +341,7 @@
   height: 22px;
   padding: 0 6px;
   border-radius: var(--radius-full);
-  background: var(--app-accent);
+  background: var(--brand-accent);
   color: #06312e;
   font-family: var(--font-display);
   font-size: 12px;
@@ -614,7 +614,7 @@
   gap: 12px;
   padding: 13px 18px;
   border-radius: var(--radius-full);
-  background: var(--app-accent);
+  background: var(--brand-accent);
   color: #06312e;
   font-family: var(--font-display);
   font-size: 15px;
@@ -1517,7 +1517,7 @@
 }
 
 .tipoAtivo {
-  background: var(--app-accent);
+  background: var(--brand-accent);
   color: #06312e;
   font-weight: 600;
 }
