@@ -107,11 +107,38 @@ export class IdentidadeEmArquivo implements IdentityProvider, IdentityRegistrar 
     mkdirSync(dirname(this.caminho), { recursive: true })
 
     /*
-     * Escreve num temporario e renomeia: `rename` no mesmo volume e atomico,
-     * entao um encerramento no meio da escrita nao deixa um arquivo pela
-     * metade — que e o caso que faria TODAS as contas sumirem de uma vez.
+     * Re-le o disco antes de escrever, e funde com o que este processo tem em
+     * memoria.
+     *
+     * A suite de e2e sobe uma instancia POR ARQUIVO DE TESTE, e o Vitest roda
+     * arquivos em processos separados, em paralelo. Sem isto, cada processo
+     * escreve so o que ELE conhece — e o cadastro que outro processo acabou
+     * de gravar, um instante antes, some quando este processo salva por cima
+     * com o proprio instantaneo, mais antigo. Foi assim que um cadastro de
+     * e2e passou e o login seguinte, no mesmo teste, apanhou com credencial
+     * "inexistente".
      */
-    const temporario = `${this.caminho}.tmp`
+    if (existsSync(this.caminho)) {
+      try {
+        const doDisco = JSON.parse(readFileSync(this.caminho, 'utf8')) as Registro[]
+        for (const r of doDisco) {
+          if (!this.registros.has(r.identifier)) this.registros.set(r.identifier, r)
+        }
+      } catch {
+        /* Disco ilegivel: segue só com o que ja estava em memoria — mesma
+           tolerancia de `carregar()`. */
+      }
+    }
+
+    /*
+     * Escreve num temporario PROPRIO deste processo, e renomeia: `rename` no
+     * mesmo volume e atomico, entao um encerramento no meio da escrita nao
+     * deixa um arquivo pela metade. O nome do temporario leva o PID e um
+     * sufixo aleatorio — dois processos escrevendo ao mesmo tempo usavam o
+     * MESMO `.tmp` fixo antes desta linha, e o segundo a renomear estourava
+     * com "arquivo nao encontrado" porque o primeiro ja tinha levado o dele.
+     */
+    const temporario = `${this.caminho}.${process.pid}.${randomBytes(4).toString('hex')}.tmp`
     writeFileSync(temporario, JSON.stringify([...this.registros.values()], null, 2), 'utf8')
     renameSync(temporario, this.caminho)
   }

@@ -118,6 +118,8 @@ export const FORA_DA_EXPORTACAO: Readonly<Record<string, string>> = {
   subscription_cycles: 'Billing SaaS ainda sem caso de uso ligado — tabela vazia no baseline.',
   attachments: 'Anexo de arquivo; DEC-009 ainda aberta.',
   idempotency_keys: 'Controle de reenvio, nao dado do titular.',
+  company_connections:
+    'Pedido de conexao entre lojistas (ADR-0008) — exportacao ainda nao ligada, fast-follow.',
   outbox: 'Fila interna de publicacao.',
   webhook_events: 'Inbox de provedor; payload de terceiro, nao do titular.',
   /* Quem PODE entrar em qualquer empresa (ADR-0007). Nao e dado da empresa

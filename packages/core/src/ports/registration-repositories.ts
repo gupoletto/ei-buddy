@@ -23,6 +23,12 @@ import type { CompanyId, UserId } from '../context.js'
  * depende de disciplina.
  */
 
+/**
+ * Geocodificada a partir do CEP — ADR-0008. `null` para limpar (CEP removido
+ * ou sem cobertura), `undefined` para nao mexer (endereco nao mudou).
+ */
+export type CompanyCoordinates = { readonly latitude: number; readonly longitude: number } | null
+
 export type NewCompany = {
   readonly legalName: string
   readonly tradeName?: string | undefined
@@ -35,6 +41,12 @@ export type NewCompany = {
   readonly municipalRegistration?: string | undefined
   readonly businessSegment?: string | undefined
   readonly address?: Address | undefined
+  /**
+   * Nunca chega pela entrada da rota — `contracts` nao tem este campo em
+   * lugar nenhum. Quem preenche e o caso de uso, depois de chamar
+   * `CepLookup`, e so quando `address.zipCode` esta presente.
+   */
+  readonly coordinates?: CompanyCoordinates | undefined
   readonly createdAt: Date
 }
 
@@ -58,6 +70,8 @@ export type CompanyChanges = {
   readonly municipalRegistration?: string | undefined
   readonly businessSegment?: string | undefined
   readonly address?: Address | undefined
+  /** Ver `NewCompany.coordinates`. */
+  readonly coordinates?: CompanyCoordinates | undefined
 }
 
 export type CompanyRepository = {

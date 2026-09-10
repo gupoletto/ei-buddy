@@ -50,8 +50,8 @@ consome. A porta é declarada pelo núcleo; a seta aponta para dentro
 
 |                               | Tarefas | Dias |
 | ----------------------------- | ------: | ---: |
-| Total                         |      85 |  212 |
-| ✅ Concluídas                 |      75 |  177 |
+| Total                         |      86 |  217 |
+| ✅ Concluídas                 |      76 |  182 |
 | 🚧 Bloqueadas por decisão     |       7 |   25 |
 | 🚧 Bloqueadas por dependência |       1 |    2 |
 | ⬜ A fazer, pode começar hoje |       2 |    8 |
@@ -221,6 +221,7 @@ voltam a ⬜.
 | NR-104 | Sino com aviso de cliente inativo, meta diaria e checklist de primeiros passos          |   🟢   | `web`                               |   2 | —                                      | —    | —                          |   ✅   |
 | NR-105 | Super Admin: "entrar como" auditado (ADR-0007), do banco ao painel                      |   🔵   | `db` `contracts` `core` `api` `web` |   4 | —                                      | —    | RF-131                     |   ✅   |
 | NR-106 | DEC-021: conexao entre usuarios por proximidade adiada para a Fase 4 (Rede)             |   —    | `docs`                              |   1 | —                                      | —    | —                          |   ✅   |
+| NR-107 | Conexao entre usuarios por proximidade: busca cross-tenant e pedido auditado (ADR-0008) |   🔵   | `db` `contracts` `core` `api` `web` |   5 | —                                      | —    | RF-01–05 (spec)            |   ✅   |
 
 ---
 
@@ -334,14 +335,14 @@ passou a ser retrabalho: trocar os tokens quando a marca fechar.
 
 ## Carga por trilha
 
-| Trilha                          | Tarefas | Dias | Observação                                     |
-| ------------------------------- | ------: | ---: | ---------------------------------------------- |
-| 🔵 1 — Núcleo & Dados           |      31 |   77 | Super Admin (NR-105) somou ao catálogo 0909    |
-| 🟠 2 — Plataforma & Integrações |      28 |   75 | a mais carregada; Asaas fechou 3 decisões dela |
-| 🟢 3 — Clientes                 |      23 |   54 | vocabulário 0909 na web/mobile (NR-097)        |
-| Compartilhada                   |       3 |    6 | documentação (NR-002, NR-088, NR-106)          |
+| Trilha                          | Tarefas | Dias | Observação                                            |
+| ------------------------------- | ------: | ---: | ----------------------------------------------------- |
+| 🔵 1 — Núcleo & Dados           |      32 |   82 | Conexão por proximidade (NR-107) somou ao Super Admin |
+| 🟠 2 — Plataforma & Integrações |      28 |   75 | a mais carregada; Asaas fechou 3 decisões dela        |
+| 🟢 3 — Clientes                 |      23 |   54 | vocabulário 0909 na web/mobile (NR-097)               |
+| Compartilhada                   |       3 |    6 | documentação (NR-002, NR-088, NR-106)                 |
 
-Somando: **212 dias-desenvolvedor** em 85 tarefas. Com 3 pessoas, isso é cerca
+Somando: **217 dias-desenvolvedor** em 86 tarefas. Com 3 pessoas, isso é cerca
 de 13 semanas de trabalho — desde que nada fique bloqueado, o que não é o caso
 hoje.
 

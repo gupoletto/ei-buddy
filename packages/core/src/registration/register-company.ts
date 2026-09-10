@@ -3,11 +3,14 @@ import { AppError } from '../app-error.js'
 import type { ExecutionContext } from '../context.js'
 import { PLANO_DE_CONTAS_PADRAO } from '../accounting/default-chart.js'
 import type { ChartOfAccountsRepository } from '../ports/chart-of-accounts.js'
+import type { CepLookup } from '../ports/cep-lookup.js'
 import type { CompanyRepository } from '../ports/registration-repositories.js'
+import { resolveCoordinates } from './geocoding.js'
 
 export type RegisterCompanyDeps = {
   readonly companies: CompanyRepository
   readonly accounts: ChartOfAccountsRepository
+  readonly cepLookup: CepLookup
 }
 
 /**
@@ -42,6 +45,8 @@ export async function registerCompany(
     )
   }
 
+  const coordinates = await resolveCoordinates(deps.cepLookup, input.address)
+
   const empresa = await deps.companies.create({
     legalName: input.legalName,
     tradeName: input.tradeName,
@@ -52,6 +57,7 @@ export async function registerCompany(
     municipalRegistration: input.municipalRegistration,
     businessSegment: input.businessSegment,
     address: input.address,
+    coordinates,
     createdAt: ctx.now,
   })
 

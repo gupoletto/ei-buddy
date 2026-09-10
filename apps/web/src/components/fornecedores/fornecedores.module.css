@@ -1,0 +1,91 @@
+.intro {
+  display: grid;
+  gap: 4px;
+}
+
+.introTopo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.introTitle {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--app-text);
+}
+
+.introSubtitle {
+  font-size: 13.5px;
+  color: var(--app-muted);
+}
+
+.busca {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.buscaCampo {
+  flex: 1;
+  min-width: 220px;
+}
+
+.lista {
+  display: grid;
+  gap: 10px;
+}
+
+.linha {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-md);
+  background: var(--app-field);
+}
+
+.linhaTexto {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.linhaTitulo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--app-text);
+}
+
+.linhaDetalhe {
+  font-size: 12.5px;
+  color: var(--app-muted);
+}
+
+.linhaProdutos {
+  font-size: 12.5px;
+  color: var(--app-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.linhaAcao {
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+}
+
+.linhaErro {
+  font-size: 11.5px;
+  color: var(--danger-text);
+}

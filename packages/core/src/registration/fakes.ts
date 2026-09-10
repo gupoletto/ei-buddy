@@ -6,6 +6,7 @@ import type {
   ProductOutput,
 } from '@na-regua/contracts'
 import type { CompanyId } from '../context.js'
+import type { CepAddress, CepLookup } from '../ports/cep-lookup.js'
 import type {
   CompanyChanges,
   CompanyRepository,
@@ -43,6 +44,12 @@ const paraEnderecoDeSaida = (a: Address | undefined): CompanyOutput['address'] =
 
 export class InMemoryCompanyRepository implements CompanyRepository {
   readonly registros = new Map<string, CompanyOutput>()
+  /**
+   * Coordenada por empresa — ADR-0008. Fora de `CompanyOutput` de proposito
+   * (nunca sai em nenhum contrato publico), entao o falso guarda a parte num
+   * mapa a mais, so para o teste que quiser inspecionar o que foi gravado.
+   */
+  readonly coordinates = new Map<string, { latitude: number; longitude: number } | null>()
   private sequencia = 0
 
   async create(company: NewCompany): Promise<CompanyOutput> {
@@ -65,6 +72,7 @@ export class InMemoryCompanyRepository implements CompanyRepository {
       createdAt: company.createdAt.toISOString(),
     }
     this.registros.set(gravada.id, gravada)
+    if (company.coordinates !== undefined) this.coordinates.set(gravada.id, company.coordinates)
     return gravada
   }
 
@@ -105,6 +113,7 @@ export class InMemoryCompanyRepository implements CompanyRepository {
     }
 
     this.registros.set(companyId, atualizada)
+    if (mudancas.coordinates !== undefined) this.coordinates.set(companyId, mudancas.coordinates)
     return atualizada
   }
 
@@ -112,6 +121,23 @@ export class InMemoryCompanyRepository implements CompanyRepository {
     /* Atravessa tenants de proposito — um CNPJ e uma empresa no pais inteiro.
        Devolve apenas se existe, nunca a linha (RF-002). */
     return [...this.registros.values()].some((e) => e.cnpj === cnpj)
+  }
+}
+
+/**
+ * Busca de CEP em memoria — ADR-0008. `registrar` semeia o que o teste
+ * precisa; CEP nao semeado devolve `undefined`, como o provedor real faria
+ * para um CEP inexistente.
+ */
+export class InMemoryCepLookup implements CepLookup {
+  private readonly registros = new Map<string, CepAddress>()
+
+  registrar(cep: string, endereco: CepAddress): void {
+    this.registros.set(cep, endereco)
+  }
+
+  async lookup(cep: string): Promise<CepAddress | undefined> {
+    return this.registros.get(cep)
   }
 }
 

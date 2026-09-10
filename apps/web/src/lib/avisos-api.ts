@@ -23,6 +23,8 @@ import { pedir } from './http'
  *   `DIAS_PARA_INATIVO` (o mesmo limite que a tela de Clientes usa), entao os
  *   dois lugares nunca podem discordar sobre quem esta inativo.
  *
+ * - pedido de conexao recebido, de `GET /conexoes/pendentes` — ADR-0008.
+ *
  * Cada regra e codigo comum, sem IA — o texto ja sai pronto do dado, entao nao
  * ha o que um modelo de linguagem precisaria decidir aqui.
  *
@@ -59,6 +61,7 @@ type ContasAgrupadas = {
 
 type ChamadosDaApi = { unread: number }
 type ClientesInativos = { total: number }
+type ConexoesPendentes = { count: number }
 
 const plural = (n: number, um: string, muitos: string) => (n === 1 ? um : muitos)
 
@@ -70,11 +73,12 @@ const plural = (n: number, um: string, muitos: string) => (n === 1 ? um : muitos
  * vender. Quem falhou simplesmente nao aparece.
  */
 export async function carregarAvisos(): Promise<Aviso[]> {
-  const [catalogo, contas, chamados, inativos] = await Promise.all([
+  const [catalogo, contas, chamados, inativos, conexoes] = await Promise.all([
     pedir<ResumoDoCatalogo>('/api/produtos/resumo'),
     pedir<ContasAgrupadas>('/api/contas-a-pagar'),
     pedir<ChamadosDaApi>('/api/suporte/chamados'),
     pedir<ClientesInativos>('/api/clientes?filter=inativos&pageSize=1'),
+    pedir<ConexoesPendentes>('/api/conexoes/pendentes'),
   ])
 
   const avisos: Aviso[] = []
@@ -121,6 +125,16 @@ export async function carregarAvisos(): Promise<Aviso[]> {
     avisos.push({
       texto: `${n} ${plural(n, 'cliente sem comprar há muito tempo', 'clientes sem comprar há muito tempo')}`,
       href: '/app/clientes?filtro=inativos',
+      tom: 'atencao',
+      contagem: n,
+    })
+  }
+
+  if (conexoes.ok && conexoes.dados.count > 0) {
+    const n = conexoes.dados.count
+    avisos.push({
+      texto: `${n} ${plural(n, 'pedido de conexão', 'pedidos de conexão')}`,
+      href: '/app/conexoes',
       tom: 'atencao',
       contagem: n,
     })

@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { CompanyOutput, CustomerOutput, ProductOutput } from '@na-regua/contracts'
 import type {
+  CompanyChanges,
   CompanyRepository,
   CustomerRepository,
   NewCompany,
@@ -108,6 +109,7 @@ export function createCompanyRepository(sql: Sql): CompanyRepository {
             (id, legal_name, trade_name, cnpj, email, phone,
              state_registration, municipal_registration, business_segment,
              postal_code, street, street_number, complement, neighborhood, city, state,
+             latitude, longitude,
              created_at)
           VALUES (${id}, ${c.legalName}, ${c.tradeName ?? null}, ${c.cnpj},
                   ${c.email}, ${c.phone},
@@ -117,6 +119,7 @@ export function createCompanyRepository(sql: Sql): CompanyRepository {
                   ${c.address?.number ?? null}, ${c.address?.complement ?? null},
                   ${c.address?.district ?? null}, ${c.address?.city ?? null},
                   ${c.address?.state ?? null},
+                  ${c.coordinates?.latitude ?? null}, ${c.coordinates?.longitude ?? null},
                   ${c.createdAt})
           RETURNING *
         `,
@@ -191,6 +194,24 @@ export function createCompanyRepository(sql: Sql): CompanyRepository {
      * linha, a data de atualizacao ficaria congelada no dia do cadastro.
      */
     update: async (companyId, m) => {
+      /*
+       * Coordenada nao segue o padrao `COALESCE` do resto do UPDATE.
+       *
+       * As outras colunas so tem dois estados possiveis para quem chama:
+       * "nao mexeu" (undefined) ou "novo valor" — `COALESCE(novo, atual)`
+       * resolve os dois com uma so expressao. Coordenada tem TRES: nao mexeu
+       * (undefined, nao inclui a coluna no SET), limpou de proposito (`null`,
+       * o CEP mudou para um sem cobertura — precisa MESMO virar nulo), ou
+       * novo valor. `COALESCE` nao distingue "limpar" de "nao mexer": um
+       * `null` ali seria absorvido e a coordenada antiga, errada para o CEP
+       * novo, ficaria gravada como se ainda valesse.
+       */
+      const coordenadas: CompanyChanges['coordinates'] = m.coordinates
+      const setCoordenadas =
+        coordenadas === undefined
+          ? sql``
+          : sql`, latitude = ${coordenadas?.latitude ?? null}, longitude = ${coordenadas?.longitude ?? null}`
+
       const [linha] = await withTenant(
         sql,
         companyId,
@@ -210,7 +231,8 @@ export function createCompanyRepository(sql: Sql): CompanyRepository {
             complement             = COALESCE(${m.address?.complement ?? null}, complement),
             neighborhood           = COALESCE(${m.address?.district ?? null}, neighborhood),
             city                   = COALESCE(${m.address?.city ?? null}, city),
-            state                  = COALESCE(${m.address?.state ?? null}, state),
+            state                  = COALESCE(${m.address?.state ?? null}, state)
+            ${setCoordenadas},
             updated_at             = now()
           RETURNING *
         `,
