@@ -1,0 +1,107 @@
+.card {
+  margin-bottom: 18px;
+}
+
+.prompt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  font-size: 13.5px;
+  color: var(--app-muted);
+}
+
+.promptCta {
+  flex: none;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--app-accent);
+}
+
+.cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.titulo {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--app-text);
+}
+
+.editar {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--app-accent);
+}
+
+.barraFundo {
+  width: 100%;
+  height: 10px;
+  border-radius: var(--radius-full);
+  background: var(--app-field);
+  overflow: hidden;
+}
+
+.barraPreenchida {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--brand-accent);
+  transition: width 0.5s ease;
+}
+
+.barraCompleta {
+  background: var(--success);
+}
+
+.legenda {
+  display: block;
+  margin-top: 8px;
+  font-size: 12.5px;
+  color: var(--app-muted);
+}
+
+.form {
+  display: grid;
+  gap: 6px;
+}
+
+.label {
+  font-size: 12.5px;
+  color: var(--app-muted);
+}
+
+.formLinha {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.prefixo {
+  font-size: 14.5px;
+  color: var(--app-muted);
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 12px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-sm);
+  background: var(--app-field);
+  color: var(--app-text);
+  font-family: var(--font-body);
+  font-size: 14.5px;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--brand-accent);
+}

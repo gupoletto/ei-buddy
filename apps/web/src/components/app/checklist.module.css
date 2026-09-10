@@ -1,0 +1,91 @@
+.card {
+  margin-bottom: 18px;
+}
+
+.cabecalho {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.titulo {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 15px;
+  color: var(--app-text);
+}
+
+.progresso {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  color: var(--app-muted);
+}
+
+.fechar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border-radius: 50%;
+  color: var(--app-muted);
+}
+
+.fechar:hover {
+  background: var(--app-field);
+  color: var(--app-text);
+}
+
+.lista {
+  display: grid;
+  gap: 6px;
+}
+
+.itemPendente {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 13.5px;
+  color: var(--app-text);
+  transition: background-color var(--transition);
+}
+
+.itemPendente:hover {
+  background: var(--app-field);
+}
+
+.bolinha {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1.5px solid var(--app-border);
+}
+
+.itemFeito {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  font-size: 13.5px;
+  color: var(--app-muted);
+  text-decoration: line-through;
+}
+
+.marca {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--success);
+  color: #fff;
+}
