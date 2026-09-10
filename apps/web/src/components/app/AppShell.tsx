@@ -33,6 +33,7 @@ import {
   IconReceipt,
   IconSettings,
   IconSparkles,
+  IconStore,
   IconUsers,
   IconWallet,
   type IconProps,
@@ -53,6 +54,7 @@ const navItems: NavItem[] = [
   { href: '/app/vendas', label: 'Vendas', icon: IconBag },
   { href: '/app/clientes', label: 'Clientes', icon: IconUsers },
   { href: '/app/produtos', label: 'Produtos', icon: IconBox },
+  { href: '/app/fornecedores', label: 'Fornecedores', icon: IconStore },
   {
     href: '/app/financeiro',
     label: 'Financeiro',

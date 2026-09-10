@@ -25,6 +25,7 @@ import {
   createAppointmentRepository,
   createBankTransactionWriter,
   createChartOfAccountsRepository,
+  createConnectionRequests,
   createInventoryHistory,
   createInventoryQueries,
   createInventoryUnitOfWork,
@@ -51,6 +52,7 @@ import {
   createReconciliationUnitOfWork,
   createSaleHistoryRepository,
   createSaleUnitOfWork,
+  createSupplierDirectory,
   createUserDirectory,
   getClient,
   lerChaveDeSegredo,
@@ -60,6 +62,7 @@ import { createFileStatementReader } from '@na-regua/banking'
 import { createFakeInvoiceIssuer, criarEmissorFocusNfe } from '@na-regua/fiscal'
 import type { InvoiceIssuer } from '@na-regua/core'
 import type { CadastroDeps } from './routes/cadastro.js'
+import type { ConnectionsRouteDeps } from './routes/connections.js'
 import type { ConciliacaoDeps } from './routes/conciliacao.js'
 import type { SaleRouteDeps } from './routes/sales.js'
 import type { ContabilidadeDeps } from './routes/contabilidade.js'
@@ -69,6 +72,8 @@ import type { SuporteDeps } from './routes/suporte.js'
 import type { RelatoriosDeps } from './routes/relatorios.js'
 import type { ContasDeps } from './routes/contas.js'
 import { createInvoiceQueue } from './invoice-queue.js'
+import { createConnectionNotifier } from './connection-notifier.js'
+import { createBrasilApiCepLookup } from './cep-lookup.js'
 import type { CredenciaisFiscaisDeps, EmissaoDeps } from './routes/fiscal.js'
 import { loadApiEnv } from '@na-regua/env'
 import { Redis } from 'ioredis'
@@ -370,6 +375,25 @@ export function buildCadastroDeps(): CadastroDeps {
      */
     uow: createInventoryUnitOfWork(sql),
     audit: createAuditTrail(sql),
+    /* Geocodifica o endereco ao salvar — ADR-0008. Fecha o TODO de
+       `GET /enderecos/cep/:cep` que so existia como mock no front. */
+    cepLookup: createBrasilApiCepLookup(),
+  }
+}
+
+/**
+ * Conexao entre lojistas por proximidade — NR-107, ADR-0008.
+ *
+ * `notifier` usa a MESMA conexao Redis da fila de emissao — ver o comentario
+ * em `buildEmissaoDeps`.
+ */
+export function buildConnectionsDeps(): ConnectionsRouteDeps {
+  const sql = getClient(env.DATABASE_URL)
+  return {
+    suppliers: createSupplierDirectory(sql),
+    connections: createConnectionRequests(sql),
+    notifier: createConnectionNotifier(getRedis()),
+    companies: createCompanyRepository(sql),
   }
 }
 

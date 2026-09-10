@@ -3,6 +3,7 @@ import { isAppError } from '../app-error.js'
 import type { Role } from '@na-regua/contracts'
 import type { ExecutionContext } from '../context.js'
 import {
+  InMemoryCepLookup,
   InMemoryCompanyRepository,
   InMemoryCustomerRepository,
   InMemoryProductRepository,
@@ -39,6 +40,9 @@ function contexto(sobrescreve: Partial<ExecutionContext> = {}): ExecutionContext
   }
 }
 
+/** Sem CEP semeado em teste nenhum aqui — a geocodificacao tem cobertura propria em geocoding.test.ts. */
+const cepLookup = new InMemoryCepLookup()
+
 const empresaValida = {
   legalName: 'Mercearia do Joao LTDA',
   cnpj: '12345678000195',
@@ -51,7 +55,11 @@ describe('registerCompany — RF-001, RF-002', () => {
     const companies = new InMemoryCompanyRepository()
     const accounts = new InMemoryChartOfAccounts()
 
-    const empresa = await registerCompany({ companies, accounts }, contexto(), empresaValida)
+    const empresa = await registerCompany(
+      { companies, accounts, cepLookup },
+      contexto(),
+      empresaValida,
+    )
 
     expect(empresa.cnpj).toBe('12345678000195')
     expect(empresa.createdAt).toBe(AGORA.toISOString())
@@ -60,28 +68,32 @@ describe('registerCompany — RF-001, RF-002', () => {
   it('usa a razao social como nome fantasia quando ele nao vem', async () => {
     const companies = new InMemoryCompanyRepository()
     const accounts = new InMemoryChartOfAccounts()
-    const empresa = await registerCompany({ companies, accounts }, contexto(), empresaValida)
+    const empresa = await registerCompany(
+      { companies, accounts, cepLookup },
+      contexto(),
+      empresaValida,
+    )
     expect(empresa.tradeName).toBe('Mercearia do Joao LTDA')
   })
 
   it('recusa CNPJ repetido', async () => {
     const companies = new InMemoryCompanyRepository()
     const accounts = new InMemoryChartOfAccounts()
-    await registerCompany({ companies, accounts }, contexto(), empresaValida)
+    await registerCompany({ companies, accounts, cepLookup }, contexto(), empresaValida)
 
     await expect(
-      registerCompany({ companies, accounts }, contexto(), empresaValida),
+      registerCompany({ companies, accounts, cepLookup }, contexto(), empresaValida),
     ).rejects.toThrow(/ja tem cadastro/i)
   })
 
   it('nao revela nada da empresa existente na recusa — RF-002', async () => {
     const companies = new InMemoryCompanyRepository()
     const accounts = new InMemoryChartOfAccounts()
-    await registerCompany({ companies, accounts }, contexto(), empresaValida)
+    await registerCompany({ companies, accounts, cepLookup }, contexto(), empresaValida)
 
     expect.assertions(3)
     try {
-      await registerCompany({ companies, accounts }, contexto(), {
+      await registerCompany({ companies, accounts, cepLookup }, contexto(), {
         ...empresaValida,
         legalName: 'Outra Empresa ME',
       })
@@ -102,7 +114,11 @@ describe('registerCompany — RF-001, RF-002', () => {
     const companies = new InMemoryCompanyRepository()
     const accounts = new InMemoryChartOfAccounts()
 
-    const empresa = await registerCompany({ companies, accounts }, contexto(), empresaValida)
+    const empresa = await registerCompany(
+      { companies, accounts, cepLookup },
+      contexto(),
+      empresaValida,
+    )
 
     /*
      * Sem isto o lojista abre a tela de classificacao vazia, e a resposta
@@ -117,7 +133,11 @@ describe('registerCompany — RF-001, RF-002', () => {
     const companies = new InMemoryCompanyRepository()
     const accounts = new InMemoryChartOfAccounts()
 
-    const empresa = await registerCompany({ companies, accounts }, contexto(), empresaValida)
+    const empresa = await registerCompany(
+      { companies, accounts, cepLookup },
+      contexto(),
+      empresaValida,
+    )
     /* A semeadura roda fora da transacao da empresa: refazer precisa ser
        seguro, senao a recuperacao de uma falha parcial deixa o plano em dobro. */
     await accounts.insertDefaults(empresa.id, PLANO_DE_CONTAS_PADRAO, 'usr-1', AGORA)
@@ -135,7 +155,7 @@ describe('registerCompany — RF-001, RF-002', () => {
      * outra loja, que nao diz nada sobre esta.
      */
     const empresa = await registerCompany(
-      { companies, accounts },
+      { companies, accounts, cepLookup },
       contexto({ role: 'accountant' as Role }),
       empresaValida,
     )
@@ -841,7 +861,7 @@ describe('o cadastro da propria loja — RF-003', () => {
     const companies = new InMemoryCompanyRepository()
     const accounts = new InMemoryChartOfAccounts()
 
-    const empresa = await registerCompany({ companies, accounts }, contexto(), {
+    const empresa = await registerCompany({ companies, accounts, cepLookup }, contexto(), {
       ...empresaValida,
       ...extra,
     })
@@ -852,13 +872,15 @@ describe('o cadastro da propria loja — RF-003', () => {
   it('devolve a empresa do contexto', async () => {
     const c = await comEmpresa()
 
-    expect((await getCompany({ companies: c.companies }, c.ctx)).cnpj).toBe(empresaValida.cnpj)
+    expect((await getCompany({ companies: c.companies, cepLookup }, c.ctx)).cnpj).toBe(
+      empresaValida.cnpj,
+    )
   })
 
   it('empresa sem os fiscais volta com eles NULOS, e nao com erro', async () => {
     const c = await comEmpresa()
 
-    const lida = await getCompany({ companies: c.companies }, c.ctx)
+    const lida = await getCompany({ companies: c.companies, cepLookup }, c.ctx)
 
     /* MEI nao tem inscricao estadual, e a RF-001 nao pede nenhum dos tres:
        exigi-los quebraria o cadastro de conta. */
@@ -869,9 +891,10 @@ describe('o cadastro da propria loja — RF-003', () => {
   it('empresa que sumiu responde NOT_FOUND, e nao um cadastro em branco', async () => {
     const companies = new InMemoryCompanyRepository()
 
-    const erro = await getCompany({ companies }, contexto({ companyId: 'emp-fantasma' })).catch(
-      (e: unknown) => e,
-    )
+    const erro = await getCompany(
+      { companies, cepLookup },
+      contexto({ companyId: 'emp-fantasma' }),
+    ).catch((e: unknown) => e)
 
     /* Um objeto vazio aqui seria salvo por cima pela tela, que abre com o que
        recebe e grava o que mostra. */
@@ -881,7 +904,7 @@ describe('o cadastro da propria loja — RF-003', () => {
   it('atualiza o que veio', async () => {
     const c = await comEmpresa()
 
-    const r = await updateCompany({ companies: c.companies }, c.ctx, {
+    const r = await updateCompany({ companies: c.companies, cepLookup }, c.ctx, {
       tradeName: 'Mercearia Sol',
       stateRegistration: 'ISENTO',
     })
@@ -894,13 +917,15 @@ describe('o cadastro da propria loja — RF-003', () => {
      estadual preenchida na aba fiscal. */
   it('campo ausente NAO apaga o que ja estava', async () => {
     const c = await comEmpresa()
-    await updateCompany({ companies: c.companies }, c.ctx, { stateRegistration: '9076288293' })
+    await updateCompany({ companies: c.companies, cepLookup }, c.ctx, {
+      stateRegistration: '9076288293',
+    })
 
-    await updateCompany({ companies: c.companies }, c.ctx, {
+    await updateCompany({ companies: c.companies, cepLookup }, c.ctx, {
       address: { city: 'Curitiba', state: 'PR' },
     })
 
-    const lida = await getCompany({ companies: c.companies }, c.ctx)
+    const lida = await getCompany({ companies: c.companies, cepLookup }, c.ctx)
     expect(lida.address.city).toBe('Curitiba')
     expect(lida.stateRegistration).toBe('9076288293')
   })
@@ -910,7 +935,9 @@ describe('o cadastro da propria loja — RF-003', () => {
   it('corpo vazio e recusado, em vez de virar uma escrita sem efeito', async () => {
     const c = await comEmpresa()
 
-    const erro = await updateCompany({ companies: c.companies }, c.ctx, {}).catch((e: unknown) => e)
+    const erro = await updateCompany({ companies: c.companies, cepLookup }, c.ctx, {}).catch(
+      (e: unknown) => e,
+    )
 
     expect(isAppError(erro) && erro.code).toBe('VALIDATION_FAILED')
   })
@@ -920,10 +947,12 @@ describe('o cadastro da propria loja — RF-003', () => {
     const leitor = { ...c.ctx, role: 'accountant' as Role }
 
     /* Fechar o mes exige CNPJ e inscricoes; mudar o cadastro nao. */
-    expect((await getCompany({ companies: c.companies }, leitor)).cnpj).toBe(empresaValida.cnpj)
+    expect((await getCompany({ companies: c.companies, cepLookup }, leitor)).cnpj).toBe(
+      empresaValida.cnpj,
+    )
 
     await expect(
-      updateCompany({ companies: c.companies }, leitor, { tradeName: 'Outro' }),
+      updateCompany({ companies: c.companies, cepLookup }, leitor, { tradeName: 'Outro' }),
     ).rejects.toThrow(/somente de leitura/i)
   })
 })

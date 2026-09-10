@@ -81,6 +81,7 @@ export {
 /* Sessao persistente e desaceleracao de login — NR-083, ADR-0002. */
 export { createLoginThrottle, createSessionIssuer } from './session-repository.js'
 export { createPlatformAdminAccess } from './platform-admin-repository.js'
+export { createConnectionRequests, createSupplierDirectory } from './connection-repository.js'
 
 /* Baixa e estorno de titulo — NR-029, RF-063 a RF-067. */
 export { createSettlementQueries, createSettlementUnitOfWork } from './settlement-repository.js'

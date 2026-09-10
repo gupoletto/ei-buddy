@@ -46,8 +46,8 @@ PR**, e a linha sai da tabela de abertas.
 | ------------------ | --: | ----------------------------------------------- |
 | 🔴 Aberta          |   9 | DEC-003, 005, 007, 009, 011, 012, 013, 016, 018 |
 | 🟡 Em análise      |   1 | DEC-001                                         |
-| ⚪ Adiada          |   2 | DEC-014, 021                                    |
-| 🟢 Decidida        |   7 | DEC-002, 006, 008, 010, 015, 019, 020           |
+| ⚪ Adiada          |   1 | DEC-014                                         |
+| 🟢 Decidida        |   8 | DEC-002, 006, 008, 010, 015, 019, 020, 021      |
 | ❓ Pergunta aberta |  10 | QST-001 a QST-008, QST-011, QST-012             |
 
 **Bloqueando o MVP agora:** DEC-003, DEC-009.
@@ -546,45 +546,20 @@ que fica em aberto" na ADR-0007.
 
 ### <a id="dec-021"></a>DEC-021 — Conexão entre usuários (rede B2B por proximidade)
 
-|              |                                                                                                       |
-| ------------ | ----------------------------------------------------------------------------------------------------- |
-| **Status**   | ⚪ Adiada — revisar ao iniciar a Fase 4 (Rede) do [roadmap](../produto/escopo-mvp.md#roadmap-pós-mvp) |
-| **Dono**     | Produto / fundadores                                                                                  |
-| **Prazo**    | Sem prazo — condicionado a massa crítica de lojistas                                                  |
-| **Bloqueia** | Nada hoje                                                                                             |
+|             |                                                                               |
+| ----------- | ----------------------------------------------------------------------------- |
+| **Status**  | 🟢 Decidida — [ADR-0008](adr/0008-conexao-entre-usuarios-por-proximidade.md)  |
+| **Escolha** | Entra agora, não espera a Fase 4 — risco de massa crítica aceito e registrado |
+| **Data**    | 2026-09-10                                                                    |
 
-**Contexto.** Prompt de especificação recebido propondo que um lojista
-pesquise por produto (ex.: "farinha") e encontre outros usuários que vendem
-aquele insumo, ordenados por proximidade de CEP, podendo enviar pedido de
-conexão para liberar contato.
-
-**Decisão.** Fica de fora por ora — mesmo motivo já registrado em
-`docs/produto/escopo-mvp.md` para "Marketplace de lojas" e "Vitrine de
-especialidades": **depende de massa crítica de lojistas que ainda não
-existe.** Uma busca por "farinha" com a base de usuários de hoje
-provavelmente não encontra ninguém por perto, e o valor do recurso é
-diretamente proporcional a quantos lojistas do mesmo ramo já usam o
-sistema numa mesma região — não é um recurso que "funciona pior" com
-poucos usuários, é um recurso que **não funciona** com poucos usuários. A
-proposta já se identifica como Fase 4 (Rede) do roadmap.
-
-**O que já foi decidido, para quando isto for retomado** (RF-03 da spec
-original):
-
-- **Antes do aceite:** o resultado da busca mostra nome da empresa,
-  bairro/cidade e distância aproximada — **sem** endereço completo nem
-  telefone.
-- **Depois do aceite** (por ambos os lados): dados completos de contato
-  ficam visíveis para os dois usuários.
-
-**O que continua em aberto**, para quando a Fase 4 começar:
-
-- Fonte de dado de CEP → lat/long para o cálculo de distância (a spec
-  original sugere uma base de centróides de CEP para o MVP da
-  funcionalidade, e geolocalização por endereço exato como evolução).
-- Se a busca reaproveita o módulo de Produtos existente tal como está, ou
-  precisa de um índice dedicado — decisão de implementação, não de
-  produto, então fica para quem pegar a tarefa.
+**Histórico.** Esta DEC nasceu ⚪ Adiada: o mesmo motivo que tira
+"Marketplace de lojas" do MVP em `docs/produto/escopo-mvp.md` — depende de
+massa crítica de lojistas que ainda não existe — se aplicava aqui. Reaberta
+no mesmo dia por decisão explícita de quem pediu a funcionalidade, ciente do
+risco: a base de usuários pequena continua sendo o motivo pelo qual buscas
+por produto específico podem voltar vazias no começo. Ver "Consequências" na
+ADR-0008 para o que isso implica em não regredir a decisão por baixa adoção
+inicial sem antes medir.
 
 ## Documentos relacionados
 

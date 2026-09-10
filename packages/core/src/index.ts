@@ -50,6 +50,7 @@ export type {
 export type { InvoiceIssuer } from './ports/invoice-issuer.js'
 export type {
   CompanyChanges,
+  CompanyCoordinates,
   CompanyRepository,
   CustomerRepository,
   NewCompany,
@@ -57,6 +58,18 @@ export type {
   NewProduct,
   ProductRepository,
 } from './ports/registration-repositories.js'
+export type { CepAddress, CepLookup } from './ports/cep-lookup.js'
+export type {
+  ConnectionContact,
+  ConnectionDirection,
+  ConnectionNotifier,
+  ConnectionRequests,
+  ConnectionRow,
+  ConnectionStatus,
+  NewConnectionRequest,
+  SupplierDirectory,
+  SupplierSearchRow,
+} from './ports/connections.js'
 export type {
   CompanySettingsRepository,
   NewReceivable,
@@ -72,6 +85,28 @@ export type {
   UnitOfWork,
 } from './ports/sale-writers.js'
 export type { MessageSender } from './ports/message-sender.js'
+export {
+  ConnectionActionRefusedError,
+  ConnectionAlreadyExistsError,
+  ConnectionNotFoundError,
+  TargetCompanyUnavailableError,
+} from './ports/connections.js'
+export { searchSuppliers } from './connections/search-suppliers.js'
+export type { SearchSuppliersDeps } from './connections/search-suppliers.js'
+export {
+  connectionPendingCount,
+  endConnection,
+  listConnections,
+  requestConnection,
+  respondToConnection,
+} from './connections/manage-connections.js'
+export type { ManageConnectionsDeps } from './connections/manage-connections.js'
+export { resolveCoordinates } from './registration/geocoding.js'
+export {
+  InMemoryConnectionNotifier,
+  InMemoryConnectionRequests,
+  InMemorySupplierDirectory,
+} from './connections/fakes.js'
 export type { PaymentGateway } from './ports/payment-gateway.js'
 export type { ReminderScheduler } from './ports/reminder-scheduler.js'
 
@@ -260,7 +295,7 @@ export type { ListAppointmentRangeDeps, RangeAgenda } from './schedule/list-appo
 export { signup } from './auth/signup.js'
 export type { SignupDeps } from './auth/signup.js'
 export type { IdentityRegistrar } from './ports/identity.js'
-export { InMemoryCompanyRepository } from './registration/fakes.js'
+export { InMemoryCepLookup, InMemoryCompanyRepository } from './registration/fakes.js'
 
 /* O gatilho da emissao — NR-042, RF-045, RF-046. */
 export { requestInvoice } from './fiscal/request-invoice.js'

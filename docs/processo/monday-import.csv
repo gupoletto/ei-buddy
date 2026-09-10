@@ -84,3 +84,4 @@ NR-102 — Corrige o tema claro: sidebar/topbar e ~20 preenchimentos que so func
 "NR-104 — Sino com aviso de cliente inativo, meta diaria e checklist de primeiros passos",Sprint 6 — Catálogo 0909,Trilha 3 — Clientes,Done,Medium,2,Sprint 6,,,web,—,docs/processo/task-ledger.md
 "NR-105 — Super Admin: ""entrar como"" auditado (ADR-0007), do banco ao painel",Sprint 6 — Catálogo 0909,Trilha 1 — Nucleo & Dados,Done,Medium,4,Sprint 6,,,db contracts core api web,RF-131,docs/processo/task-ledger.md
 NR-106 — DEC-021: conexao entre usuarios por proximidade adiada para a Fase 4 (Rede),Sprint 6 — Catálogo 0909,Compartilhada,Done,Medium,1,Sprint 6,,,docs,—,docs/processo/task-ledger.md
+NR-107 — Conexao entre usuarios por proximidade: busca cross-tenant e pedido auditado (ADR-0008),Sprint 6 — Catálogo 0909,Trilha 1 — Nucleo & Dados,Done,Medium,5,Sprint 6,,,db contracts core api web,RF-01–05 (spec),docs/processo/task-ledger.md
