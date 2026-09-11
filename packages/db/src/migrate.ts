@@ -65,7 +65,12 @@ export function lerMigrations(pasta = PASTA): readonly Migration[] {
  * na sua forma mais caro de depurar.
  */
 export async function migrate(url: string, pasta = PASTA): Promise<MigrationResult> {
+  const DBG = `${process.pid}-${Math.random().toString(36).slice(2, 8)}`
+  console.error(`[migrate ${DBG}] chamado, pasta=${pasta}`)
   const migrations = lerMigrations(pasta)
+  console.error(
+    `[migrate ${DBG}] ${migrations.length} migrations no disco: ${migrations.map((m) => m.version).join(',')}`,
+  )
   if (migrations.length === 0) return { aplicadas: [], jaEstavam: [] }
 
   const sql = postgres(url, { max: 1, onnotice: () => {} })
@@ -88,7 +93,9 @@ export async function migrate(url: string, pasta = PASTA): Promise<MigrationResu
      * `finally` — e por isso `max: 1`, para trava e unlock cairem na mesma
      * conexao.
      */
+    console.error(`[migrate ${DBG}] pedindo a trava`)
     await sql`SELECT pg_advisory_lock(${TRAVA_DE_MIGRATION})`
+    console.error(`[migrate ${DBG}] trava obtida`)
 
     await sql`
       CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -105,6 +112,7 @@ export async function migrate(url: string, pasta = PASTA): Promise<MigrationResu
       `
       ).map((r) => [r.version, r.checksum]),
     )
+    console.error(`[migrate ${DBG}] ja registradas: ${[...registradas.keys()].join(',')}`)
 
     const aplicadas: string[] = []
     const jaEstavam: string[] = []
@@ -122,6 +130,8 @@ export async function migrate(url: string, pasta = PASTA): Promise<MigrationResu
         jaEstavam.push(m.version)
         continue
       }
+
+      console.error(`[migrate ${DBG}] aplicando ${m.version}`)
 
       /*
        * Uma transacao por migration. Nao uma transacao para todas: se a
@@ -147,13 +157,19 @@ export async function migrate(url: string, pasta = PASTA): Promise<MigrationResu
         `
       })
 
+      console.error(`[migrate ${DBG}] ${m.version} aplicada e registrada`)
       aplicadas.push(m.version)
     }
 
+    console.error(`[migrate ${DBG}] concluido: aplicadas=${aplicadas.join(',')}`)
     return { aplicadas, jaEstavam }
+  } catch (erro) {
+    console.error(`[migrate ${DBG}] ERRO: ${erro instanceof Error ? erro.message : String(erro)}`)
+    throw erro
   } finally {
     /* Solta a trava antes de fechar. Fechar a conexao ja soltaria, mas
        depender disso torna o unlock invisivel para quem le. */
+    console.error(`[migrate ${DBG}] soltando a trava`)
     await sql`SELECT pg_advisory_unlock(${TRAVA_DE_MIGRATION})`.catch(() => undefined)
     await sql.end({ timeout: 5 })
   }
