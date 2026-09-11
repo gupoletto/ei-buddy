@@ -251,11 +251,11 @@ describe.skipIf(!DATABASE_URL)('conexao entre usuarios — NR-107', () => {
       const [pedidoA] = await sql`
         SELECT * FROM company_connections_request(${donoA.id}, ${confeitariaA}, ${distribuidora})
       `
-      await sql`SELECT company_connections_respond(${pedidoA.id}, ${donoDist.id}, true)`
+      await sql`SELECT company_connections_respond(${pedidoA!.id}, ${donoDist.id}, true)`
       const [pedidoB] = await sql`
         SELECT * FROM company_connections_request(${donoB.id}, ${confeitariaB}, ${distribuidora})
       `
-      await sql`SELECT company_connections_respond(${pedidoB.id}, ${donoDist.id}, true)`
+      await sql`SELECT company_connections_respond(${pedidoB!.id}, ${donoDist.id}, true)`
 
       const sugestoes = await sql`SELECT * FROM company_connections_suggestions(${confeitariaC})`
 
@@ -286,7 +286,7 @@ describe.skipIf(!DATABASE_URL)('conexao entre usuarios — NR-107', () => {
       const [pedidoA] = await sql`
         SELECT * FROM company_connections_request(${donoA.id}, ${confeitariaA}, ${distribuidora})
       `
-      await sql`SELECT company_connections_respond(${pedidoA.id}, ${donoDist.id}, true)`
+      await sql`SELECT company_connections_respond(${pedidoA!.id}, ${donoDist.id}, true)`
       /* C ja pediu para a mesma distribuidora — nao deveria ser "sugerida" de novo. */
       await sql`SELECT * FROM company_connections_request(${donoC.id}, ${confeitariaC}, ${distribuidora})`
 
@@ -458,7 +458,7 @@ describe.skipIf(!DATABASE_URL)('conexao entre usuarios — NR-107', () => {
       const [pedido] = await sql`
         SELECT * FROM company_connections_request(${donoPar.id}, ${parDoRamo}, ${sugerida})
       `
-      await sql`SELECT company_connections_respond(${pedido.id}, ${donoSugerida.id}, true)`
+      await sql`SELECT company_connections_respond(${pedido!.id}, ${donoSugerida.id}, true)`
 
       const sugestoes = await diretorio.suggest(buscadora)
 
