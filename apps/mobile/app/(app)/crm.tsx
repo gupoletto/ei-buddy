@@ -1,30 +1,47 @@
-import { useMemo, useState } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import {
-  COLUNAS,
-  listarCards,
-  moverCard,
-  ROTULO_ORIGEM,
-  type CardCrm,
-  type ColunaId,
-} from '@/lib/crm-api'
+import { COLUNAS, listarCards, moverCard, type CardCrm, type ColunaId } from '@/lib/crm-api'
 import { formatDate, daysUntil } from '@/lib/format'
 import Cabecalho from '@/components/Cabecalho'
+import Botao from '@/components/ui/Botao'
+import { Etiqueta, Vazio } from '@/components/ui/Cartao'
 import Sanfona from '@/components/ui/Sanfona'
-import { Etiqueta } from '@/components/ui/Cartao'
 import { cores, espaco, fonte, peso, raio } from '@/theme/tokens'
 
 /**
- * CRM.
+ * CRM — NR-109.
  *
  * O web mostra um quadro Kanban com as colunas lado a lado. No celular
  * isso viraria rolagem horizontal dentro de vertical — desconfortavel.
  * Aqui cada coluna e uma sanfona, e mover o card e um toque nos botoes
  * de destino, que funciona no toque e no leitor de tela (arrastar nao).
+ *
+ * So LISTA e MOVE: nao ha formulario de criacao nem comentario nesta tela.
  */
 export default function Crm() {
-  const [cards, setCards] = useState<CardCrm[]>(() => listarCards())
+  const [cards, setCards] = useState<CardCrm[]>([])
+  const [carregando, setCarregando] = useState(true)
+  const [erro, setErro] = useState<string | null>(null)
+
+  const buscar = useCallback(async () => {
+    const r = await listarCards()
+    setCarregando(false)
+
+    if (!r.ok) {
+      setErro(r.erro)
+      return
+    }
+
+    setErro(null)
+    setCards(r.dados)
+  }, [])
+
+  useEffect(() => {
+    void (async () => {
+      await buscar()
+    })()
+  }, [buscar])
 
   const porColuna = useMemo(() => {
     const mapa = new Map<ColunaId, CardCrm[]>()
@@ -43,7 +60,6 @@ export default function Crm() {
        que demora a responder parece travado. */
     setCards((atual) => atual.map((c) => (c.id === id ? { ...c, coluna: destino } : c)))
 
-    /* SUBSTITUIR POR: PATCH /crm/cards/:id */
     const r = await moverCard(id, destino)
     if (!r.ok) {
       setCards((atual) => atual.map((c) => (c.id === id ? { ...c, coluna: anterior } : c)))
@@ -54,39 +70,67 @@ export default function Crm() {
 
   return (
     <SafeAreaView style={estilos.tela} edges={['top']}>
-      <Cabecalho titulo="CRM" subtitulo={aFazer > 0 ? `${aFazer} a fazer` : 'nada pendente'} />
+      <Cabecalho
+        titulo="CRM"
+        subtitulo={carregando ? 'carregando' : aFazer > 0 ? `${aFazer} a fazer` : 'nada pendente'}
+      />
 
-      <ScrollView contentContainerStyle={estilos.conteudo}>
-        {COLUNAS.map((coluna) => {
-          const lista = porColuna.get(coluna.id) ?? []
+      {carregando ? (
+        <View style={estilos.centro}>
+          <ActivityIndicator color={cores.acento} />
+        </View>
+      ) : erro !== null ? (
+        <View style={estilos.centro}>
+          <Vazio
+            titulo="Não deu para carregar o quadro"
+            descricao={erro}
+            acao={
+              <Botao
+                variante="secundario"
+                onPress={() => {
+                  setCarregando(true)
+                  setErro(null)
+                  void buscar()
+                }}
+              >
+                Tentar de novo
+              </Botao>
+            }
+          />
+        </View>
+      ) : (
+        <ScrollView contentContainerStyle={estilos.conteudo}>
+          {COLUNAS.map((coluna) => {
+            const lista = porColuna.get(coluna.id) ?? []
 
-          return (
-            <Sanfona
-              key={coluna.id}
-              titulo={coluna.titulo}
-              resumo={`${lista.length} card(s)`}
-              etiqueta={
-                coluna.id === 'afazer' && lista.length > 0 ? (
-                  <Etiqueta tom="atencao">{lista.length}</Etiqueta>
-                ) : undefined
-              }
-              inicialAberta={coluna.id !== 'concluido'}
-            >
-              {lista.length === 0 ? (
-                <Text style={estilos.vazio}>Nada nesta coluna.</Text>
-              ) : (
-                lista.map((card) => (
-                  <CardLinha
-                    key={card.id}
-                    card={card}
-                    onMover={(destino) => void mover(card.id, destino)}
-                  />
-                ))
-              )}
-            </Sanfona>
-          )
-        })}
-      </ScrollView>
+            return (
+              <Sanfona
+                key={coluna.id}
+                titulo={coluna.titulo}
+                resumo={`${lista.length} card(s)`}
+                etiqueta={
+                  coluna.id === 'afazer' && lista.length > 0 ? (
+                    <Etiqueta tom="atencao">{lista.length}</Etiqueta>
+                  ) : undefined
+                }
+                inicialAberta={coluna.id !== 'concluido'}
+              >
+                {lista.length === 0 ? (
+                  <Text style={estilos.vazio}>Nada nesta coluna.</Text>
+                ) : (
+                  lista.map((card) => (
+                    <CardLinha
+                      key={card.id}
+                      card={card}
+                      onMover={(destino) => void mover(card.id, destino)}
+                    />
+                  ))
+                )}
+              </Sanfona>
+            )
+          })}
+        </ScrollView>
+      )}
     </SafeAreaView>
   )
 }
@@ -105,9 +149,11 @@ function CardLinha({ card, onMover }: { card: CardCrm; onMover: (destino: Coluna
 
       <Text style={estilos.cardTitulo}>{card.titulo}</Text>
       <Text style={estilos.cardApoio} numberOfLines={1}>
-        {card.clienteNome} · {formatDate(card.data)}
+        {card.clienteNome ?? 'Sem cliente'} · {formatDate(card.data)}
       </Text>
-      <Text style={estilos.cardOrigem}>{ROTULO_ORIGEM[card.origem]}</Text>
+      <Text style={estilos.cardOrigem}>
+        {card.responsavelNome ? `Com ${card.responsavelNome.split(' ')[0]}` : 'Sem responsável'}
+      </Text>
 
       {/* Botoes de destino no lugar de arrastar: funciona no toque e e
           alcancavel pelo leitor de tela. */}
@@ -130,6 +176,7 @@ function CardLinha({ card, onMover }: { card: CardCrm; onMover: (destino: Coluna
 
 const estilos = StyleSheet.create({
   tela: { flex: 1, backgroundColor: cores.fundo },
+  centro: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: espaco.lg },
   conteudo: { padding: espaco.lg, gap: espaco.md, paddingBottom: espaco.xxl },
   vazio: { fontSize: fonte.pequeno, color: cores.textoFraco },
 

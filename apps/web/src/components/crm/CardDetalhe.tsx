@@ -1,14 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import {
-  COLUNAS,
-  comentarCard,
-  moverCard,
-  ROTULO_ORIGEM,
-  type CardCrm,
-  type ColunaId,
-} from '@/lib/crm-api'
+import { COLUNAS, comentarCard, moverCard, type CardCrm, type ColunaId } from '@/lib/crm-api'
 import { formatDate } from '@/lib/format'
 import { Badge } from '@/components/ui/UI'
 import { Button } from '@/components/ui/Button'
@@ -54,23 +47,27 @@ export default function CardDetalhe({
     setErro(null)
     setEnviando(true)
 
-    /* SUBSTITUIR POR: POST /crm/cards/:id/comentarios */
     const r = await comentarCard(card.id, comentario)
     setEnviando(false)
 
     if (!r.ok) {
-      setErro(r.error)
+      setErro(r.erro)
       return
     }
 
-    onAtualizar({ ...card, comentarios: [...card.comentarios, r.comentario] })
+    onAtualizar({ ...card, comentarios: [...card.comentarios, r.dados] })
     setComentario('')
   }
 
   async function mudarColuna(coluna: ColunaId) {
+    const anterior = card.coluna
     onAtualizar({ ...card, coluna })
-    /* SUBSTITUIR POR: PATCH /crm/cards/:id */
-    await moverCard(card.id, coluna)
+
+    const r = await moverCard(card.id, coluna)
+    if (!r.ok) {
+      onAtualizar({ ...card, coluna: anterior })
+      setErro('Não foi possível mover o card.')
+    }
   }
 
   const concluido = card.coluna === 'concluido'
@@ -120,7 +117,7 @@ export default function CardDetalhe({
         <dl className={styles.detalheDados}>
           <div>
             <dt>Cliente</dt>
-            <dd>{card.clienteNome}</dd>
+            <dd>{card.clienteNome ?? 'Sem cliente'}</dd>
           </div>
           <div>
             <dt>Data</dt>
@@ -128,11 +125,7 @@ export default function CardDetalhe({
           </div>
           <div>
             <dt>Responsável</dt>
-            <dd>{card.responsaveis.length > 0 ? card.responsaveis.join(', ') : 'Ninguém ainda'}</dd>
-          </div>
-          <div>
-            <dt>Origem</dt>
-            <dd>{ROTULO_ORIGEM[card.origem]}</dd>
+            <dd>{card.responsavelNome ?? 'Ninguém ainda'}</dd>
           </div>
         </dl>
 
@@ -159,8 +152,8 @@ export default function CardDetalhe({
             {/* Evento de criacao: o card sempre tem ao menos esta linha */}
             <li className={styles.comentario}>
               <span className={styles.comentarioAutor}>Sistema</span>
-              <span className={styles.comentarioData}>{formatDate(card.data)}</span>
-              <p className={styles.comentarioTexto}>{ROTULO_ORIGEM[card.origem]}.</p>
+              <span className={styles.comentarioData}>{formatDate(card.criadoEm)}</span>
+              <p className={styles.comentarioTexto}>Card criado.</p>
             </li>
 
             {card.comentarios.map((c) => (

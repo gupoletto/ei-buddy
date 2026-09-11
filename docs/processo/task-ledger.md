@@ -50,13 +50,13 @@ consome. A porta é declarada pelo núcleo; a seta aponta para dentro
 
 |                               | Tarefas | Dias |
 | ----------------------------- | ------: | ---: |
-| Total                         |      87 |  218 |
-| ✅ Concluídas                 |      77 |  183 |
+| Total                         |      88 |  222 |
+| ✅ Concluídas                 |      78 |  187 |
 | 🚧 Bloqueadas por decisão     |       7 |   25 |
 | 🚧 Bloqueadas por dependência |       1 |    2 |
 | ⬜ A fazer, pode começar hoje |       2 |    8 |
 
-> **Números conferidos contra a `main` em 2026-09-10**, não estimados: cada
+> **Números conferidos contra a `main` em 2026-09-11**, não estimados: cada
 > ✅ tem commit mesclado com `Refs: NR-xxx` no histórico. O NR-012 é a
 > exceção — foi mesclado antes de a convenção de rodapé existir (PR #15).
 > As somas saem das linhas deste arquivo e fecham com o
@@ -200,29 +200,30 @@ Objetivo: o banco vivo é o recorte `db_0909.sql` no domínio, com identidade,
 sessão, cofre e extrato da `main` às margens. Baseline novo; IDs antigos não
 voltam a ⬜.
 
-| ID     | Tarefa                                                                                  | Trilha | Módulo                              | Est | Dep                                    | Bloq | US/RF                      | Status |
-| ------ | --------------------------------------------------------------------------------------- | :----: | ----------------------------------- | --: | -------------------------------------- | ---- | -------------------------- | :----: |
-| NR-088 | Adendo oficial 0909 + plataforma, DEC-019/ADR-0006, abrir NR-089–098                    |   —    | `docs`                              |   1 | —                                      | —    | RNF-048                    |   ✅   |
-| NR-089 | `db`: baseline 0001–0007 (0909 + identidade/sessão/cofre/banco); apaga 0001–0025 velhos |   🔵   | `db`                                |   2 | NR-088                                 | —    | RF-121, RF-122, RNF-021    |   ✅   |
-| NR-090 | `db`: repositórios de cadastro no shape 0909 (endereço, produto, categoria)             |   🔵   | `db`                                |   2 | NR-089                                 | —    | RF-001, RF-009, RF-017     |   ✅   |
-| NR-091 | `db` + `contracts`: venda, itens, pagamentos PSP, estoque, idempotência                 |   🔵   | `db` `contracts`                    |   2 | NR-089                                 | —    | RF-034–039, RNF-046        |   ✅   |
-| NR-092 | `db` + `contracts`: `ledger_accounts`, `outstanding_cents`, `settlements` unificados    |   🔵   | `db` `contracts`                    |   2 | NR-089                                 | —    | RF-055–067, RF-081         |   ✅   |
-| NR-093 | `db`: `invoices` 0909 + `company_integrations` convivendo com o cofre fiscal            |   🔵   | `db`                                |   2 | NR-089                                 | —    | RF-004, RF-045–054         |   ✅   |
-| NR-094 | `db` + `contracts`: `ticket_messages`, status EN de suporte, `audit_logs`               |   🔵   | `db` `contracts`                    |   2 | NR-089                                 | —    | US-062, RF-123, RF-124     |   ✅   |
-| NR-095 | `db`: conciliação nas FKs novas + inventário da exportação LGPD                         |   🔵   | `db`                                |   2 | NR-090, NR-092                         | —    | RF-078–080, RF-125, RF-127 |   ✅   |
-| NR-096 | `api`: composition e rotas cujo SQL/contrato mudou                                      |   🟠   | `api`                               |   2 | NR-090, NR-091, NR-092, NR-093, NR-094 | —    | RF-001–019, RF-036         |   ✅   |
-| NR-097 | `web` + `mobile`: vocabulário e campos (venda, suporte, endereço, categoria)            |   🟢   | `web` `mobile`                      |   2 | NR-096                                 | —    | US-014–019, US-062         |   ✅   |
-| NR-098 | Merge do baseline na `main` e `infra:reset` no setup                                    |   🟠   | `repo` `infra`                      |   1 | NR-095, NR-096, NR-097                 | —    | RNF-048                    |   ✅   |
-| NR-099 | Tema claro do painel: alternancia com persistencia e paridade AA de contraste           |   🟢   | `web` `ui`                          |   1 | —                                      | —    | RNF-055                    |   ✅   |
-| NR-100 | Polish do painel: som e animacao na venda fechada, skeleton e mascote nos vazios        |   🟢   | `web`                               |   1 | —                                      | —    | RNF-055                    |   ✅   |
-| NR-101 | Tutorial guiado no primeiro login: spotlight pelo dashboard e pela barra lateral        |   🟢   | `web`                               |   1 | —                                      | —    | —                          |   ✅   |
-| NR-102 | Corrige o tema claro: sidebar/topbar e ~20 preenchimentos que so funcionavam no escuro  |   🟢   | `web`                               |   1 | —                                      | —    | RNF-055                    |   ✅   |
-| NR-103 | Logo "Ei Buddy" no painel so atualiza a tela — nao navega mais pro site institucional   |   🟢   | `web`                               |   1 | —                                      | —    | —                          |   ✅   |
-| NR-104 | Sino com aviso de cliente inativo, meta diaria e checklist de primeiros passos          |   🟢   | `web`                               |   2 | —                                      | —    | —                          |   ✅   |
-| NR-105 | Super Admin: "entrar como" auditado (ADR-0007), do banco ao painel                      |   🔵   | `db` `contracts` `core` `api` `web` |   4 | —                                      | —    | RF-131                     |   ✅   |
-| NR-106 | DEC-021: conexao entre usuarios por proximidade adiada para a Fase 4 (Rede)             |   —    | `docs`                              |   1 | —                                      | —    | —                          |   ✅   |
-| NR-107 | Conexao entre usuarios por proximidade: busca cross-tenant e pedido auditado (ADR-0008) |   🔵   | `db` `contracts` `core` `api` `web` |   5 | —                                      | —    | RF-01–05 (spec)            |   ✅   |
-| NR-108 | Sugestao de conexao por filtragem colaborativa de ramo, sem IA (ADR-0009)               |   🔵   | `db` `contracts` `core` `api` `web` |   1 | NR-107                                 | —    | RF-01 (spec, aditivo)      |   ✅   |
+| ID     | Tarefa                                                                                   | Trilha | Módulo                                       | Est | Dep                                    | Bloq | US/RF                      | Status |
+| ------ | ---------------------------------------------------------------------------------------- | :----: | -------------------------------------------- | --: | -------------------------------------- | ---- | -------------------------- | :----: |
+| NR-088 | Adendo oficial 0909 + plataforma, DEC-019/ADR-0006, abrir NR-089–098                     |   —    | `docs`                                       |   1 | —                                      | —    | RNF-048                    |   ✅   |
+| NR-089 | `db`: baseline 0001–0007 (0909 + identidade/sessão/cofre/banco); apaga 0001–0025 velhos  |   🔵   | `db`                                         |   2 | NR-088                                 | —    | RF-121, RF-122, RNF-021    |   ✅   |
+| NR-090 | `db`: repositórios de cadastro no shape 0909 (endereço, produto, categoria)              |   🔵   | `db`                                         |   2 | NR-089                                 | —    | RF-001, RF-009, RF-017     |   ✅   |
+| NR-091 | `db` + `contracts`: venda, itens, pagamentos PSP, estoque, idempotência                  |   🔵   | `db` `contracts`                             |   2 | NR-089                                 | —    | RF-034–039, RNF-046        |   ✅   |
+| NR-092 | `db` + `contracts`: `ledger_accounts`, `outstanding_cents`, `settlements` unificados     |   🔵   | `db` `contracts`                             |   2 | NR-089                                 | —    | RF-055–067, RF-081         |   ✅   |
+| NR-093 | `db`: `invoices` 0909 + `company_integrations` convivendo com o cofre fiscal             |   🔵   | `db`                                         |   2 | NR-089                                 | —    | RF-004, RF-045–054         |   ✅   |
+| NR-094 | `db` + `contracts`: `ticket_messages`, status EN de suporte, `audit_logs`                |   🔵   | `db` `contracts`                             |   2 | NR-089                                 | —    | US-062, RF-123, RF-124     |   ✅   |
+| NR-095 | `db`: conciliação nas FKs novas + inventário da exportação LGPD                          |   🔵   | `db`                                         |   2 | NR-090, NR-092                         | —    | RF-078–080, RF-125, RF-127 |   ✅   |
+| NR-096 | `api`: composition e rotas cujo SQL/contrato mudou                                       |   🟠   | `api`                                        |   2 | NR-090, NR-091, NR-092, NR-093, NR-094 | —    | RF-001–019, RF-036         |   ✅   |
+| NR-097 | `web` + `mobile`: vocabulário e campos (venda, suporte, endereço, categoria)             |   🟢   | `web` `mobile`                               |   2 | NR-096                                 | —    | US-014–019, US-062         |   ✅   |
+| NR-098 | Merge do baseline na `main` e `infra:reset` no setup                                     |   🟠   | `repo` `infra`                               |   1 | NR-095, NR-096, NR-097                 | —    | RNF-048                    |   ✅   |
+| NR-099 | Tema claro do painel: alternancia com persistencia e paridade AA de contraste            |   🟢   | `web` `ui`                                   |   1 | —                                      | —    | RNF-055                    |   ✅   |
+| NR-100 | Polish do painel: som e animacao na venda fechada, skeleton e mascote nos vazios         |   🟢   | `web`                                        |   1 | —                                      | —    | RNF-055                    |   ✅   |
+| NR-101 | Tutorial guiado no primeiro login: spotlight pelo dashboard e pela barra lateral         |   🟢   | `web`                                        |   1 | —                                      | —    | —                          |   ✅   |
+| NR-102 | Corrige o tema claro: sidebar/topbar e ~20 preenchimentos que so funcionavam no escuro   |   🟢   | `web`                                        |   1 | —                                      | —    | RNF-055                    |   ✅   |
+| NR-103 | Logo "Ei Buddy" no painel so atualiza a tela — nao navega mais pro site institucional    |   🟢   | `web`                                        |   1 | —                                      | —    | —                          |   ✅   |
+| NR-104 | Sino com aviso de cliente inativo, meta diaria e checklist de primeiros passos           |   🟢   | `web`                                        |   2 | —                                      | —    | —                          |   ✅   |
+| NR-105 | Super Admin: "entrar como" auditado (ADR-0007), do banco ao painel                       |   🔵   | `db` `contracts` `core` `api` `web`          |   4 | —                                      | —    | RF-131                     |   ✅   |
+| NR-106 | DEC-021: conexao entre usuarios por proximidade adiada para a Fase 4 (Rede)              |   —    | `docs`                                       |   1 | —                                      | —    | —                          |   ✅   |
+| NR-107 | Conexao entre usuarios por proximidade: busca cross-tenant e pedido auditado (ADR-0008)  |   🔵   | `db` `contracts` `core` `api` `web`          |   5 | —                                      | —    | RF-01–05 (spec)            |   ✅   |
+| NR-108 | Sugestao de conexao por filtragem colaborativa de ramo, sem IA (ADR-0009)                |   🔵   | `db` `contracts` `core` `api` `web`          |   1 | NR-107                                 | —    | RF-01 (spec, aditivo)      |   ✅   |
+| NR-109 | Quadro de CRM: pendencias e contatos em Kanban, do banco ao mobile (comentario e equipe) |   🟢   | `db` `contracts` `core` `api` `web` `mobile` |   4 | —                                      | —    | —                          |   ✅   |
 
 ---
 
@@ -340,7 +341,7 @@ passou a ser retrabalho: trocar os tokens quando a marca fechar.
 | ------------------------------- | ------: | ---: | ---------------------------------------------- |
 | 🔵 1 — Núcleo & Dados           |      33 |   83 | Sugestão de conexão (NR-108) somou ao NR-107   |
 | 🟠 2 — Plataforma & Integrações |      28 |   75 | a mais carregada; Asaas fechou 3 decisões dela |
-| 🟢 3 — Clientes                 |      23 |   54 | vocabulário 0909 na web/mobile (NR-097)        |
+| 🟢 3 — Clientes                 |      24 |   58 | quadro de CRM em Kanban (NR-109)               |
 | Compartilhada                   |       3 |    6 | documentação (NR-002, NR-088, NR-106)          |
 
 Somando: **218 dias-desenvolvedor** em 87 tarefas. Com 3 pessoas, isso é cerca
