@@ -1,5 +1,5 @@
 import { chamarApi } from './api'
-import type { ResultadoDre } from './contabilidade-api'
+import type { Resultado } from './contabilidade-api'
 
 /**
  * Faturamento e rankings — NR-077, US-041.
@@ -61,7 +61,7 @@ const periodo = (de: string, ate: string) =>
 export async function carregarFaturamento(
   de: string,
   ate: string,
-): Promise<ResultadoDre<Faturamento>> {
+): Promise<Resultado<Faturamento>> {
   const r = await chamarApi<Faturamento>(`/relatorios/faturamento?${periodo(de, ate)}`)
   return r.ok ? { ok: true, dados: r.dados } : { ok: false, erro: r.message }
 }
@@ -69,7 +69,7 @@ export async function carregarFaturamento(
 export async function carregarRankingDeClientes(
   de: string,
   ate: string,
-): Promise<ResultadoDre<RankingDeClientes>> {
+): Promise<Resultado<RankingDeClientes>> {
   const r = await chamarApi<RankingDeClientes>(`/relatorios/ranking/clientes?${periodo(de, ate)}`)
   return r.ok ? { ok: true, dados: r.dados } : { ok: false, erro: r.message }
 }
@@ -77,7 +77,7 @@ export async function carregarRankingDeClientes(
 export async function carregarRankingDeProdutos(
   de: string,
   ate: string,
-): Promise<ResultadoDre<RankingDeProdutos>> {
+): Promise<Resultado<RankingDeProdutos>> {
   const r = await chamarApi<RankingDeProdutos>(`/relatorios/ranking/produtos?${periodo(de, ate)}`)
   return r.ok ? { ok: true, dados: r.dados } : { ok: false, erro: r.message }
 }
