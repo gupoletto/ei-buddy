@@ -1,12 +1,19 @@
 import { useRouter } from 'expo-router'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import Cabecalho from '@/components/Cabecalho'
 import {
+  estadoDaNota,
   fecharVenda,
   margemEmPontos,
   novaChaveDeVenda,
+  pedirNota,
+  reconciliarContingencia,
+  situacaoCertificado,
+  type EstadoEmissao,
+  type NotaEmitida,
+  type SituacaoCertificado,
   type VendaRegistrada,
   FORMAS,
   paraItemCarrinho,
@@ -174,17 +181,15 @@ O carrinho continua aqui. Tente de novo.`,
 
     chaveDoFechamento.current = null
     setItens([])
-
-    Alert.alert(
-      r.venda.reenvio ? 'Venda já registrada' : 'Venda registrada',
-      r.venda.reenvio
-        ? `Esta venda já tinha entrado (número ${r.venda.numero}). Nada foi duplicado.`
-        : `Número ${r.venda.numero}` +
-            (r.venda.trocoCentavos > 0
-              ? `
-Troco: ${formatMoney(r.venda.trocoCentavos / 100)}`
-              : ''),
-    )
+    /*
+     * Mostra o resumo, e nao mais um Alert de sucesso.
+     *
+     * O card ja tinha sido construido (`ResumoDaVenda`, com bruto, custo,
+     * imposto, tarifa, liquido e margem) mas nada chamava `setResumo`: a tela
+     * so mostrava um alerta de texto com o numero e o troco, e o resumo
+     * inteiro — inclusive a etapa de emitir a nota — nunca aparecia.
+     */
+    setResumo(r.venda)
   }
 
   function fechar() {
@@ -329,6 +334,15 @@ const estilos = StyleSheet.create({
     color: cores.acento,
     marginTop: espaco.sm,
   },
+
+  /* Etapa fiscal, dentro do resumo — NR-042. */
+  fiscalBloco: { gap: espaco.sm, marginTop: espaco.md },
+  fiscalTitulo: { fontSize: fonte.pequeno, fontWeight: peso.forte, color: cores.texto },
+  fiscalTexto: { fontSize: fonte.micro, color: cores.textoFraco },
+  fiscalOk: { fontSize: fonte.pequeno, fontWeight: peso.forte, color: cores.acento },
+  fiscalChave: { fontSize: fonte.micro, color: cores.textoFraco },
+  fiscalErro: { fontSize: fonte.micro, color: cores.erro },
+
   tela: { flex: 1, backgroundColor: cores.fundo },
 
   cabecalho: {
@@ -457,8 +471,134 @@ function ResumoDaVenda({ venda, onFechar }: { venda: VendaRegistrada; onFechar: 
         <LinhaResumo rotulo="Troco" centavos={venda.trocoCentavos} destaque />
       ) : null}
 
-      <Botao variante="secundario" onPress={onFechar} largura>
-        Nova venda
+      <EmissaoFiscal vendaId={venda.id} onConcluir={onFechar} />
+    </View>
+  )
+}
+
+/**
+ * A etapa fiscal, dentro do resumo — NR-042, RF-004, RF-045, RF-054.
+ *
+ * Nao existia NENHUMA tela no celular que oferecesse emitir nota: as funcoes
+ * que fariam isso (`emitirNota`, `situacaoCertificado`) eram mock e nenhuma
+ * tela as chamava — a venda ficava registrada, e a nota nunca era pedida por
+ * aqui, so pelo computador.
+ *
+ * Mesmo fluxo do web (`EtapaFiscal.tsx`): confere certificado, pede a nota,
+ * acompanha ate a SEFAZ responder ou desistir sem tratar isso como erro — a
+ * venda ja esta registrada de qualquer jeito.
+ */
+function EmissaoFiscal({ vendaId, onConcluir }: { vendaId: string; onConcluir: () => void }) {
+  const [certificado, setCertificado] = useState<SituacaoCertificado | null>(null)
+  const [estado, setEstado] = useState<EstadoEmissao>('ocioso')
+  const [nota, setNota] = useState<NotaEmitida | null>(null)
+  const [erro, setErro] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelado = false
+    async function carregar() {
+      /* Reconcilia antes de perguntar o certificado — RF-053. Custa nada
+         quando nao ha contingencia: o caso de uso volta sem consultar o
+         provedor. */
+      await reconciliarContingencia()
+      const s = await situacaoCertificado()
+      if (!cancelado) setCertificado(s)
+    }
+    void carregar()
+    return () => {
+      cancelado = true
+    }
+  }, [])
+
+  async function emitir() {
+    setEstado('processando')
+    setErro(null)
+
+    const pedido = await pedirNota(vendaId)
+    if (!pedido.ok) {
+      setErro(pedido.erro)
+      setEstado('erro')
+      return
+    }
+
+    /* NFC-e e sincrona no provedor, entao a resposta costuma vir logo — doze
+       tentativas de um segundo cobrem uma fila ocupada sem prender a tela.
+       Desistir nao e erro: a nota pode sair depois, e a venda ja esta
+       registrada. */
+    for (let tentativa = 0; tentativa < 12; tentativa += 1) {
+      const atual = await estadoDaNota(vendaId)
+
+      if (atual !== null && atual.status !== 'pending') {
+        if (atual.status === 'rejected') {
+          setErro(atual.rejection.message)
+          setEstado('erro')
+          return
+        }
+
+        setNota({
+          tipo: 'nfce',
+          numero: String(atual.number),
+          chave: atual.accessKey,
+          url: atual.status === 'authorized' ? atual.danfeUrl : '',
+        })
+        setEstado('emitida')
+        return
+      }
+
+      await new Promise((r) => setTimeout(r, 1000))
+    }
+
+    setErro('A nota ainda está sendo processada. Confira o estado dela em Vendas daqui a pouco.')
+    setEstado('erro')
+  }
+
+  const podeEmitir = certificado === 'valido'
+
+  if (certificado === null) {
+    return <Text style={estilos.fiscalTexto}>Verificando certificado digital...</Text>
+  }
+
+  if (!podeEmitir) {
+    return (
+      <View style={estilos.fiscalBloco}>
+        <Text style={estilos.fiscalTitulo}>
+          {certificado === 'expirado'
+            ? 'Certificado digital expirado'
+            : 'Nenhum certificado digital cadastrado'}
+        </Text>
+        <Text style={estilos.fiscalTexto}>
+          A venda já está registrada. Cadastre o certificado A1 pelo computador para emitir a nota.
+        </Text>
+        <Botao variante="secundario" onPress={onConcluir} largura>
+          Nova venda
+        </Botao>
+      </View>
+    )
+  }
+
+  if (estado === 'emitida' && nota) {
+    return (
+      <View style={estilos.fiscalBloco}>
+        <Text style={estilos.fiscalOk}>NFC-e {nota.numero} emitida</Text>
+        <Text style={estilos.fiscalChave}>{nota.chave}</Text>
+        <Botao onPress={onConcluir} largura>
+          Nova venda
+        </Botao>
+      </View>
+    )
+  }
+
+  return (
+    <View style={estilos.fiscalBloco}>
+      {estado === 'erro' ? (
+        <Text style={estilos.fiscalErro}>{erro ?? 'Não foi possível emitir a nota.'}</Text>
+      ) : null}
+
+      <Botao onPress={() => void emitir()} carregando={estado === 'processando'} largura>
+        {estado === 'processando' ? 'Emitindo...' : 'Emitir NFC-e'}
+      </Botao>
+      <Botao variante="secundario" onPress={onConcluir} largura>
+        Concluir sem nota
       </Botao>
     </View>
   )
