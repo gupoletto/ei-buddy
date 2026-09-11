@@ -1,4 +1,4 @@
-import type { SupplierSearchOutput } from '@na-regua/contracts'
+import type { SupplierSearchOutput, SupplierSuggestionsOutput } from '@na-regua/contracts'
 import type { ExecutionContext } from '../context.js'
 import type { SupplierDirectory } from '../ports/connections.js'
 
@@ -28,6 +28,31 @@ export async function searchSuppliers(
       city: l.city,
       distanceKm: l.distanceKm,
       products: [...l.products],
+    })),
+  }
+}
+
+/**
+ * Empresas que outras do MESMO ramo ja se conectaram — RF-01 (aditivo), ADR-0008.
+ *
+ * Leitura, sem `assertCanWrite`. Vazia ate haver conexao aceita entre pares
+ * do mesmo ramo — nao e erro, e o estado esperado enquanto a base e pequena
+ * (o mesmo risco ja registrado na DEC-021).
+ */
+export async function suggestSuppliers(
+  deps: SearchSuppliersDeps,
+  ctx: ExecutionContext,
+): Promise<SupplierSuggestionsOutput> {
+  const linhas = await deps.suppliers.suggest(ctx.companyId)
+
+  return {
+    suggestions: linhas.map((l) => ({
+      companyId: l.companyId,
+      companyName: l.companyName,
+      neighborhood: l.neighborhood,
+      city: l.city,
+      distanceKm: l.distanceKm,
+      peerCount: l.peerCount,
     })),
   }
 }

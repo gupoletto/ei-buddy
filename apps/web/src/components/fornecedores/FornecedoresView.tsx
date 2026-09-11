@@ -1,17 +1,25 @@
 'use client'
 
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Button, ButtonLink } from '@/components/ui/Button'
 import { Card, EmptyState, Field, Input } from '@/components/ui/UI'
 import { Spinner } from '@/components/auth/Fields'
 import { IconCheck, IconSearch, IconStore } from '@/components/Icons'
-import { buscarFornecedores, pedirConexao, type Fornecedor } from '@/lib/connections-api'
+import {
+  buscarFornecedores,
+  buscarSugestoes,
+  pedirConexao,
+  type Fornecedor,
+  type SugestaoDeFornecedor,
+} from '@/lib/connections-api'
 import styles from './fornecedores.module.css'
 
 const formatarDistancia = (km: number | null): string | null => {
   if (km === null) return null
   return km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`
 }
+
+const plural = (n: number, um: string, muitos: string) => (n === 1 ? um : muitos)
 
 /**
  * Buscar fornecedor por proximidade — ADR-0008, DEC-021, RF-01 a RF-04.
@@ -27,7 +35,19 @@ export default function FornecedoresView() {
   const [buscou, setBuscou] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
   const [resultados, setResultados] = useState<Fornecedor[]>([])
+  const [sugestoes, setSugestoes] = useState<SugestaoDeFornecedor[] | null>(null)
+  /* Uma so tabela de estado para os dois tipos de resultado: pedir a partir
+     de uma sugestao ou de um resultado de busca e a MESMA acao, e se a
+     mesma empresa aparecer nos dois lugares o segundo botao reflete o
+     primeiro clique em vez de fingir que nada aconteceu. */
   const [pedidos, setPedidos] = useState<Record<string, 'enviando' | 'enviado' | string>>({})
+
+  useEffect(() => {
+    void (async () => {
+      const r = await buscarSugestoes()
+      if (r.ok) setSugestoes(r.dados.suggestions)
+    })()
+  }, [])
 
   async function buscar(event: FormEvent) {
     event.preventDefault()
@@ -48,14 +68,14 @@ export default function FornecedoresView() {
     setResultados(r.dados.results)
   }
 
-  async function pedir(fornecedor: Fornecedor) {
-    setPedidos((atual) => ({ ...atual, [fornecedor.companyId]: 'enviando' }))
+  async function pedir(companyId: string) {
+    setPedidos((atual) => ({ ...atual, [companyId]: 'enviando' }))
 
-    const r = await pedirConexao(fornecedor.companyId)
+    const r = await pedirConexao(companyId)
 
     setPedidos((atual) => ({
       ...atual,
-      [fornecedor.companyId]: r.ok ? 'enviado' : r.erro,
+      [companyId]: r.ok ? 'enviado' : r.erro,
     }))
   }
 
@@ -74,6 +94,26 @@ export default function FornecedoresView() {
           </ButtonLink>
         </div>
       </div>
+
+      {sugestoes !== null && sugestoes.length > 0 ? (
+        <Card title="Sugestões para você">
+          <ul className={styles.lista}>
+            {sugestoes.map((s) => (
+              <LinhaDeResultado
+                key={s.companyId}
+                companyId={s.companyId}
+                companyName={s.companyName}
+                neighborhood={s.neighborhood}
+                city={s.city}
+                distanceKm={s.distanceKm}
+                detalhe={`${s.peerCount} ${plural(s.peerCount, 'empresa do seu ramo já se conectou', 'empresas do seu ramo já se conectaram')}`}
+                estado={pedidos[s.companyId]}
+                onPedir={pedir}
+              />
+            ))}
+          </ul>
+        </Card>
+      ) : null}
 
       <Card>
         <form className={styles.busca} onSubmit={(e) => void buscar(e)}>
@@ -112,53 +152,86 @@ export default function FornecedoresView() {
             />
           ) : (
             <ul className={styles.lista}>
-              {resultados.map((f) => {
-                const estado = pedidos[f.companyId]
-                const distancia = formatarDistancia(f.distanceKm)
-
-                return (
-                  <li key={f.companyId} className={styles.linha}>
-                    <IconStore size={20} />
-                    <div className={styles.linhaTexto}>
-                      <span className={styles.linhaTitulo}>
-                        {f.companyName}
-                        {distancia !== null ? (
-                          <span className={styles.linhaDetalhe}>· {distancia}</span>
-                        ) : null}
-                      </span>
-                      <span className={styles.linhaDetalhe}>
-                        {[f.neighborhood, f.city].filter(Boolean).join(', ') ||
-                          'Localização não informada'}
-                      </span>
-                      <span className={styles.linhaProdutos}>{f.products.join(', ')}</span>
-                    </div>
-
-                    {estado === 'enviado' ? (
-                      <Button size="sm" variant="secondary" disabled>
-                        <IconCheck size={16} />
-                        Pedido enviado
-                      </Button>
-                    ) : estado === 'enviando' ? (
-                      <Button size="sm" variant="secondary" disabled>
-                        <Spinner size={14} />
-                      </Button>
-                    ) : (
-                      <div className={styles.linhaAcao}>
-                        {estado !== undefined ? (
-                          <span className={styles.linhaErro}>{estado}</span>
-                        ) : null}
-                        <Button size="sm" variant="secondary" onClick={() => void pedir(f)}>
-                          Pedir conexão
-                        </Button>
-                      </div>
-                    )}
-                  </li>
-                )
-              })}
+              {resultados.map((f) => (
+                <LinhaDeResultado
+                  key={f.companyId}
+                  companyId={f.companyId}
+                  companyName={f.companyName}
+                  neighborhood={f.neighborhood}
+                  city={f.city}
+                  distanceKm={f.distanceKm}
+                  detalhe={f.products.join(', ')}
+                  estado={pedidos[f.companyId]}
+                  onPedir={pedir}
+                />
+              ))}
             </ul>
           )
         ) : null}
       </Card>
     </>
+  )
+}
+
+/**
+ * Uma linha de resultado — busca e sugestao usam a MESMA aparencia e a MESMA
+ * maquina de estado do botao (enviando/enviado/erro). O que muda entre as
+ * duas e so o `detalhe` (produtos vendidos, ou quantos pares do ramo ja
+ * conectaram) — extrair evitava duas copias da logica de botao divergindo
+ * silenciosamente com o tempo.
+ */
+function LinhaDeResultado({
+  companyId,
+  companyName,
+  neighborhood,
+  city,
+  distanceKm,
+  detalhe,
+  estado,
+  onPedir,
+}: {
+  companyId: string
+  companyName: string
+  neighborhood: string | null
+  city: string | null
+  distanceKm: number | null
+  detalhe: string
+  estado: string | undefined
+  onPedir: (companyId: string) => void
+}) {
+  const distancia = formatarDistancia(distanceKm)
+
+  return (
+    <li className={styles.linha}>
+      <IconStore size={20} />
+      <div className={styles.linhaTexto}>
+        <span className={styles.linhaTitulo}>
+          {companyName}
+          {distancia !== null ? <span className={styles.linhaDetalhe}>· {distancia}</span> : null}
+        </span>
+        <span className={styles.linhaDetalhe}>
+          {[neighborhood, city].filter(Boolean).join(', ') || 'Localização não informada'}
+        </span>
+        <span className={styles.linhaProdutos}>{detalhe}</span>
+      </div>
+
+      {estado === 'enviado' ? (
+        <Button size="sm" variant="secondary" disabled>
+          <IconCheck size={16} />
+          Pedido enviado
+        </Button>
+      ) : estado === 'enviando' ? (
+        <Button size="sm" variant="secondary" disabled>
+          <Spinner size={14} />
+        </Button>
+      ) : (
+        <div className={styles.linhaAcao}>
+          {estado !== undefined ? <span className={styles.linhaErro}>{estado}</span> : null}
+          <Button size="sm" variant="secondary" onClick={() => onPedir(companyId)}>
+            Pedir conexão
+          </Button>
+        </div>
+      )}
+    </li>
   )
 }

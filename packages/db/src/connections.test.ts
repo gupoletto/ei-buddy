@@ -77,6 +77,7 @@ describe.skipIf(!DATABASE_URL)('conexao entre usuarios — NR-107', () => {
     coordenada?: { lat: number; lng: number } | undefined
     ativa?: boolean
     telefone?: string
+    ramo?: string
   }) {
     const id = randomUUID()
     const cnpj = cnpjDeTesteLocal()
@@ -84,11 +85,13 @@ describe.skipIf(!DATABASE_URL)('conexao entre usuarios — NR-107', () => {
       sql,
       id,
       (tx) => tx`
-        INSERT INTO companies (id, legal_name, cnpj, email, phone, is_active, latitude, longitude)
+        INSERT INTO companies
+          (id, legal_name, cnpj, email, phone, is_active, latitude, longitude, business_segment)
         VALUES (
           ${id}, ${opcoes.nome}, ${cnpj}, ${`contato@${cnpj}.local`}, ${opcoes.telefone ?? '41999990000'},
           ${opcoes.ativa ?? true},
-          ${opcoes.coordenada?.lat ?? null}, ${opcoes.coordenada?.lng ?? null}
+          ${opcoes.coordenada?.lat ?? null}, ${opcoes.coordenada?.lng ?? null},
+          ${opcoes.ramo ?? null}
         )
       `,
     )
@@ -221,6 +224,75 @@ describe.skipIf(!DATABASE_URL)('conexao entre usuarios — NR-107', () => {
       const resultados = await sql`SELECT * FROM company_connections_search(${buscadora}, ${termo})`
 
       expect(resultados).toHaveLength(0)
+    })
+  })
+
+  describe('company_connections_suggestions — filtragem colaborativa por ramo, ADR-0008', () => {
+    it('sugere quem outras empresas do MESMO ramo ja conectaram, com o total de pares', async () => {
+      const ramo = termoUnico()
+      const confeitariaA = await criarEmpresa({ nome: 'Confeitaria A', ramo, coordenada: ORIGEM })
+      const confeitariaB = await criarEmpresa({
+        nome: 'Confeitaria B',
+        ramo: ` ${ramo.toUpperCase()} `,
+      })
+      const confeitariaC = await criarEmpresa({
+        nome: 'Confeitaria C (busca)',
+        ramo,
+        coordenada: PERTO,
+      })
+      const distribuidora = await criarEmpresa({
+        nome: 'Distribuidora de Insumos',
+        coordenada: PERTO,
+      })
+      const donoA = await criarDono(confeitariaA)
+      const donoB = await criarDono(confeitariaB)
+      const donoDist = await criarDono(distribuidora)
+
+      const [pedidoA] = await sql`
+        SELECT * FROM company_connections_request(${donoA.id}, ${confeitariaA}, ${distribuidora})
+      `
+      await sql`SELECT company_connections_respond(${pedidoA!.id}, ${donoDist.id}, true)`
+      const [pedidoB] = await sql`
+        SELECT * FROM company_connections_request(${donoB.id}, ${confeitariaB}, ${distribuidora})
+      `
+      await sql`SELECT company_connections_respond(${pedidoB!.id}, ${donoDist.id}, true)`
+
+      const sugestoes = await sql`SELECT * FROM company_connections_suggestions(${confeitariaC})`
+
+      expect(sugestoes).toHaveLength(1)
+      expect(sugestoes[0]!.company_id).toBe(distribuidora)
+      expect(sugestoes[0]!.peer_count).toBe(2)
+      expect(Number(sugestoes[0]!.distance_km)).toBeLessThan(5)
+    })
+
+    it('vazia quando ninguem do ramo tem conexao aceita ainda — cold start', async () => {
+      const ramo = termoUnico()
+      const sozinha = await criarEmpresa({ nome: 'Sozinha no Ramo', ramo })
+
+      const sugestoes = await sql`SELECT * FROM company_connections_suggestions(${sozinha})`
+
+      expect(sugestoes).toHaveLength(0)
+    })
+
+    it('nao sugere quem ja tem pedido ativo com quem busca', async () => {
+      const ramo = termoUnico()
+      const confeitariaA = await criarEmpresa({ nome: 'Confeitaria Pares A', ramo })
+      const confeitariaC = await criarEmpresa({ nome: 'Confeitaria Pares C', ramo })
+      const distribuidora = await criarEmpresa({ nome: 'Distribuidora Ja Pedida' })
+      const donoA = await criarDono(confeitariaA)
+      const donoC = await criarDono(confeitariaC)
+      const donoDist = await criarDono(distribuidora)
+
+      const [pedidoA] = await sql`
+        SELECT * FROM company_connections_request(${donoA.id}, ${confeitariaA}, ${distribuidora})
+      `
+      await sql`SELECT company_connections_respond(${pedidoA!.id}, ${donoDist.id}, true)`
+      /* C ja pediu para a mesma distribuidora — nao deveria ser "sugerida" de novo. */
+      await sql`SELECT * FROM company_connections_request(${donoC.id}, ${confeitariaC}, ${distribuidora})`
+
+      const sugestoes = await sql`SELECT * FROM company_connections_suggestions(${confeitariaC})`
+
+      expect(sugestoes.map((s) => s.company_id)).not.toContain(distribuidora)
     })
   })
 
@@ -370,6 +442,34 @@ describe.skipIf(!DATABASE_URL)('conexao entre usuarios — NR-107', () => {
           city: null,
           distanceKm: expect.any(Number),
           products: [`Farinha de trigo especial adapter ${termo}`],
+        },
+      ])
+    })
+
+    it('suggest bate de ponta a ponta, com o mapeamento snake_case -> camelCase', async () => {
+      const ramo = termoUnico()
+      const diretorio = createSupplierDirectory(sql)
+      const parDoRamo = await criarEmpresa({ nome: 'Par do Ramo Adapter', ramo })
+      const buscadora = await criarEmpresa({ nome: 'Busca Sugestao Adapter', ramo })
+      const sugerida = await criarEmpresa({ nome: 'Sugerida Adapter', coordenada: PERTO })
+      const donoPar = await criarDono(parDoRamo)
+      const donoSugerida = await criarDono(sugerida)
+
+      const [pedido] = await sql`
+        SELECT * FROM company_connections_request(${donoPar.id}, ${parDoRamo}, ${sugerida})
+      `
+      await sql`SELECT company_connections_respond(${pedido!.id}, ${donoSugerida.id}, true)`
+
+      const sugestoes = await diretorio.suggest(buscadora)
+
+      expect(sugestoes).toEqual([
+        {
+          companyId: sugerida,
+          companyName: 'Sugerida Adapter',
+          neighborhood: null,
+          city: null,
+          distanceKm: null,
+          peerCount: 1,
         },
       ])
     })

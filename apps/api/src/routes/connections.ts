@@ -7,6 +7,7 @@ import {
   requestConnection,
   respondToConnection,
   searchSuppliers,
+  suggestSuppliers,
   type SearchSuppliersDeps,
 } from '@na-regua/core'
 import type { FastifyInstance } from 'fastify'
@@ -29,6 +30,15 @@ export function registerConnectionsRoutes(app: FastifyInstance, deps: Connection
     const { termo } = validate(buscarFornecedoresQuerySchema, request.query ?? {})
 
     const saida = await searchSuppliers(deps, ctx, termo)
+
+    return reply.code(200).send(saida)
+  })
+
+  /** Empresas que outras do seu ramo ja conectaram — RF-01 (aditivo), ADR-0008. */
+  app.get('/fornecedores/sugestoes', async (request, reply) => {
+    const ctx = requireContext(request)
+
+    const saida = await suggestSuppliers(deps, ctx)
 
     return reply.code(200).send(saida)
   })

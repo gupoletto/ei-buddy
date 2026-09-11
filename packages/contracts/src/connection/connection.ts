@@ -47,6 +47,30 @@ export const supplierSearchOutputSchema = z.object({
 
 export type SupplierSearchOutput = z.infer<typeof supplierSearchOutputSchema>
 
+/**
+ * Uma sugestao — "empresas do seu ramo ja se conectaram com esta" (ADR-0008).
+ *
+ * `peerCount` e o que sustenta a sugestao: quantas empresas do MESMO ramo
+ * que a que busca ja tem conexao aceita com esta. Sem IA, sem lista de
+ * palavra-chave por ramo — so filtragem colaborativa com o dado que ja existe.
+ */
+export const supplierSuggestionSchema = z.object({
+  companyId: idSchema,
+  companyName: z.string(),
+  neighborhood: z.string().nullable(),
+  city: z.string().nullable(),
+  distanceKm: z.number().nullable(),
+  peerCount: z.number().int(),
+})
+
+export type SupplierSuggestion = z.infer<typeof supplierSuggestionSchema>
+
+export const supplierSuggestionsOutputSchema = z.object({
+  suggestions: z.array(supplierSuggestionSchema),
+})
+
+export type SupplierSuggestionsOutput = z.infer<typeof supplierSuggestionsOutputSchema>
+
 export const requestConnectionInputSchema = z
   .object({
     targetCompanyId: idSchema,

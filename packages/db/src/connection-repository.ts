@@ -10,6 +10,7 @@ import {
   type NewConnectionRequest,
   type SupplierDirectory,
   type SupplierSearchRow,
+  type SupplierSuggestionRow,
 } from '@na-regua/core'
 import type { Sql } from 'postgres'
 
@@ -47,6 +48,24 @@ const paraResultadoDeBusca = (l: LinhaDeBusca): SupplierSearchRow => ({
   products: l.products,
 })
 
+type LinhaDeSugestao = {
+  company_id: string
+  company_name: string
+  neighborhood: string | null
+  city: string | null
+  distance_km: string | null
+  peer_count: number
+}
+
+const paraSugestao = (l: LinhaDeSugestao): SupplierSuggestionRow => ({
+  companyId: l.company_id,
+  companyName: l.company_name,
+  neighborhood: l.neighborhood,
+  city: l.city,
+  distanceKm: l.distance_km === null ? null : Number(l.distance_km),
+  peerCount: l.peer_count,
+})
+
 export function createSupplierDirectory(sql: Sql): SupplierDirectory {
   return {
     search: async (requesterCompanyId, term) => {
@@ -54,6 +73,13 @@ export function createSupplierDirectory(sql: Sql): SupplierDirectory {
         SELECT * FROM company_connections_search(${requesterCompanyId}, ${term})
       `
       return linhas.map(paraResultadoDeBusca)
+    },
+
+    suggest: async (requesterCompanyId) => {
+      const linhas = await sql<LinhaDeSugestao[]>`
+        SELECT * FROM company_connections_suggestions(${requesterCompanyId})
+      `
+      return linhas.map(paraSugestao)
     },
   }
 }

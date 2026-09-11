@@ -6,6 +6,7 @@ import type {
   NewConnectionRequest,
   SupplierDirectory,
   SupplierSearchRow,
+  SupplierSuggestionRow,
 } from '../ports/connections.js'
 
 /**
@@ -80,10 +81,17 @@ export class InMemoryConnectionNotifier implements ConnectionNotifier {
 
 export class InMemorySupplierDirectory implements SupplierDirectory {
   resultado: readonly SupplierSearchRow[] = []
+  sugestoes: readonly SupplierSuggestionRow[] = []
   readonly chamadas: { readonly requesterCompanyId: CompanyId; readonly term: string }[] = []
+  readonly chamadasDeSugestao: CompanyId[] = []
 
   async search(requesterCompanyId: CompanyId, term: string): Promise<readonly SupplierSearchRow[]> {
     this.chamadas.push({ requesterCompanyId, term })
     return this.resultado
+  }
+
+  async suggest(requesterCompanyId: CompanyId): Promise<readonly SupplierSuggestionRow[]> {
+    this.chamadasDeSugestao.push(requesterCompanyId)
+    return this.sugestoes
   }
 }
