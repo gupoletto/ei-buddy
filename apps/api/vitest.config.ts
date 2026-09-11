@@ -19,5 +19,15 @@ export default defineConfig({
   test: {
     testTimeout: 30_000,
     hookTimeout: 60_000,
+    /*
+     * Aplica as migrations UMA VEZ, antes de qualquer worker abrir — ver
+     * `src/e2e/global-setup.ts`. Sem isto, os quatro testes de ponta a ponta
+     * chamavam `migrate()` cada um no proprio `beforeAll`, em paralelo, contra
+     * o mesmo Postgres vazio da CI: a trava de `migrate.ts` serializa as
+     * escritas, mas nao impede duas sessoes de tentarem criar a MESMA tabela
+     * nova em sequencia — `relation "x" already exists`, sempre que uma
+     * migration adiciona tabela.
+     */
+    globalSetup: ['./src/e2e/global-setup.ts'],
   },
 })
