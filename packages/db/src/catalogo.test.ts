@@ -220,3 +220,99 @@ describe.skipIf(!DATABASE_URL)('catalogo do backoffice — NR-072', () => {
     })
   })
 })
+
+describe.skipIf(!DATABASE_URL)('cadastro de produto — categoria e fornecedor', () => {
+  let admin: Sql
+  let sql: Sql
+  let aplicacao: ConexaoDeAplicacao
+  let empresa: string
+  let usuario: string
+  let repo: ReturnType<typeof createProductRepository>
+
+  beforeAll(async () => {
+    await migrate(MIGRATION_URL!)
+
+    admin = postgres(DATABASE_URL!, { max: 4, onnotice: () => {} })
+    aplicacao = await conectarComoAplicacao(admin, DATABASE_URL!)
+    sql = aplicacao.sql
+    repo = createProductRepository(sql)
+
+    const cnpj = cnpjDeTeste('6')
+    empresa = randomUUID()
+    await withTenant(
+      sql,
+      empresa,
+      (tx) => tx`
+        INSERT INTO companies (id, legal_name, cnpj, email, phone)
+        VALUES (${empresa}, 'Loja do Cadastro de Produto', ${cnpj}, ${`p@${cnpj}.local`},
+                '41999990000')
+      `,
+    )
+
+    usuario = randomUUID()
+    await admin`
+      INSERT INTO users (id, name, email) VALUES (${usuario}, 'Dono', ${`u${usuario}@local`})
+    `
+  }, 60_000)
+
+  afterAll(async () => {
+    if (!sql) {
+      await admin?.end({ timeout: 5 })
+      return
+    }
+    await withTenant(sql, empresa, async (tx) => {
+      await tx`DELETE FROM products`
+      await tx`DELETE FROM companies`
+    })
+    await admin`DELETE FROM users WHERE id = ${usuario}`
+    await aplicacao.encerrar()
+    await admin.end({ timeout: 5 })
+  })
+
+  const base = {
+    description: 'Cafe torrado 500g',
+    internalCode: 'PROD-0001',
+    unitOfMeasure: 'un' as const,
+    salePriceCents: 2490,
+    costPriceCents: 1600,
+    minStock: 0,
+    ncm: null,
+    cfop: null,
+    taxSituationCode: null,
+    createdAt: new Date('2026-09-11T12:00:00.000Z'),
+  }
+
+  /*
+   * O defeito que isto guarda: `products.supplier` existia desde a migration
+   * 0007, mas o INSERT nunca gravava nela — a coluna ficava sempre NULL
+   * mesmo quando `NewProduct.supplier` chegava preenchido.
+   */
+  it('grava categoria e fornecedor, e devolve os dois na leitura', async () => {
+    const criado = await repo.create({
+      ...base,
+      companyId: empresa,
+      createdBy: usuario,
+      category: 'Mercearia',
+      supplier: 'Torrefacao Aurora',
+    })
+
+    expect(criado.category).toBe('Mercearia')
+    expect(criado.supplier).toBe('Torrefacao Aurora')
+
+    const lido = await repo.findById(empresa, criado.id)
+    expect(lido?.category).toBe('Mercearia')
+    expect(lido?.supplier).toBe('Torrefacao Aurora')
+  })
+
+  it('sem categoria nem fornecedor, os dois ficam NULOS — nao ausentes', async () => {
+    const criado = await repo.create({
+      ...base,
+      internalCode: 'PROD-0002',
+      companyId: empresa,
+      createdBy: usuario,
+    })
+
+    expect(criado.category).toBeNull()
+    expect(criado.supplier).toBeNull()
+  })
+})

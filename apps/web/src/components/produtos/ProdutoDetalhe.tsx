@@ -194,6 +194,14 @@ export default function ProdutoDetalhe({ produtoId }: { produtoId: string }) {
               <dd>{produto.unidade}</dd>
             </div>
             <div>
+              <dt>Categoria</dt>
+              <dd>{produto.categoria ?? '—'}</dd>
+            </div>
+            <div>
+              <dt>Fornecedor</dt>
+              <dd>{produto.fornecedor ?? '—'}</dd>
+            </div>
+            <div>
               <dt>NCM</dt>
               <dd>{produto.ncm ?? '—'}</dd>
             </div>

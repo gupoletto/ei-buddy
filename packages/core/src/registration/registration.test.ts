@@ -362,6 +362,33 @@ describe('registerProduct — RF-017, RF-018', () => {
     expect(p.barcode).toBeNull()
   })
 
+  /*
+   * O defeito que isto guarda: a coluna `products.supplier` existia desde a
+   * migration 0007, mas `registerProduct` nunca a repassava — o formulario
+   * mandava o fornecedor e ele era descartado antes de chegar ao repositorio.
+   */
+  it('repassa categoria e fornecedor ao repositorio', async () => {
+    const products = new InMemoryProductRepository()
+
+    const p = await registerProduct({ products }, contexto(), {
+      ...produtoValido,
+      category: 'Mercearia',
+      supplier: 'Torrefacao Aurora',
+    })
+
+    expect(p.category).toBe('Mercearia')
+    expect(p.supplier).toBe('Torrefacao Aurora')
+  })
+
+  it('sem categoria nem fornecedor, os dois voltam nulos — nao ausentes', async () => {
+    const products = new InMemoryProductRepository()
+
+    const p = await registerProduct({ products }, contexto(), produtoValido)
+
+    expect(p.category).toBeNull()
+    expect(p.supplier).toBeNull()
+  })
+
   it('gera codigo interno tambem para produto com codigo de barras', async () => {
     const products = new InMemoryProductRepository()
 

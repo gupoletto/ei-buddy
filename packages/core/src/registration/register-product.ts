@@ -82,6 +82,7 @@ export async function registerProduct(
     taxSituationCode: input.taxSituationCode ?? null,
     minStock: input.minStock,
     category: input.category,
+    supplier: input.supplier,
     createdBy: ctx.userId,
     createdAt: ctx.now,
   })

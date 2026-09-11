@@ -455,6 +455,7 @@ type LinhaProduto = {
   stock: number
   min_stock: number
   category: string | null
+  supplier: string | null
   is_active: boolean
   created_at: Date
   ncm: string | null
@@ -479,6 +480,7 @@ const paraProduto = (l: LinhaProduto): ProductOutput => ({
   stock: l.stock,
   minStock: l.min_stock,
   category: l.category,
+  supplier: l.supplier,
 })
 
 export function createProductRepository(sql: Sql): ProductRepository {
@@ -491,11 +493,12 @@ export function createProductRepository(sql: Sql): ProductRepository {
           INSERT INTO products
             (company_id, description, barcode, internal_code, unit_of_measure,
              sale_price_cents, cost_price_cents, tax_rate, min_stock, category,
-             ncm, cfop, tax_situation_code,
+             supplier, ncm, cfop, tax_situation_code,
              created_by, created_at)
           VALUES (${p.companyId}, ${p.description}, ${p.barcode ?? null}, ${p.internalCode},
                   ${p.unitOfMeasure}, ${p.salePriceCents}, ${p.costPriceCents},
                   ${p.taxRate ?? null}, ${p.minStock}, ${p.category ?? null},
+                  ${p.supplier ?? null},
                   ${p.ncm}, ${p.cfop}, ${p.taxSituationCode},
                   ${p.createdBy}, ${p.createdAt})
           RETURNING *
