@@ -156,8 +156,14 @@ export type DadosProduto = {
 /**
  * Cadastra o produto — RF-017, RF-019.
  *
- * **Fornecedor e imagem nao sao enviados.** Categoria vai como texto
- * (`category`) — o 0909 nao tem tabela `categories`.
+ * **Imagem nao e enviada** — precisa de upload de arquivo, que esta fora do
+ * escopo aqui. Categoria e fornecedor vao como texto (`category`/`supplier`):
+ * nenhum dos dois normaliza numa tabela propria, e a coluna do fornecedor foi
+ * adicionada ao lado da de categoria (migration 0007).
+ *
+ * O fornecedor era digitado nesta tela e DESCARTADO em silencio: a coluna ja
+ * existia no banco, mas o contrato de cadastro nunca a expunha, e o lojista
+ * achava ter informado.
  */
 export async function salvarProduto(
   dados: DadosProduto,
@@ -178,6 +184,7 @@ export async function salvarProduto(
         costPriceCents: Math.round(dados.precoCusto * 100),
         minStock: Math.round(dados.estoqueMinimo),
         ...(dados.categoria.trim() === '' ? {} : { category: dados.categoria.trim() }),
+        ...(dados.fornecedor.trim() === '' ? {} : { supplier: dados.fornecedor.trim() }),
 
         /*
          * Fiscais — RF-046.

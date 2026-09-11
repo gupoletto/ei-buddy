@@ -233,6 +233,7 @@ function cadastroEmMemoria() {
         stock: 0,
         minStock: p.minStock,
         category: p.category ?? null,
+        supplier: p.supplier ?? null,
       }
       produtos.push(pr)
 
@@ -537,6 +538,35 @@ describe('cadastrar produto — RF-017, RF-019', () => {
     const r = await app.inject({ method: 'POST', url: '/produtos', payload: PRODUTO })
 
     expect(r.statusCode).toBe(201)
+  })
+
+  /*
+   * O defeito que isto guarda: `products.supplier` existia desde a migration
+   * 0007, mas o contrato de cadastro nunca a expunha — o lojista digitava o
+   * fornecedor e o cadastro descartava o campo em silencio.
+   */
+  it('grava categoria e fornecedor', async () => {
+    const c = await buildApp()
+    app = c.app
+
+    const r = await app.inject({
+      method: 'POST',
+      url: '/produtos',
+      payload: { ...PRODUTO, category: 'Mercearia', supplier: 'Torrefacao Aurora' },
+    })
+
+    expect(r.json().category).toBe('Mercearia')
+    expect(r.json().supplier).toBe('Torrefacao Aurora')
+  })
+
+  it('sem categoria nem fornecedor, os dois voltam nulos', async () => {
+    const c = await buildApp()
+    app = c.app
+
+    const r = await app.inject({ method: 'POST', url: '/produtos', payload: PRODUTO })
+
+    expect(r.json().category).toBeNull()
+    expect(r.json().supplier).toBeNull()
   })
 
   /* RF-019: sem codigo de barras, `core` gera o interno. A rota nao participa
