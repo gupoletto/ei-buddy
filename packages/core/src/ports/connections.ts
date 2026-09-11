@@ -19,9 +19,25 @@ export type SupplierSearchRow = {
   readonly products: readonly string[]
 }
 
+export type SupplierSuggestionRow = {
+  readonly companyId: CompanyId
+  readonly companyName: string
+  readonly neighborhood: string | null
+  readonly city: string | null
+  readonly distanceKm: number | null
+  /** Quantas empresas do MESMO ramo ja tem conexao aceita com esta. */
+  readonly peerCount: number
+}
+
 export type SupplierDirectory = {
   /** Quem vende `term`, perto da empresa que busca — nunca telefone/endereco. */
   search(requesterCompanyId: CompanyId, term: string): Promise<readonly SupplierSearchRow[]>
+
+  /**
+   * Quem empresas do MESMO ramo ja conectaram — filtragem colaborativa, sem
+   * IA (ADR-0008). Vazio ate haver conexao aceita entre pares do ramo.
+   */
+  suggest(requesterCompanyId: CompanyId): Promise<readonly SupplierSuggestionRow[]>
 }
 
 export type ConnectionDirection = 'sent' | 'received'

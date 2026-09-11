@@ -21,7 +21,7 @@ import {
   requestConnection,
   respondToConnection,
 } from './manage-connections.js'
-import { searchSuppliers } from './search-suppliers.js'
+import { searchSuppliers, suggestSuppliers } from './search-suppliers.js'
 
 const AGORA = new Date('2026-09-10T12:00:00.000Z')
 
@@ -81,6 +81,36 @@ describe('searchSuppliers — RF-01, RF-02', () => {
     const saida = await searchSuppliers({ suppliers }, contexto(), 'farinha')
 
     expect(saida.results).toEqual([])
+  })
+})
+
+describe('suggestSuppliers — filtragem colaborativa por ramo, ADR-0008', () => {
+  it('repassa a empresa do contexto para a porta', async () => {
+    const { suppliers } = cenario()
+    suppliers.sugestoes = [
+      {
+        companyId: 'emp-9',
+        companyName: 'Distribuidora de Insumos',
+        neighborhood: null,
+        city: 'Curitiba',
+        distanceKm: 3.0,
+        peerCount: 2,
+      },
+    ]
+
+    const saida = await suggestSuppliers({ suppliers }, contexto())
+
+    expect(suppliers.chamadasDeSugestao).toEqual(['emp-1'])
+    expect(saida.suggestions).toEqual(suppliers.sugestoes)
+  })
+
+  it('vazia enquanto nao ha peer do ramo conectado — nao e erro', async () => {
+    const { suppliers } = cenario()
+    suppliers.sugestoes = []
+
+    const saida = await suggestSuppliers({ suppliers }, contexto())
+
+    expect(saida.suggestions).toEqual([])
   })
 })
 

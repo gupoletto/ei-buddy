@@ -69,6 +69,7 @@ export type {
   NewConnectionRequest,
   SupplierDirectory,
   SupplierSearchRow,
+  SupplierSuggestionRow,
 } from './ports/connections.js'
 export type {
   CompanySettingsRepository,
@@ -91,7 +92,7 @@ export {
   ConnectionNotFoundError,
   TargetCompanyUnavailableError,
 } from './ports/connections.js'
-export { searchSuppliers } from './connections/search-suppliers.js'
+export { searchSuppliers, suggestSuppliers } from './connections/search-suppliers.js'
 export type { SearchSuppliersDeps } from './connections/search-suppliers.js'
 export {
   connectionPendingCount,

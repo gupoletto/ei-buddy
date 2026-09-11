@@ -17,6 +17,17 @@ export type Fornecedor = {
   products: string[]
 }
 
+/** Empresas que outras do seu ramo ja conectaram — filtragem colaborativa, sem IA (ADR-0008). */
+export type SugestaoDeFornecedor = {
+  companyId: string
+  companyName: string
+  neighborhood: string | null
+  city: string | null
+  distanceKm: number | null
+  /** Quantas empresas do seu ramo ja tem conexao aceita com esta. */
+  peerCount: number
+}
+
 export type ConexaoContato = {
   phone: string
   postalCode: string | null
@@ -42,6 +53,9 @@ export type Conexao = {
 
 export const buscarFornecedores = (termo: string): Promise<Resultado<{ results: Fornecedor[] }>> =>
   pedir(`/api/fornecedores?termo=${encodeURIComponent(termo)}`)
+
+export const buscarSugestoes = (): Promise<Resultado<{ suggestions: SugestaoDeFornecedor[] }>> =>
+  pedir('/api/fornecedores/sugestoes')
 
 export const pedirConexao = (targetCompanyId: string): Promise<Resultado<{ id: string }>> =>
   pedir('/api/conexoes', { method: 'POST', body: JSON.stringify({ targetCompanyId }) })

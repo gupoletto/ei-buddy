@@ -47,7 +47,7 @@ PR**, e a linha sai da tabela de abertas.
 | 🔴 Aberta          |   9 | DEC-003, 005, 007, 009, 011, 012, 013, 016, 018 |
 | 🟡 Em análise      |   1 | DEC-001                                         |
 | ⚪ Adiada          |   1 | DEC-014                                         |
-| 🟢 Decidida        |   8 | DEC-002, 006, 008, 010, 015, 019, 020, 021      |
+| 🟢 Decidida        |   9 | DEC-002, 006, 008, 010, 015, 019, 020, 021, 022 |
 | ❓ Pergunta aberta |  10 | QST-001 a QST-008, QST-011, QST-012             |
 
 **Bloqueando o MVP agora:** DEC-003, DEC-009.
@@ -560,6 +560,22 @@ risco: a base de usuários pequena continua sendo o motivo pelo qual buscas
 por produto específico podem voltar vazias no começo. Ver "Consequências" na
 ADR-0008 para o que isso implica em não regredir a decisão por baixa adoção
 inicial sem antes medir.
+
+---
+
+### <a id="dec-022"></a>DEC-022 — Como sugerir conexão sem IA
+
+|             |                                                                      |
+| ----------- | -------------------------------------------------------------------- |
+| **Status**  | 🟢 Decidida — [ADR-0009](adr/0009-sugestao-de-conexao-por-ramo.md)   |
+| **Escolha** | Filtragem colaborativa por ramo — sem lista de palavra-chave, sem IA |
+| **Data**    | 2026-09-10                                                           |
+
+Sugestão de fornecedor "baseada no negócio" sem exigir busca: se outras
+empresas do MESMO ramo (texto livre, comparado sem caixa nem espaço) já tem
+conexão ACEITA com uma empresa, ela é sugerida também. Começa vazia até
+haver massa crítica de conexões entre pares do mesmo ramo — mesmo risco já
+registrado na DEC-021.
 
 ## Documentos relacionados
 

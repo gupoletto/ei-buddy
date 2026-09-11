@@ -63,6 +63,35 @@ function criarVerificador(secret: string): string {
   return `${sal.toString('base64url')}:${derivar(secret, sal).toString('base64url')}`
 }
 
+/** Sincrono de proposito — a classe inteira e sincrona, e um `await` a mais so para dormir destoaria. */
+function dormirSincrono(ms: number): void {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms)
+}
+
+/**
+ * `rename` no Windows pode recusar com `EPERM`/`EBUSY` quando outro processo
+ * tem o DESTINO aberto no instante exato da troca — nao e o mesmo bug do
+ * `.tmp` fixo (esse ja tinha nome unico), e sim uma diferenca real de
+ * semantica de arquivo entre Windows e POSIX: `rename` sobre um arquivo que
+ * outro processo esta lendo e permitido em Linux e pode falhar no Windows.
+ * A suite de e2e roda em varios processos Vitest, todos gravando o mesmo
+ * arquivo — a colisao e rara, mas o suficiente numero de tentativas com um
+ * atraso pequeno resolve sem inventar um lock de arquivo.
+ */
+function renomearComRetentativa(origem: string, destino: string): void {
+  const MAX_TENTATIVAS = 5
+  for (let tentativa = 1; tentativa <= MAX_TENTATIVAS; tentativa++) {
+    try {
+      renameSync(origem, destino)
+      return
+    } catch (erro) {
+      const codigo = (erro as NodeJS.ErrnoException).code
+      if ((codigo !== 'EPERM' && codigo !== 'EBUSY') || tentativa === MAX_TENTATIVAS) throw erro
+      dormirSincrono(20 * tentativa)
+    }
+  }
+}
+
 function confere(secret: string, verificador: string): boolean {
   const [salBase, hashBase] = verificador.split(':')
   if (salBase === undefined || hashBase === undefined) return false
@@ -140,7 +169,7 @@ export class IdentidadeEmArquivo implements IdentityProvider, IdentityRegistrar 
      */
     const temporario = `${this.caminho}.${process.pid}.${randomBytes(4).toString('hex')}.tmp`
     writeFileSync(temporario, JSON.stringify([...this.registros.values()], null, 2), 'utf8')
-    renameSync(temporario, this.caminho)
+    renomearComRetentativa(temporario, this.caminho)
   }
 
   async verify(credential: Credential): Promise<VerifiedIdentity | undefined> {

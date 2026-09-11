@@ -237,4 +237,50 @@ describe.skipIf(!DATABASE_URL)('conexao entre usuarios, ponta a ponta — ADR-00
     expect(conexoesDeB[0]!.status).toBe('rejected')
     expect(conexoesDeB[0]!.contact).toBeNull()
   })
+
+  it('GET /fornecedores/sugestoes: sugere quem um par do mesmo ramo ja conectou', async () => {
+    const ramo = `Ramo de Teste ${randomUUID()}`
+    const sql = getClient(DATABASE_URL!)
+
+    const cadastroPar = signupInputSchema.parse({
+      name: 'Dono do Par',
+      email: `par-${randomUUID()}@loja.local`,
+      secret: 'senha-de-teste',
+      legalName: 'Empresa Par do Ramo LTDA',
+      cnpj: cnpjDeTeste(),
+      phone: telefoneDeTeste(),
+    })
+    const rPar = await app.inject({ method: 'POST', url: '/auth/signup', payload: cadastroPar })
+    const sessaoPar = rPar.json()
+
+    const cadastroBusca = signupInputSchema.parse({
+      name: 'Dona que Busca',
+      email: `busca-${randomUUID()}@loja.local`,
+      secret: 'senha-de-teste',
+      legalName: 'Empresa que Busca LTDA',
+      cnpj: cnpjDeTeste(),
+      phone: telefoneDeTeste(),
+    })
+    const rBusca = await app.inject({ method: 'POST', url: '/auth/signup', payload: cadastroBusca })
+    const sessaoBusca = rBusca.json()
+
+    await sql`UPDATE companies SET business_segment = ${ramo} WHERE id = ${sessaoPar.activeCompanyId}`
+    await sql`UPDATE companies SET business_segment = ${ramo} WHERE id = ${sessaoBusca.activeCompanyId}`
+
+    const pedidoDoPar = await comToken(sessaoPar.token, {
+      method: 'POST',
+      url: '/conexoes',
+      payload: { targetCompanyId: empresaBId },
+    })
+    const { id: conexaoDoPar } = pedidoDoPar.json() as { id: string }
+    await comToken(tokenB, { method: 'POST', url: `/conexoes/${conexaoDoPar}/aceitar` })
+
+    const r = await comToken(sessaoBusca.token, { method: 'GET', url: '/fornecedores/sugestoes' })
+    expect(r.statusCode).toBe(200)
+
+    const corpo = r.json() as { suggestions: { companyId: string; peerCount: number }[] }
+    expect(corpo.suggestions).toEqual([
+      expect.objectContaining({ companyId: empresaBId, peerCount: 1 }),
+    ])
+  })
 })
