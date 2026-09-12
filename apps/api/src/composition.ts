@@ -25,6 +25,8 @@ import {
   createAppointmentRepository,
   createBankTransactionWriter,
   createChartOfAccountsRepository,
+  createFixedCostPayableGenerator,
+  createFixedCostRepository,
   createConnectionRequests,
   createCrmRepository,
   createInventoryHistory,
@@ -69,6 +71,7 @@ import type { ConnectionsRouteDeps } from './routes/connections.js'
 import type { ConciliacaoDeps } from './routes/conciliacao.js'
 import type { SaleRouteDeps } from './routes/sales.js'
 import type { ContabilidadeDeps } from './routes/contabilidade.js'
+import type { CustosFixosDeps } from './routes/custos-fixos.js'
 import type { BaixasDeps } from './routes/baixas.js'
 import type { EstoqueDeps } from './routes/estoque.js'
 import type { SuporteDeps } from './routes/suporte.js'
@@ -565,6 +568,17 @@ export function buildContabilidadeDeps(): ContabilidadeDeps {
   const sql = getClient(env.DATABASE_URL)
   return {
     accounts: createChartOfAccountsRepository(sql),
+    /* Mesma pendencia das outras: `db` nao expoe repositorio de auditoria. */
+    audit: createAuditTrail(sql),
+  }
+}
+
+/** Custos fixos — NR-110. */
+export function buildCustosFixosDeps(): CustosFixosDeps {
+  const sql = getClient(env.DATABASE_URL)
+  return {
+    fixedCosts: createFixedCostRepository(sql),
+    generator: createFixedCostPayableGenerator(sql),
     /* Mesma pendencia das outras: `db` nao expoe repositorio de auditoria. */
     audit: createAuditTrail(sql),
   }

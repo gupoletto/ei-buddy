@@ -176,25 +176,6 @@ export type Banco = {
   ultimaConciliacao: string | null
 }
 
-/** Modulo: Plano de Contas */
-export type PlanoContas = {
-  id: string
-  nome: string
-  tipo: 'receita' | 'despesa'
-  gastoMes: number
-}
-
-export type CustoFixo = {
-  id: string
-  nome: string
-  planoContasId: string
-  planoContasNome: string
-  bancoId: string
-  bancoNome: string
-  diaVencimento: number
-  valor: number
-}
-
 /** Modulo: Agenda */
 export type TipoCompromisso = 'cobranca' | 'entrega' | 'reuniao' | 'pagamento'
 

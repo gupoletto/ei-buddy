@@ -50,13 +50,13 @@ consome. A porta é declarada pelo núcleo; a seta aponta para dentro
 
 |                               | Tarefas | Dias |
 | ----------------------------- | ------: | ---: |
-| Total                         |      88 |  222 |
-| ✅ Concluídas                 |      78 |  187 |
+| Total                         |      89 |  226 |
+| ✅ Concluídas                 |      79 |  191 |
 | 🚧 Bloqueadas por decisão     |       7 |   25 |
 | 🚧 Bloqueadas por dependência |       1 |    2 |
 | ⬜ A fazer, pode começar hoje |       2 |    8 |
 
-> **Números conferidos contra a `main` em 2026-09-11**, não estimados: cada
+> **Números conferidos contra a `main` em 2026-09-12**, não estimados: cada
 > ✅ tem commit mesclado com `Refs: NR-xxx` no histórico. O NR-012 é a
 > exceção — foi mesclado antes de a convenção de rodapé existir (PR #15).
 > As somas saem das linhas deste arquivo e fecham com o
@@ -224,6 +224,7 @@ voltam a ⬜.
 | NR-107 | Conexao entre usuarios por proximidade: busca cross-tenant e pedido auditado (ADR-0008)  |   🔵   | `db` `contracts` `core` `api` `web`          |   5 | —                                      | —    | RF-01–05 (spec)            |   ✅   |
 | NR-108 | Sugestao de conexao por filtragem colaborativa de ramo, sem IA (ADR-0009)                |   🔵   | `db` `contracts` `core` `api` `web`          |   1 | NR-107                                 | —    | RF-01 (spec, aditivo)      |   ✅   |
 | NR-109 | Quadro de CRM: pendencias e contatos em Kanban, do banco ao mobile (comentario e equipe) |   🟢   | `db` `contracts` `core` `api` `web` `mobile` |   4 | —                                      | —    | —                          |   ✅   |
+| NR-110 | Custos fixos: cadastro, edicao e "gerar contas do mes", do banco a tela                  |   🟢   | `db` `contracts` `core` `api` `web`          |   4 | NR-077                                 | —    | —                          |   ✅   |
 
 ---
 
@@ -341,7 +342,7 @@ passou a ser retrabalho: trocar os tokens quando a marca fechar.
 | ------------------------------- | ------: | ---: | ---------------------------------------------- |
 | 🔵 1 — Núcleo & Dados           |      33 |   83 | Sugestão de conexão (NR-108) somou ao NR-107   |
 | 🟠 2 — Plataforma & Integrações |      28 |   75 | a mais carregada; Asaas fechou 3 decisões dela |
-| 🟢 3 — Clientes                 |      24 |   58 | quadro de CRM em Kanban (NR-109)               |
+| 🟢 3 — Clientes                 |      25 |   62 | custos fixos gera conta a pagar (NR-110)       |
 | Compartilhada                   |       3 |    6 | documentação (NR-002, NR-088, NR-106)          |
 
 Somando: **218 dias-desenvolvedor** em 87 tarefas. Com 3 pessoas, isso é cerca
