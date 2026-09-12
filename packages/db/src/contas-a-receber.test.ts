@@ -282,21 +282,17 @@ describe.skipIf(!DATABASE_URL)('lancar recebivel avulso — NR-074, RF-065', () 
     clienteA = cliente!.id
   }, 60_000)
 
+  /*
+   * SEM limpeza de linha aqui — `audit_logs` e so-insercao (RF-124, trigger
+   * `audit_logs_somente_insercao`): um `DELETE`, mesmo em cascata a partir de
+   * `companies`, e recusado pelo banco. `trilha.test.ts` segue o mesmo
+   * caminho. A CI sobe um Postgres NOVO por execucao, entao a sobra nao
+   * acumula; so importa para quem roda a suite contra um Postgres persistente
+   * localmente.
+   */
   afterAll(async () => {
-    if (!sql) {
-      await admin?.end({ timeout: 5 })
-      return
-    }
-    await withTenant(sql, empresaA, async (tx) => {
-      await tx`DELETE FROM audit_logs`
-      await tx`DELETE FROM receivables`
-      await tx`DELETE FROM customers`
-      await tx`DELETE FROM company_users`
-      await tx`DELETE FROM users`
-      await tx`DELETE FROM companies`
-    })
-    await aplicacao.encerrar()
-    await admin.end({ timeout: 5 })
+    await aplicacao?.encerrar()
+    await admin?.end({ timeout: 5 })
   })
 
   it('grava com origin manual, sem venda por tras', async () => {
