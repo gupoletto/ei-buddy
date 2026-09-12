@@ -1,18 +1,12 @@
-# EI BUDDY
+# EiBuddy
 
 > ERP para pequenos e médios negócios, operável tanto por aplicativo quanto por
 > um assistente de IA no WhatsApp — os dois sobre o mesmo banco de dados e as
 > mesmas regras de negócio.
 
-> [!NOTE]
-> **O nome do produto ainda não está definido.** Circulam três: `na-regua`
-> (repositório), **ZapGestor** (apresentação comercial, que a própria
-> apresentação declara ser nome de trabalho) e **ProComércio** (material de
-> rebranding, com identidade visual completa e cinco marcas derivadas).
-> A documentação usa **ZapGestor** provisoriamente, e o escopo dos pacotes é
-> `@na-regua/*` — atrelado ao repositório, que não muda com a marca, para que a
-> decisão não force renomear pacote nenhum. Ver
-> [DEC-001](docs/decisoes/README.md#dec-001) e [QST-011](docs/decisoes/README.md#qst-011).
+Nome comercial **EiBuddy**, domínio **[eibuddy.com.br](https://eibuddy.com.br)**.
+O repositório e os pacotes permanecem `na-regua` / `@na-regua/*`
+([ADR-0011](docs/decisoes/adr/0011-eibuddy-nome-e-dominio.md)).
 
 **Status:** pré-MVP.
 

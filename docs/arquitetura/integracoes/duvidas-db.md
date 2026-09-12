@@ -113,7 +113,7 @@ Papel de acesso: `owner` `staff` `platform_admin`.
 | ---------------- | --------------------- | --------------------- |
 | `owner`          | Lojista dono da conta | `company_id` da loja  |
 | `staff` (futuro) | Balcão (roadmap)      | Mesma empresa do dono |
-| `platform_admin` | Operação ZapGestor    | Não é tenant          |
+| `platform_admin` | Operação EiBuddy      | Não é tenant          |
 
 ### Com `companies` e `users`, o que o usuário informa para fazer login?
 

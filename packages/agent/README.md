@@ -2,8 +2,12 @@
 
 Runtime do assistente: tools, memória e confirmações.
 
-**Estado:** 🔴 não implementado · 🚧 bloqueado por
-[DEC-007](../../docs/decisoes/README.md#dec-007) · `NR-060`, `NR-061`, `NR-062`
+**Estado:** 🟡 runtime local sem WhatsApp · [ADR-0010](../../docs/decisoes/adr/0010-mastra-e-gpt-4o-mini.md)
+(Mastra + `openai/gpt-4o-mini`) · canal de teste `POST /agent/messages` com
+`AGENT_PROVIDER=fake` · webhook ainda espera
+[DEC-003](../../docs/decisoes/README.md#dec-003) / `NR-046` · confirmação
+persistente é `NR-061` · memória da conversa ainda é
+[DEC-011](../../docs/decisoes/README.md#dec-011) (`NR-062`)
 
 ## Responsabilidade
 
@@ -19,6 +23,15 @@ de `core`.
 
 O LLM interpreta linguagem; nunca decide dinheiro. É isso que impede a classe
 inteira de erro em que o número da conversa não bate com o número do relatório.
+
+## Runtime
+
+[Mastra](https://mastra.ai) como biblioteca — `Agent` + `createTool` — **dentro**
+deste pacote, composto em `apps/api`. Não é o servidor HTTP do Mastra. Contrato:
+[`integracoes/mastra.md`](../../docs/arquitetura/integracoes/mastra.md).
+
+Modelo inicial: `openai/gpt-4o-mini`. Trocar de modelo é `AGENT_MODEL`. Trocar
+de framework reabre a ADR-0010.
 
 ## Fronteiras
 
@@ -38,7 +51,7 @@ começam a divergir. Ver
 ## Tools são geradas de `contracts`
 
 ```
-CreateSaleInput (Zod)  ──→  schema da tool do agente
+CreateSaleInput (Zod)  ──→  schema da tool do agente (Mastra createTool)
                        ──→  validação da rota HTTP
 ```
 
@@ -63,22 +76,24 @@ lançamento financeiro errado. [RF-103](../../docs/produto/requisitos-funcionais
 É também controle de **segurança**, não só de usabilidade: quem obtiver acesso
 ao aparelho ainda precisa confirmar cada lançamento.
 
+A máquina de estados mora na tabela `confirmations`. O Mastra não a substitui.
+
 ## Riscos específicos de ter um LLM no caminho
 
-| Risco                                  | Controle                                                                               |
-| -------------------------------------- | -------------------------------------------------------------------------------------- |
-| Injeção de prompt                      | só executa via tool call tipada; texto nunca vira chamada arbitrária                   |
-| Escalada de privilégio                 | chama `core` com o mesmo `ExecutionContext`; papel verificado no caso de uso           |
-| Ação não intencionada                  | confirmação explícita                                                                  |
-| Vazamento entre conversas              | contexto isolado por empresa ([RF-106](../../docs/produto/requisitos-funcionais.md))   |
-| Dado sensível ao provedor              | envia o mínimo necessário ([RNF-075](../../docs/produto/requisitos-nao-funcionais.md)) |
-| Alucinação com consequência financeira | o agente não calcula                                                                   |
+| Risco                                  | Controle                                                                                                        |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Injeção de prompt                      | só executa via tool call tipada; texto nunca vira chamada arbitrária                                            |
+| Escalada de privilégio                 | chama `core` com o mesmo `ExecutionContext`; papel verificado no caso de uso                                    |
+| Ação não intencionada                  | confirmação explícita                                                                                           |
+| Vazamento entre conversas              | contexto isolado por empresa ([RF-106](../../docs/produto/requisitos-funcionais.md))                            |
+| Dado sensível ao provedor              | envia o mínimo necessário ([RNF-075](../../docs/produto/requisitos-nao-funcionais.md)); OpenAI é subprocessador |
+| Alucinação com consequência financeira | o agente não calcula                                                                                            |
 
 ## Não haverá busca semântica sobre o banco de negócio
 
 "Quanto vendi hoje?" vira consulta SQL determinística via `core`, não busca
-vetorial. Recomendação registrada em
-[DEC-007](../../docs/decisoes/README.md#dec-007).
+vetorial. Mastra tem RAG; **não se liga** sobre dado financeiro. Fechado na
+[ADR-0010](../../docs/decisoes/adr/0010-mastra-e-gpt-4o-mini.md).
 
 ## Custo
 
@@ -86,7 +101,9 @@ Consumo medido por empresa desde o primeiro dia. Teto configurável, com
 degradação avisada em vez de conta surpresa —
 [RNF-072](../../docs/produto/requisitos-nao-funcionais.md),
 [RNF-073](../../docs/produto/requisitos-nao-funcionais.md).
+O denominador da mensalidade ainda é [QST-002](../../docs/decisoes/README.md#qst-002).
 
 ## Variáveis de ambiente
 
-`AGENT_PROVIDER`, `ANTHROPIC_API_KEY`, `AGENT_MODEL`, `AGENT_MONTHLY_BUDGET_CENTS`.
+`AGENT_PROVIDER` (`fake` \| `mastra`), `OPENAI_API_KEY`, `AGENT_MODEL`
+(`openai/gpt-4o-mini`), `AGENT_MONTHLY_BUDGET_CENTS`.

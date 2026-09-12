@@ -52,8 +52,8 @@ consome. A porta é declarada pelo núcleo; a seta aponta para dentro
 | ----------------------------- | ------: | ---: |
 | Total                         |      87 |  218 |
 | ✅ Concluídas                 |      77 |  183 |
-| 🚧 Bloqueadas por decisão     |       7 |   25 |
-| 🚧 Bloqueadas por dependência |       1 |    2 |
+| 🚧 Bloqueadas por decisão     |       6 |   20 |
+| 🚧 Bloqueadas por dependência |       2 |    7 |
 | ⬜ A fazer, pode começar hoje |       2 |    8 |
 
 > **Números conferidos contra a `main` em 2026-09-10**, não estimados: cada
@@ -80,8 +80,8 @@ NR-022, NR-023), a agenda no schema (NR-035) e a trilha de auditoria
 consumidores de fila (NR-041) e o plano de contas com DRE (NR-032).
 
 Dos **35 dias que faltam, 8 podem começar hoje**: NR-044 e NR-063. A fila
-NR-088–098 (catálogo 0909) está ✅. Sobram 27 dias atrás de decisão (25) ou de
-dependência (2).
+NR-088–098 (catálogo 0909) está ✅. Sobram 27 dias atrás de decisão (20) ou de
+dependência (7).
 
 ---
 
@@ -157,8 +157,8 @@ Objetivo: operar o ERP por mensagem e cobrar a mensalidade.
 | NR-031 | `core`: exportação completa e anonimização (LGPD)             |   🔵   | `core`            |   3 | NR-028         | —                | RF-125–128             |   ✅   |
 | NR-045 | `whatsapp`: porta `MessageSender` + adapter falso             |   🟠   | `whatsapp` `core` |   2 | NR-005         | —                | RF-015                 |   ✅   |
 | NR-046 | `whatsapp`: adapter real, webhook e consentimento             |   🟠   | `whatsapp`        |   4 | NR-045         | **DEC-003**      | RF-016, RF-094, RF-095 |   🚧   |
-| NR-060 | `agent`: runtime com tools geradas de `contracts`             |   🟠   | `agent`           |   5 | NR-046, NR-005 | **DEC-007**      | RF-096–102, 108, 109   |   🚧   |
-| NR-061 | `agent`: confirmação de ação sensível, com expiração          |   🟠   | `agent`           |   2 | NR-060         | NR-060 → DEC-007 | RF-103, RF-104         |   🚧   |
+| NR-060 | `agent`: runtime com tools geradas de `contracts`             |   🟠   | `agent`           |   5 | NR-046, NR-005 | NR-046 → DEC-003 | RF-096–102, 108, 109   |   🚧   |
+| NR-061 | `agent`: confirmação de ação sensível, com expiração          |   🟠   | `agent`           |   2 | NR-060         | NR-060 → DEC-003 | RF-103, RF-104         |   🚧   |
 | NR-062 | `agent`: contexto de conversa isolado por empresa             |   🟠   | `agent`           |   3 | NR-060         | **DEC-011**      | RF-105, RF-106         |   🚧   |
 | NR-063 | `billing`: assinatura, trial, inadimplência e estado restrito |   🟠   | `billing`         |   4 | NR-044         | —                | RF-110–118             |   ⬜   |
 | NR-075 | `web`: planos, assinatura e cupom                             |   🟢   | `web`             |   3 | NR-063         | DEC-012          | E12                    |   🚧   |
@@ -286,9 +286,9 @@ esses repositórios, e uma rota ligada a um _fake_ não é uma rota.
 
 | Decisão                                                                                  | Diretas       | Em cascata | Dias parados |
 | ---------------------------------------------------------------------------------------- | ------------- | ---------: | -----------: |
-| [DEC-007](../decisoes/README.md#dec-007) LLM                                             | NR-060        |          1 |            7 |
+| [DEC-007](../decisoes/README.md#dec-007) LLM ✅ Mastra + `gpt-4o-mini`                    | — (NR-060 via DEC-003) |          — |            0 |
 | [DEC-004](../decisoes/README.md#dec-004) fiscal ✅                                       | — (NR-042 ✅) |          — |            0 |
-| [DEC-003](../decisoes/README.md#dec-003) WhatsApp                                        | NR-046        |          — |            4 |
+| [DEC-003](../decisoes/README.md#dec-003) WhatsApp                                        | NR-046        |          2 |           11 |
 | [DEC-010](../decisoes/README.md#dec-010) cobrança ✅                                     | — (NR-063 ⬜) |          — |            0 |
 | [DEC-006](../decisoes/README.md#dec-006)/[DEC-015](../decisoes/README.md#dec-015) PSP ✅ | — (NR-044 ⬜) |          — |            0 |
 | [DEC-005](../decisoes/README.md#dec-005) Open Finance                                    | NR-048        |          — |            4 |
@@ -304,19 +304,20 @@ esses repositórios, e uma rota ligada a um _fake_ não é uma rota.
 > [destravar-os-bloqueios.md](destravar-os-bloqueios.md).
 
 **Dos 35 dias-desenvolvedor que restam, 8 estão liberados** — NR-044 e NR-063.
-Os outros 27 continuam atrás de decisão (25) ou de dependência (2).
+Os outros 27 continuam atrás de decisão (20) ou de dependência (7).
 
-As duas de maior alcance que ainda travam são a
-[DEC-003](../decisoes/README.md#dec-003) (WhatsApp + fluxo 3 do E2E, 7 dias) e a
-[DEC-007](../decisoes/README.md#dec-007) (LLM, 7 dias): juntas seguram o
-assistente inteiro, que é a promessa central do produto.
+A de maior alcance que ainda trava o assistente é a
+[DEC-003](../decisoes/README.md#dec-003) (WhatsApp + runtime do agente em
+cascata + fluxo 3 do E2E): a [DEC-007](../decisoes/README.md#dec-007) fechou
+pela [ADR-0010](../decisoes/adr/0010-mastra-e-gpt-4o-mini.md) (Mastra +
+`gpt-4o-mini`). O cérebro tem runtime; o canal não.
 
 Cada tarefa é contada **uma vez**, na decisão que aparece na sua própria coluna
 `Bloq`. Uma tarefa pode estar atrás de mais de uma: NR-075 espera a DEC-012 e,
 via NR-063, o adapter de cobrança — somar as duas contaria o mesmo dia duas vezes.
 
 **Nenhuma decisão restante domina como a DEC-002 dominava.** A maior é a
-[DEC-007](../decisoes/README.md#dec-007), com 7 dias. O bloqueio continua
+[DEC-003](../decisoes/README.md#dec-003). O bloqueio continua
 espalhado — o que antes permitia tocar código enquanto se decidia, e agora
 significa apenas que nenhuma decisão isolada resolve o impasse.
 
@@ -328,11 +329,12 @@ travava o código era **quem é dono do papel e da sessão**. Separadas, a segun
 foi decidida na hora e a primeira virou escolha de configuração que espera a
 [DEC-009](../decisoes/README.md#dec-009) sem parar nada.
 
-A [DEC-001](../decisoes/README.md#dec-001) não trava mais tarefa nenhuma. NR-011
-foi entregue com a paleta provisória de
-[`packages/ui/src/tokens/color.ts`](../../packages/ui/src/tokens/color.ts) — a
-mitigação que estava prevista. O custo dela deixou de ser trabalho parado e
-passou a ser retrabalho: trocar os tokens quando a marca fechar.
+A [DEC-001](../decisoes/README.md#dec-001) fechou pela
+[ADR-0011](../decisoes/adr/0011-eibuddy-nome-e-dominio.md): produto **EiBuddy**,
+domínio **eibuddy.com.br**. NR-011 já tinha sido entregue com a paleta
+provisória de
+[`packages/ui/src/tokens/color.ts`](../../packages/ui/src/tokens/color.ts).
+O retrabalho que resta é visual (tokens), não naming.
 
 ## Carga por trilha
 

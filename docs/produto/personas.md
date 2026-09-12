@@ -115,7 +115,7 @@ Compra na loja da Cláudia, presencial e por WhatsApp.
 **Papel no sistema:** `platform_admin` — acesso ao backoffice, nunca aos dados
 de negócio de um tenant sem registro de acesso.
 
-Trabalha na equipe do ZapGestor: suporte, cobrança e diagnóstico.
+Trabalha na equipe do EiBuddy: suporte, cobrança e diagnóstico.
 
 **O que ela precisa**
 

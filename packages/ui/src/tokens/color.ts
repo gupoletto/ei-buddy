@@ -1,9 +1,9 @@
 /**
  * Paleta.
  *
- * **Provisoria ate a DEC-001 / QST-011 fecharem.** Os valores sao os da paleta
- * ProComercio; se este produto for uma das marcas derivadas, troca-se este
- * arquivo e nada mais — e exatamente para isso que os tokens existem.
+ * **Provisoria.** Os valores sao os da paleta ProComercio; o produto se chama
+ * EiBuddy (ADR-0011). Quando houver arte propria, troca-se este arquivo e
+ * nada mais — e exatamente para isso que os tokens existem.
  *
  * Nenhum componente escreve cor literal. O que nao esta aqui nao existe.
  */

@@ -21,13 +21,13 @@ flowchart TB
     CLIENTE(["👤 Cliente final<br/><i>compra na loja</i>"])
     ADMIN(["👤 Admin da plataforma"])
 
-    SYS["<b>ZapGestor</b><br/>ERP operável por app<br/>e por WhatsApp"]
+    SYS["<b>EiBuddy</b><br/>ERP operável por app<br/>e por WhatsApp"]
 
     SEFAZ["🏛 SEFAZ<br/><i>autorização de NFC-e/NFS-e</i>"]
     META["💬 Provedor WhatsApp<br/><i>envio e recebimento</i>"]
     OF["🏦 Open Finance<br/><i>extrato bancário</i>"]
     PSP["💳 PSP / Adquirente<br/><i>tarifas e repasses</i>"]
-    LLM["🤖 Provedor de LLM<br/><i>interpretação de linguagem</i>"]
+    LLM["🤖 OpenAI<br/><i>gpt-4o-mini via Mastra</i>"]
     SAAS["💰 Cobrança SaaS<br/><i>mensalidade</i>"]
 
     LOJISTA -->|app e WhatsApp| SYS
@@ -43,12 +43,12 @@ flowchart TB
     SYS <-->|assinatura| SAAS
 ```
 
-**Seis integrações externas, todas em decisão aberta** —
-[DEC-003](../decisoes/README.md#dec-003) a
-[DEC-007](../decisoes/README.md#dec-007) e
-[DEC-010](../decisoes/README.md#dec-010). É exatamente por isso que cada uma
-está atrás de um adapter: o trabalho de `core` e `domain` não espera essas
-decisões.
+**Seis integrações externas, cada uma atrás de um adapter.** Fiscal (Focus NFe),
+PSP/mensalidade (Asaas) e LLM (Mastra + `gpt-4o-mini`,
+[ADR-0010](../decisoes/adr/0010-mastra-e-gpt-4o-mini.md)) já fecharam. WhatsApp
+([DEC-003](../decisoes/README.md#dec-003)) e Open Finance
+([DEC-005](../decisoes/README.md#dec-005)) continuam abertos. O trabalho de
+`core` e `domain` não espera essas decisões.
 
 ## Nível 2 — Containers
 
@@ -161,6 +161,7 @@ validações e a auditoria.
 | ORM                    | Drizzle                    | SQL explícito e tipado, essencial para trabalhar com RLS sem surpresa                                                |
 | Isolamento             | RLS no PostgreSQL          | Isolamento que não depende de o desenvolvedor lembrar do `WHERE` — [ADR-0001](../decisoes/adr/0001-rls-por-linha.md) |
 | Validação              | Zod em `contracts`         | O mesmo schema serve a HTTP, tipos e tools do agente                                                                 |
+| Runtime do agente      | Mastra + `gpt-4o-mini`     | Tools em Zod, modelo trocável por config — [ADR-0010](../decisoes/adr/0010-mastra-e-gpt-4o-mini.md)                   |
 
 ## Decisões estruturais ainda em aberto
 
@@ -169,8 +170,7 @@ Estas **não** estão decididas e não devem ser assumidas em código:
 | Tema                            | Decisão                                  | Impacto se decidida errado                       |
 | ------------------------------- | ---------------------------------------- | ------------------------------------------------ |
 | Hospedagem e deploy             | [DEC-009](../decisoes/README.md#dec-009) | Define `infra/` e os workflows de deploy         |
-| Autenticação                    | [DEC-008](../decisoes/README.md#dec-008) | Afeta api, web, mobile e o vínculo do WhatsApp   |
-| LLM e recuperação de informação | [DEC-007](../decisoes/README.md#dec-007) | Define o runtime do `agent` e o custo por tenant |
+| Memória da conversa             | [DEC-011](../decisoes/README.md#dec-011) | O que o assistente lembra, por quanto tempo, onde |
 
 ## Documentos relacionados
 

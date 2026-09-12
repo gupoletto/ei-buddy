@@ -21,7 +21,7 @@
  * landing, painel de login, sidebar do app, rodape e titulos de pagina —
  * entao trocar o nome continua sendo uma linha so.
  */
-export const BRAND = 'Ei Buddy'
+export const BRAND = 'EiBuddy'
 
 export const nav = [
   { label: 'Módulos', href: '#modulos' },

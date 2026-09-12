@@ -7,9 +7,9 @@ import { parseEnv } from './parse.js'
  *
  * So entram aqui variaveis que o processo realmente le hoje, mais as
  * marcadas Obr. na matriz que ja tem consumidor no codigo (AUTH_PROVIDER e
- * JWT_SECRET, por DEC-008). As de PagMaxx, fiscal, WhatsApp, Open Finance e
- * agente ficam de fora ate os adapters existirem — colocar aqui uma lista de
- * campos obrigatorios que nada consome ainda so far barrar o boot local sem
+ * JWT_SECRET, por DEC-008). As de PagMaxx, fiscal, WhatsApp e Open Finance
+ * ficam de fora ate os adapters existirem — colocar aqui uma lista de campos
+ * obrigatorios que nada consome ainda so far barrar o boot local sem
  * necessidade.
  */
 export const apiEnvSchema = baseEnvSchema.extend({
@@ -65,6 +65,25 @@ export const apiEnvSchema = baseEnvSchema.extend({
    * nos dois lugares daria duas respostas para "esta chave serve".
    */
   SECRETS_KEY: opcionalNaoVazia,
+
+  /**
+   * Runtime do assistente — ADR-0010.
+   *
+   * `fake` nao chama a OpenAI e reconhece so as consultas da US-047, o bastante
+   * para o POST /agent/messages funcionar local sem chave. `mastra` e o
+   * provedor real. Producao recusa `fake` em `assertAgentUsavelEmProducao`.
+   */
+  AGENT_PROVIDER: z.enum(['fake', 'mastra']).default('fake'),
+  OPENAI_API_KEY: opcionalNaoVazia,
+  AGENT_MODEL: z.string().min(1).default('openai/gpt-4o-mini'),
+  /**
+   * Ausente ou vazio = sem teto configurado. A medicao (RNF-073) entra com o
+   * runtime; o numero so existe quando alguem definiu um.
+   */
+  AGENT_MONTHLY_BUDGET_CENTS: z.preprocess((v) => {
+    if (v === undefined || v === '') return undefined
+    return v
+  }, z.coerce.number().int().positive().optional()),
 })
 
 export type ApiEnv = z.infer<typeof apiEnvSchema>

@@ -13,6 +13,17 @@ evento, fila e chave de tradução.
 
 ---
 
+## Produto
+
+| PT-BR        | Identificador     | Observações                                                                                          |
+| ------------ | ----------------- | ---------------------------------------------------------------------------------------------------- |
+| EiBuddy      | — (marca)         | Nome comercial ([ADR-0011](../decisoes/adr/0011-eibuddy-nome-e-dominio.md)). Grafia: uma palavra     |
+| Site         | `eibuddy.com.br`  | Domínio público. DNS e TLS esperam a [DEC-009](../decisoes/README.md#dec-009)                        |
+| Repositório  | `na-regua`        | Não muda com a marca                                                                                 |
+| Pacote npm   | `@na-regua/*`     | Atrelado ao repositório, de propósito                                                                |
+
+---
+
 ## Cadastros
 
 | PT-BR                     | Código (inglês)  | Observações                                                                               |
@@ -105,7 +116,8 @@ evento, fila e chave de tradução.
 | Chamada de ferramenta  | `ToolCall`            |                                        |
 | Confirmação            | `Confirmation`        | Aprovação explícita para ação sensível |
 | Memória / contexto     | `ConversationContext` |                                        |
-| Modelo (LLM)           | `Model`               |                                        |
+| Modelo (LLM)           | `Model`               | inicial: `openai/gpt-4o-mini`          |
+| Runtime do agente      | `Mastra`              | biblioteca em `packages/agent`; [ADR-0010](../decisoes/adr/0010-mastra-e-gpt-4o-mini.md) |
 
 ## Plataforma
 

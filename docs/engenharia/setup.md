@@ -128,8 +128,9 @@ docker compose -f infra/docker-compose.yml --profile full up -d
 
 ## Provedores externos em desenvolvimento
 
-Todos os provedores estão em decisão aberta ([decisões](../decisoes/README.md)).
-Enquanto não fecham, cada adapter roda em **modo falso**:
+Todos os adapters sobem em **modo falso** até haver credencial. LLM já tem
+provedor escolhido ([ADR-0010](../decisoes/adr/0010-mastra-e-gpt-4o-mini.md));
+WhatsApp e Open Finance ainda não. O falso vale para todos:
 
 ```bash
 PAYMENTS_PROVIDER=fake

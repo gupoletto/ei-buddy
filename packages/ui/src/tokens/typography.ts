@@ -30,9 +30,10 @@ export const fontWeight = {
 /**
  * Familias.
  *
- * A marca pede BC Alphapipe e BD Colonius ([DEC-001]), que ainda nao foram
- * licenciadas. Ate la, Poppins para display e Inter para corpo — a fallback
- * completa existe para que a troca de fonte nao mude o layout.
+ * A marca pede BC Alphapipe e BD Colonius (material ProComercio; o nome do
+ * produto e EiBuddy, ADR-0011), que ainda nao foram licenciadas. Ate la,
+ * Poppins para display e Inter para corpo — a fallback completa existe para
+ * que a troca de fonte nao mude o layout.
  */
 export const fontFamily = {
   display: "'Segoe UI', system-ui, sans-serif",

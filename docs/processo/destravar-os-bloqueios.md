@@ -43,7 +43,7 @@ provedor nenhum.
 | Tarefa     | Dias | O que a decisão realmente segura           | O que dá para fazer **hoje**                                      | Dias livres |
 | ---------- | ---: | ------------------------------------------ | ----------------------------------------------------------------- | ----------: |
 | **NR-046** |    4 | o adapter HTTP do provedor                 | consentimento (RF-016), webhook de entrada, roteamento de comando |          ~3 |
-| **NR-060** |    5 | **qual modelo**                            | as tools tipadas geradas de `contracts` e o laço de execução      |          ~4 |
+| **NR-060** |    5 | o adapter HTTP do WhatsApp (DEC-003)           | as tools tipadas, o laço Mastra e o `LlmClient` falso |          ~4 |
 | **NR-061** |    2 | nada próprio — herda de NR-060             | a máquina de estados da confirmação e a expiração são `core` puro |           2 |
 | **NR-062** |    3 | **onde** o contexto persiste (DEC-011)     | o isolamento por empresa é a mesma RLS que já existe              |          ~2 |
 | **NR-063** |    4 | a cobrança em si                           | trial, estados e o que cada estado permite                        |          ~2 |
@@ -80,9 +80,10 @@ e o `b` continua honestamente bloqueado.
 
 ---
 
-## As duas decisões que mais rendem
+## A decisão que mais rende agora
 
-Se for para decidir só duas coisas, são estas:
+A [DEC-007](../decisoes/README.md#dec-007) fechou. Se for para decidir só mais
+uma coisa que destrave o assistente, é esta:
 
 ### DEC-003 — provedor de WhatsApp
 
@@ -97,18 +98,20 @@ contra velocidade de integração.
 Sem isso a comparação de custo não fecha, e é o único critério em que os dois
 diferem de forma material.
 
-### DEC-007 — modelo de LLM
+### DEC-007 — modelo de LLM ✅
 
-Segura 7 dias (NR-060 + NR-061). A parte difícil **já foi decidida na
-arquitetura** e está escrita na própria DEC-007: não haverá busca semântica sobre
-o banco de negócio — o agente chama _tools tipadas geradas de `contracts`_ sobre
-casos de uso de `core`. O que resta é escolher um modelo, e essa escolha é
-trocável: um `LlmClient` com adapter falso segue exatamente o mesmo padrão do
-`InvoiceIssuer`.
+Fechou na [ADR-0010](../decisoes/adr/0010-mastra-e-gpt-4o-mini.md): Mastra como
+biblioteca em `packages/agent`, modelo inicial `openai/gpt-4o-mini`, tools
+geradas de `contracts`, sem RAG sobre o banco de negócio.
 
-**O que é preciso para decidir:** um teto de custo por interação e a exigência de
-_tool calling_ confiável em português. Nada disso depende de escrever código
-primeiro — mas escrever as tools primeiro torna a troca de modelo barata.
+O que ainda segura o `NR-060` é o canal ([DEC-003](../decisoes/README.md#dec-003)).
+O laço e as tools não dependem do adapter real de WhatsApp — o precedente da
+NR-042 continua valendo, agora com o modelo já escolhido.
+
+**O que é preciso para o adapter `mastra`:** `OPENAI_API_KEY` no ambiente que
+não for `fake`. O teto por tenant ([RNF-073](../produto/requisitos-nao-funcionais.md))
+entra no mesmo PR da NR-060; o percentual da mensalidade ([RNF-072](../produto/requisitos-nao-funcionais.md))
+espera [QST-002](../decisoes/README.md#qst-002).
 
 ---
 

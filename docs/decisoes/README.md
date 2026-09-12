@@ -44,17 +44,22 @@ PR**, e a linha sai da tabela de abertas.
 
 | Estado             | Qtd | Quais                                           |
 | ------------------ | --: | ----------------------------------------------- |
-| 🔴 Aberta          |   9 | DEC-003, 005, 007, 009, 011, 012, 013, 016, 018 |
-| 🟡 Em análise      |   1 | DEC-001                                         |
+| 🔴 Aberta          |   8 | DEC-003, 005, 009, 011, 012, 013, 016, 018      |
+| 🟡 Em análise      |   0 | —                                               |
 | ⚪ Adiada          |   1 | DEC-014                                         |
-| 🟢 Decidida        |   9 | DEC-002, 006, 008, 010, 015, 019, 020, 021, 022 |
-| ❓ Pergunta aberta |  10 | QST-001 a QST-008, QST-011, QST-012             |
+| 🟢 Decidida        |  11 | DEC-001, 002, 006, 007, 008, 010, 015, 019, 020, 021, 022 |
+| ❓ Pergunta aberta |   9 | QST-001 a QST-008, QST-012                      |
 
 **Bloqueando o MVP agora:** DEC-003, DEC-009.
 Essas duas travam trabalho de implementação já na Sprint 1. A DEC-016 não trava
 código, mas trava **operação comercial**: os documentos existem e têm lacunas
 declaradas na própria página.
 
+A DEC-001 fechou — [ADR-0011](adr/0011-eibuddy-nome-e-dominio.md): o produto
+é **EiBuddy**, domínio **eibuddy.com.br**; pacotes continuam `@na-regua/*`.
+A DEC-007 fechou — [ADR-0010](adr/0010-mastra-e-gpt-4o-mini.md): Mastra como
+runtime, `gpt-4o-mini` no começo. O assistente ainda espera o WhatsApp
+([DEC-003](#dec-003)) e a memória da conversa ([DEC-011](#dec-011)).
 A DEC-008 fechou — [ADR-0002](adr/0002-autenticacao-identidade-propria.md) e
 [ADR-0003](adr/0003-better-auth-como-prova-de-identidade.md).
 A DEC-009 continua aberta, e **a autenticação deixou de esperar por ela**: a
@@ -66,45 +71,6 @@ opção C é trocar uma função de composição.
 ---
 
 ## Decisões em aberto
-
-### DEC-001 — Nome do produto
-
-|              |                                                                     |
-| ------------ | ------------------------------------------------------------------- |
-| **Status**   | 🟡 Em análise                                                       |
-| **Dono**     | Produto / fundadores                                                |
-| **Prazo**    | Antes de qualquer material público ou publicação em loja de apps    |
-| **Bloqueia** | README, marca, domínio, nome nas app stores, escopo dos pacotes npm |
-
-**Contexto.** Existem três nomes em circulação:
-
-| Nome            | Origem                                                                                                                                                                                                     |
-| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `na-regua`      | nome do repositório                                                                                                                                                                                        |
-| **ZapGestor**   | [apresentação comercial](../assets/zapgestor-apresentacao.md) — e a própria apresentação diz que é **nome de trabalho**, listando ContaZap, Fechou.AI e Zaply Gestão como alternativas                     |
-| **ProComércio** | [material de rebranding](../assets/pro-comercio-rebranding.md) com identidade completa: paleta (`#1E2A78` `#39C8BD` `#6D33DD`), fontes (BC Alphapipe, BD Colonius) e **cinco paletas de marcas derivadas** |
-
-**O que o material de rebranding sugere.** O texto fala em _"diferentes e
-complementares soluções para negócios, que se conectam em um único
-ecossistema"_, e traz cinco paletas derivadas. A leitura provável é que
-**ProComércio é a marca guarda-chuva** e este ERP é **uma** das soluções dela —
-não que o ERP se chame ProComércio. Isso é inferência a partir de um KV de uma
-página, não um fato → [QST-011](#qst-011).
-
-**Opções**
-
-| Opção                                                   | Consequência                                                   |
-| ------------------------------------------------------- | -------------------------------------------------------------- |
-| ProComércio como guarda-chuva + nome próprio para o ERP | Precisa definir o nome do ERP; usa uma das 5 paletas derivadas |
-| ProComércio é o nome do ERP                             | Marca já pronta; abandona ZapGestor                            |
-| Manter ZapGestor                                        | Contradiz o investimento já feito no rebranding                |
-
-**Recomendação.** Responder [QST-011](#qst-011) primeiro. Enquanto isso a
-documentação usa **ZapGestor** como nome de trabalho e o escopo dos pacotes é
-`@na-regua/*` — deliberadamente atrelado ao **repositório**, que não muda com a
-marca, para que a decisão não force renomear pacote nenhum.
-
----
 
 ### DEC-003 — Provedor de WhatsApp
 
@@ -217,33 +183,32 @@ mesma porta `BankStatementProvider`.
 
 ---
 
-### DEC-007 — Modelo de LLM e mecanismo de recuperação de informação
+### <a id="dec-007"></a>DEC-007 — Modelo de LLM e mecanismo de recuperação de informação
 
-|              |                                                                                                                                |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| **Status**   | 🔴 Aberta                                                                                                                      |
-| **Dono**     | Trilha 2 — Plataforma & Integrações                                                                                            |
-| **Prazo**    | **Sprint 3**                                                                                                                   |
-| **Bloqueia** | `packages/agent` · [RF-096 a RF-109](../produto/requisitos-funcionais.md) · [RNF-072](../produto/requisitos-nao-funcionais.md) |
+|              |                                                                                                                                     |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| **Status**   | 🟢 **Decidida — [ADR-0010](adr/0010-mastra-e-gpt-4o-mini.md)**                                                                      |
+| **Dono**     | Trilha 2 — Plataforma & Integrações                                                                                                 |
+| **Prazo**    | Sprint 3                                                                                                                            |
+| **Bloqueia** | — (NR-060 ainda espera o canal: [DEC-003](#dec-003) / NR-046). Memória da conversa continua [DEC-011](#dec-011).                    |
 
-**Contexto.** Herdada da apresentação ("como será a busca de informações por trás
-da IA"). São duas decisões que costumam ser confundidas:
+**Decisão (2026-09-11): Mastra + OpenAI `gpt-4o-mini` no começo.**
 
-1. **Qual modelo** — custo por interação, latência
-   ([RNF-006](../produto/requisitos-nao-funcionais.md): ≤ 5 s), qualidade em
-   português, e se aceita _tool calling_ confiável.
-2. **Como o agente acessa o dado** — e aqui a arquitetura já respondeu: **tools
-   tipadas geradas de `contracts`, chamando casos de uso de `core`**. Não é RAG
-   sobre texto: é chamada de função sobre dado estruturado.
+Duas perguntas que costumavam ser confundidas, as duas respondidas:
 
-**Recomendação.** Deixar explícito que **não haverá busca semântica sobre o banco
-de negócio**. O lojista pergunta "quanto vendi hoje?" e a resposta vem de uma
-consulta SQL determinística, não de um índice vetorial. Isso mata a classe
-inteira de erro em que o número da resposta não bate com o número do relatório —
-e é o que sustenta [RF-101](../produto/requisitos-funcionais.md).
+1. **Qual runtime e qual modelo** — Mastra como biblioteca em `packages/agent`;
+   modelo inicial `openai/gpt-4o-mini` (`AGENT_MODEL`). Trocar de modelo é
+   configuração; trocar de framework reabre a ADR.
+2. **Como o agente acessa o dado** — **tools tipadas geradas de `contracts`**,
+   chamando casos de uso de `core`. Não é RAG sobre texto. Mastra tem busca
+   semântica; **não se liga** sobre o banco de negócio.
 
-Busca semântica pode ser útil depois, para documentação e ajuda — não para dado
-financeiro.
+Contrato: [`integracoes/mastra.md`](../arquitetura/integracoes/mastra.md).
+O runtime continua dentro de `apps/api`. `AGENT_PROVIDER=fake` no local.
+
+O que **não** fecha aqui: o que a conversa lembra ([DEC-011](#dec-011)), o
+provedor de WhatsApp ([DEC-003](#dec-003)), e o denominador do teto de custo
+([QST-002](#qst-002) / [RNF-072](../produto/requisitos-nao-funcionais.md)).
 
 ---
 
@@ -369,10 +334,10 @@ inventário de fato e é gerada a partir de
 
 | Lacuna                                       | Por que só o negócio decide                                                         |
 | -------------------------------------------- | ----------------------------------------------------------------------------------- |
-| Razão social e CNPJ do controlador           | Depende da constituição da empresa e da [DEC-001](#dec-001) (nome)                  |
+| Razão social e CNPJ do controlador           | Nome do produto é EiBuddy ([ADR-0011](adr/0011-eibuddy-nome-e-dominio.md)); razão social e CNPJ ainda são da empresa |
 | Contato do encarregado (LGPD art. 41)        | Exige uma pessoa designada, não um endereço genérico                                |
 | Prazo de retenção após encerramento da conta | Escolha de negócio acima do mínimo fiscal, que já são 5 anos                        |
-| Lista completa de operadores                 | Asaas já é operador ([ADR-0004](adr/0004-asaas.md)); faltam DEC-003, 005, 007 e 009 |
+| Lista completa de operadores                 | Asaas ([ADR-0004](adr/0004-asaas.md)) e OpenAI ([ADR-0010](adr/0010-mastra-e-gpt-4o-mini.md)) já são; faltam DEC-003, 005 e 009 |
 | Preço, prazo de pagamento e nível de serviço | [QST-002](#qst-002) — o provedor já é Asaas ([ADR-0004](adr/0004-asaas.md))         |
 | Limite de responsabilidade, rescisão e foro  | Cláusula contratual; escrita por quem responde por ela                              |
 
@@ -428,7 +393,7 @@ atualização de documento — e às vezes abre uma `DEC`.
 | <a id="qst-008"></a>**QST-008** | Os alvos numéricos dos [RNFs](../produto/requisitos-nao-funcionais.md) batem com o aparelho e a internet do público-alvo?  | Produto + Trilha 3   | Calibrados por estimativa, não por medição                                                                                                                        | Sprint 3   |
 | <a id="qst-009"></a>**QST-009** | ~~A PagMaxx pode estender o escopo da API Key?~~ Respondida: Asaas autentica por API Key ([ADR-0004](adr/0004-asaas.md))   | —                    | Encerrada com a troca de PSP                                                                                                                                      | Respondida |
 | <a id="qst-010"></a>**QST-010** | ~~A PagMaxx tem API de captura presencial?~~ Respondida: Asaas também não; PDV só registra ([ADR-0004](adr/0004-asaas.md)) | —                    | Encerrada — o desenho do PDV não muda                                                                                                                             | Respondida |
-| <a id="qst-011"></a>**QST-011** | ProComércio é a marca guarda-chuva e este ERP é uma das soluções dela, ou é o nome do próprio ERP?                         | Produto / fundadores | Resolve [DEC-001](#dec-001) e define qual das 5 paletas derivadas o produto usa                                                                                   | Sprint 1   |
+| <a id="qst-011"></a>**QST-011** | ~~ProComércio é a marca guarda-chuva e este ERP é uma das soluções dela, ou é o nome do próprio ERP?~~ Respondida: o ERP é **EiBuddy** ([ADR-0011](adr/0011-eibuddy-nome-e-dominio.md)); ProComércio não é o nome do produto. Paleta provisória segue em `packages/ui`. | —                    | Encerrada com a DEC-001                                                                                                                                           | Respondida |
 | <a id="qst-012"></a>**QST-012** | Já existe conta Asaas de sandbox e acesso para testar `packages/payments`?                                                 | Produto              | Sem sandbox não há como ligar o adapter da [NR-044](../processo/task-ledger.md)                                                                                   | Sprint 2   |
 
 ---
@@ -446,6 +411,23 @@ links que já apontam para cá.
 | [ADR-0004](adr/0004-asaas.md)                                | Asaas como PSP das vendas e da assinatura SaaS                   | 2026-09-04 |
 | [ADR-0005](adr/0005-subconta-asaas-nao-baas.md)              | Subconta Asaas não-BaaS por lojista; KYC fora do caminho crítico | 2026-09-04 |
 | [ADR-0006](adr/0006-catalogo-0909-mais-plataforma.md)        | Catálogo 0909 no domínio; identidade, cofre e banco às margens   | 2026-09-09 |
+| [ADR-0007](adr/0007-super-admin-por-sessao-auditada.md)      | Super Admin por troca de sessão auditada, não `BYPASSRLS`        | 2026-09-10 |
+| [ADR-0008](adr/0008-conexao-entre-usuarios-por-proximidade.md) | Rede B2B por proximidade entra agora, com risco de massa crítica | 2026-09-10 |
+| [ADR-0009](adr/0009-sugestao-de-conexao-por-ramo.md)         | Sugestão de conexão por ramo, sem lista de palavra-chave e sem IA | 2026-09-10 |
+| [ADR-0010](adr/0010-mastra-e-gpt-4o-mini.md)                 | Mastra como runtime do agente; `gpt-4o-mini` no começo           | 2026-09-11 |
+| [ADR-0011](adr/0011-eibuddy-nome-e-dominio.md)               | Produto EiBuddy; domínio eibuddy.com.br; pacotes `@na-regua/*`   | 2026-09-11 |
+
+### <a id="dec-001"></a>DEC-001 — Nome do produto
+
+|             |                                                                     |
+| ----------- | ------------------------------------------------------------------- |
+| **Status**  | 🟢 Decidida — [ADR-0011](adr/0011-eibuddy-nome-e-dominio.md)        |
+| **Escolha** | **EiBuddy**, domínio **eibuddy.com.br**; pacotes `@na-regua/*`      |
+| **Data**    | 2026-09-11                                                          |
+
+ZapGestor fica como nome de trabalho da apresentação comercial (fonte bruta).
+ProComércio não é o nome do ERP. Paleta e fontes em `packages/ui` continuam
+provisórias até existir arte própria.
 
 ### <a id="dec-002"></a>DEC-002 — Estratégia multi-tenant
 
