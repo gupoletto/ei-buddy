@@ -131,13 +131,20 @@ export type {
   PayableUnitOfWork,
 } from './ports/payable-repository.js'
 export { listReceivables } from './receivables/list-receivables.js'
-export { InMemoryReceivables } from './receivables/fakes.js'
+export { createReceivable } from './receivables/create-receivable.js'
+export type { CreateReceivableDeps } from './receivables/create-receivable.js'
+export { InMemoryManualReceivables, InMemoryReceivables } from './receivables/fakes.js'
 export type {
   GrupoDeRecebimento,
   ListReceivablesDeps,
   ReceivablesAgrupadas,
 } from './receivables/list-receivables.js'
-export type { ReceivableQueries } from './ports/receivable-repository.js'
+export type {
+  ManualReceivableTransaction,
+  ManualReceivableUnitOfWork,
+  NewManualReceivable,
+  ReceivableQueries,
+} from './ports/receivable-repository.js'
 export { listSettlements } from './settlements/list-settlements.js'
 export type { ListSettlementsDeps } from './settlements/list-settlements.js'
 export { reverseSettlement } from './settlements/reverse-settlement.js'

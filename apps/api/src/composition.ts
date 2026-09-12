@@ -47,6 +47,7 @@ import {
   createInvoiceStore,
   createSaleFiscalReader,
   createPayableQueries,
+  createManualReceivableUnitOfWork,
   createReceivableRepository,
   createPayableUnitOfWork,
   createProductRepository,
@@ -642,6 +643,7 @@ export function buildContasDeps(): ContasDeps {
     uow: createPayableUnitOfWork(sql),
     queries: createPayableQueries(sql),
     receivables: createReceivableRepository(sql),
+    receivablesUow: createManualReceivableUnitOfWork(sql),
     ids: { next: () => randomUUID() },
     /* Mesma pendencia da autenticacao: `db` nao expoe repositorio de
        auditoria, entao a trilha do lancamento fica em memoria. */

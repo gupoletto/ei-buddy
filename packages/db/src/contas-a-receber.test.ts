@@ -2,7 +2,10 @@ import { randomUUID } from 'node:crypto'
 import postgres, { type Sql } from 'postgres'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { migrate } from './migrate.js'
-import { createReceivableRepository } from './receivable-repository.js'
+import {
+  createManualReceivableUnitOfWork,
+  createReceivableRepository,
+} from './receivable-repository.js'
 import { cnpjDeTeste, conectarComoAplicacao, type ConexaoDeAplicacao } from './test-support.js'
 import { withTenant } from './tenant.js'
 
@@ -222,5 +225,169 @@ describe.skipIf(!DATABASE_URL)('contas a receber — NR-074', () => {
     expect((await emAberto(empresaB)).map((r) => r.description)).toContain('So da loja B')
 
     expect((await emAberto(empresaA)).map((r) => r.description)).not.toContain('So da loja B')
+  })
+})
+
+describe.skipIf(!DATABASE_URL)('lancar recebivel avulso — NR-074, RF-065', () => {
+  let admin: Sql
+  let sql: Sql
+  let aplicacao: ConexaoDeAplicacao
+  let empresaA: string
+  let usuarioA: string
+  let clienteA: string
+
+  let uow: ReturnType<typeof createManualReceivableUnitOfWork>
+
+  beforeAll(async () => {
+    const r = await migrate(MIGRATION_URL!)
+    expect([...r.aplicadas, ...r.jaEstavam]).toContain('0002_dominio_0909')
+
+    admin = postgres(DATABASE_URL!, { max: 4, onnotice: () => {} })
+    aplicacao = await conectarComoAplicacao(admin, DATABASE_URL!)
+    sql = aplicacao.sql
+
+    uow = createManualReceivableUnitOfWork(sql)
+
+    const id = randomUUID()
+    const cnpj = cnpjDeTeste('3')
+    await withTenant(
+      sql,
+      id,
+      (tx) => tx`
+        INSERT INTO companies (id, legal_name, cnpj, email, phone)
+        VALUES (${id}, 'Loja Avulso', ${cnpj}, ${`a@${cnpj}.local`}, '41999990000')
+      `,
+    )
+    empresaA = id
+
+    usuarioA = randomUUID()
+    await withTenant(sql, empresaA, async (tx) => {
+      await tx`
+        INSERT INTO users (id, name, email) VALUES (${usuarioA}, 'Dono', ${`d${usuarioA}@local`})
+      `
+      await tx`
+        INSERT INTO company_users (company_id, user_id, role)
+        VALUES (${empresaA}, ${usuarioA}, 'owner')
+      `
+    })
+
+    const [cliente] = await withTenant(
+      sql,
+      empresaA,
+      (tx) => tx<{ id: string }[]>`
+        INSERT INTO customers (company_id, name) VALUES (${empresaA}, 'Seu Renato')
+        RETURNING id
+      `,
+    )
+    clienteA = cliente!.id
+  }, 60_000)
+
+  afterAll(async () => {
+    if (!sql) {
+      await admin?.end({ timeout: 5 })
+      return
+    }
+    await withTenant(sql, empresaA, async (tx) => {
+      await tx`DELETE FROM audit_logs`
+      await tx`DELETE FROM receivables`
+      await tx`DELETE FROM customers`
+      await tx`DELETE FROM company_users`
+      await tx`DELETE FROM users`
+      await tx`DELETE FROM companies`
+    })
+    await aplicacao.encerrar()
+    await admin.end({ timeout: 5 })
+  })
+
+  it('grava com origin manual, sem venda por tras', async () => {
+    const gravado = await uow.transaction(empresaA, (tx) =>
+      tx.insert({
+        companyId: empresaA,
+        description: 'Emprestimo a receber',
+        amountCents: 50_000,
+        dueDate: '2026-09-20',
+        customerId: null,
+        accountId: null,
+        createdBy: usuarioA,
+        createdAt: new Date('2026-09-11T13:00:00.000Z'),
+      }),
+    )
+
+    expect(gravado.saleId).toBeNull()
+    expect(gravado.status).toBe('open')
+    expect(gravado.installmentNumber).toBe(1)
+    expect(gravado.installmentCount).toBe(1)
+  })
+
+  it('liquido e bruto saem iguais — sem tarifa de adquirente', async () => {
+    const gravado = await uow.transaction(empresaA, (tx) =>
+      tx.insert({
+        companyId: empresaA,
+        description: 'Aluguel',
+        amountCents: 80_000,
+        dueDate: '2026-09-21',
+        customerId: null,
+        accountId: null,
+        createdBy: usuarioA,
+        createdAt: new Date('2026-09-11T13:00:00.000Z'),
+      }),
+    )
+
+    expect(gravado.amountCents).toBe(80_000)
+    expect(gravado.netAmountCents).toBe(80_000)
+  })
+
+  it('com cliente, traz o nome junto — sem segunda consulta', async () => {
+    const gravado = await uow.transaction(empresaA, (tx) =>
+      tx.insert({
+        companyId: empresaA,
+        description: 'Fiado antigo',
+        amountCents: 12_000,
+        dueDate: '2026-09-22',
+        customerId: clienteA,
+        accountId: null,
+        createdBy: usuarioA,
+        createdAt: new Date('2026-09-11T13:00:00.000Z'),
+      }),
+    )
+
+    expect(gravado.customerId).toBe(clienteA)
+    expect(gravado.customerName).toBe('Seu Renato')
+  })
+
+  it('deixa rastro na trilha, DENTRO da transacao', async () => {
+    await uow.transaction(empresaA, async (tx) => {
+      const gravado = await tx.insert({
+        companyId: empresaA,
+        description: 'Com trilha',
+        amountCents: 30_000,
+        dueDate: '2026-09-23',
+        customerId: null,
+        accountId: null,
+        createdBy: usuarioA,
+        createdAt: new Date('2026-09-11T13:00:00.000Z'),
+      })
+
+      await tx.record({
+        companyId: empresaA,
+        entity: 'Receivable',
+        entityId: gravado.id,
+        action: 'created',
+        actorId: usuarioA,
+        channel: 'app',
+        occurredAt: new Date('2026-09-11T13:00:00.000Z'),
+        before: null,
+        after: { amountCents: 30_000 },
+      })
+    })
+
+    const [entrada] = await withTenant(
+      sql,
+      empresaA,
+      (tx) => tx<{ entity: string; action: string }[]>`
+        SELECT entity, action FROM audit_logs WHERE entity = 'Receivable' AND action = 'created'
+      `,
+    )
+    expect(entrada?.entity).toBe('Receivable')
   })
 })

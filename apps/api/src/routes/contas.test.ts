@@ -1,4 +1,4 @@
-import { InMemoryAuditTrail, InMemoryReceivables } from '@na-regua/core'
+import { InMemoryAuditTrail, InMemoryManualReceivables, InMemoryReceivables } from '@na-regua/core'
 import Fastify, { type FastifyInstance } from 'fastify'
 import { afterEach, describe, expect, it } from 'vitest'
 import { registerErrorHandler } from '../plugins/error-handler.js'
@@ -36,18 +36,22 @@ async function buildApp(
     if (principal !== null) request.principal = principal
   })
 
+  const audit = new InMemoryAuditTrail()
+  const receivablesUow = new InMemoryManualReceivables(audit)
+
   const deps = {
     receivables,
+    receivablesUow,
     /* A rota de contas a pagar convive neste arquivo; ela nao e exercitada
        aqui, e um falso vazio basta para o registro nao quebrar. */
     queries: { list: async () => [] },
     uow: {},
     ids: { next: () => 'id' },
-    audit: new InMemoryAuditTrail(),
+    audit,
   }
 
   registerContasRoutes(app, deps as unknown as ContasDeps)
-  return { app, receivables }
+  return { app, receivables, receivablesUow }
 }
 
 let app: FastifyInstance
@@ -132,5 +136,64 @@ describe('contas a receber — RF-064, RF-066', () => {
 
     expect(aPagar.statusCode).toBe(200)
     expect(aPagar.json().totalCents).toBe(0)
+  })
+})
+
+describe('lancar recebivel avulso — POST /contas-a-receber, RF-065', () => {
+  it('cria com 201 e devolve o recebivel', async () => {
+    const c = await buildApp()
+    app = c.app
+
+    const r = await app.inject({
+      method: 'POST',
+      url: '/contas-a-receber',
+      payload: { description: 'Aluguel de sala', amountCents: 80_000, dueDate: '2026-09-20' },
+    })
+
+    expect(r.statusCode).toBe(201)
+    expect(r.json().description).toBe('Aluguel de sala')
+    expect(r.json().amountCents).toBe(80_000)
+    expect(r.json().saleId).toBeNull()
+  })
+
+  it('recusa valor zero', async () => {
+    const c = await buildApp()
+    app = c.app
+
+    const r = await app.inject({
+      method: 'POST',
+      url: '/contas-a-receber',
+      payload: { description: 'Zerado', amountCents: 0, dueDate: '2026-09-20' },
+    })
+
+    expect(r.statusCode).toBe(400)
+  })
+
+  it('accountant nao lanca — e escrita', async () => {
+    const c = await buildApp({ ...PRINCIPAL, role: 'accountant' })
+    app = c.app
+
+    const r = await app.inject({
+      method: 'POST',
+      url: '/contas-a-receber',
+      payload: { description: 'Aluguel', amountCents: 10_000, dueDate: '2026-09-20' },
+    })
+
+    expect(r.statusCode).toBe(403)
+  })
+
+  it('nao confunde com o lancamento de contas a pagar', async () => {
+    const c = await buildApp()
+    app = c.app
+
+    await app.inject({
+      method: 'POST',
+      url: '/contas-a-receber',
+      payload: { description: 'Recebivel', amountCents: 10_000, dueDate: '2026-09-20' },
+    })
+
+    /* A unidade de trabalho de pagar (`uow: {}`) nao foi chamada — se a rota
+       confundisse as duas, este teste quebraria ao tentar usar o falso vazio. */
+    expect(c.receivablesUow.todas('empresa-1')).toHaveLength(1)
   })
 })

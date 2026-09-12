@@ -1,6 +1,12 @@
+import { InMemoryAuditTrail } from '../audit/fakes.js'
 import type { ReceivableOutput, ReceivableStatus } from '@na-regua/contracts'
-import type { CompanyId } from '../context.js'
-import type { ReceivableQueries } from '../ports/receivable-repository.js'
+import type { CompanyId, UserId } from '../context.js'
+import type {
+  ManualReceivableTransaction,
+  ManualReceivableUnitOfWork,
+  NewManualReceivable,
+  ReceivableQueries,
+} from '../ports/receivable-repository.js'
 
 /**
  * Recebiveis em memoria, para teste do caso de uso.
@@ -54,5 +60,78 @@ export class InMemoryReceivables implements ReceivableQueries {
         .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
         .map(({ companyId: _omitido, ...resto }) => resto)
     )
+  }
+}
+
+type GuardadaManual = ReceivableOutput & {
+  readonly companyId: CompanyId
+  readonly createdBy: UserId
+}
+
+/**
+ * Recebivel avulso em memoria, com rollback e filtro por empresa de verdade —
+ * mesmo criterio de `InMemoryPayables`.
+ *
+ * Classe PROPRIA, e nao um metodo a mais em `InMemoryReceivables`: aquela
+ * classe implementa a porta de LEITURA usada por varios testes ja escritos, e
+ * um construtor pedindo uma trilha (como a escrita exige, via `NR-087`)
+ * quebraria todos eles.
+ */
+export class InMemoryManualReceivables implements ManualReceivableUnitOfWork {
+  private readonly registros: GuardadaManual[] = []
+  private sequencia = 0
+
+  constructor(readonly trilha: InMemoryAuditTrail) {}
+
+  todas(companyId: CompanyId): readonly ReceivableOutput[] {
+    return this.registros.filter((r) => r.companyId === companyId)
+  }
+
+  async transaction<T>(
+    companyId: CompanyId,
+    fn: (tx: ManualReceivableTransaction) => Promise<T>,
+  ): Promise<T> {
+    const trilhaAntes = this.trilha.marcaDeTransacao()
+    const antes = [...this.registros]
+    const sequenciaAntes = this.sequencia
+
+    try {
+      return await fn(this.escopo(companyId))
+    } catch (erro) {
+      this.trilha.desfazerAte(trilhaAntes)
+      this.registros.length = 0
+      this.registros.push(...antes)
+      this.sequencia = sequenciaAntes
+      throw erro
+    }
+  }
+
+  private escopo(_companyId: CompanyId): ManualReceivableTransaction {
+    return {
+      record: (entrada) => this.trilha.record(entrada),
+
+      insert: async (novo: NewManualReceivable) => {
+        this.sequencia += 1
+        const gravado: GuardadaManual = {
+          id: `rec-${this.sequencia}`,
+          companyId: novo.companyId,
+          saleId: null,
+          customerId: novo.customerId,
+          customerName: null,
+          description: novo.description,
+          amountCents: novo.amountCents,
+          netAmountCents: novo.amountCents,
+          settledAmountCents: 0,
+          dueDate: novo.dueDate,
+          installmentNumber: 1,
+          installmentCount: 1,
+          status: 'open',
+          createdAt: novo.createdAt.toISOString(),
+          createdBy: novo.createdBy,
+        }
+        this.registros.push(gravado)
+        return gravado
+      },
+    }
   }
 }

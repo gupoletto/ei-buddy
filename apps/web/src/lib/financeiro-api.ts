@@ -5,19 +5,23 @@
  *
  *  | Funcao                | Endpoint esperado                | Disparo         |
  *  |-----------------------|----------------------------------|-----------------|
- *  | salvarTitulo          | POST/PUT /financeiro/titulos     | submit do form  |
  *  | salvarPlanoContas     | POST/PUT /financeiro/planos      | submit          |
  *  | salvarCustoFixo       | POST/PUT /financeiro/custos-fixos| submit          |
  *  | gerarContasDeCustosFixos | POST /financeiro/custos-fixos/gerar | botao      |
  *  | exportar              | GET  /financeiro/titulos/export  | botao exportar  |
  *
- * BAIXA E ESTORNO SAIRAM DESTA LISTA — sao reais desde a NR-081, no fim do
- * arquivo. O aviso que morava aqui dizia que a baixa nao podia ser um UPDATE
- * no titulo, e o servidor concorda: cada baixa e uma linha propria, e o estorno
- * e outra linha, negativa, apontando para a primeira. Nunca um DELETE.
+ * LANCAR TITULO SAIU DESTA LISTA. O lado PAGAR fala com `POST
+ * /contas-a-pagar` (NR-074) e o lado RECEBER com `POST /contas-a-receber`
+ * (RF-065) — ver `lancarContaAPagar`/`lancarContaAReceber` mais abaixo, e
+ * `FormularioTitulo.tsx` para o formulario que os chama.
+ *
+ * BAIXA E ESTORNO SAIRAM DESTA LISTA TAMBEM — sao reais desde a NR-081, no fim
+ * do arquivo. O aviso que morava aqui dizia que a baixa nao podia ser um
+ * UPDATE no titulo, e o servidor concorda: cada baixa e uma linha propria, e o
+ * estorno e outra linha, negativa, apontando para a primeira. Nunca um DELETE.
  */
 
-import { contasPagar, planoContas, custosFixos, bancos, clientes } from './mock-data'
+import { contasPagar, planoContas, custosFixos, bancos } from './mock-data'
 import { pedir, type Resultado } from './http'
 import type { CustoFixo, PlanoContas, StatusTitulo } from './types'
 
@@ -27,24 +31,8 @@ const delay = (ms: number) => new Promise((r) => setTimeout(r, ms))
 /* Listas para os campos "(T)"                                                */
 /* -------------------------------------------------------------------------- */
 
-/** SUBSTITUIR POR: GET /bancos */
+/** SUBSTITUIR POR: GET /bancos. Continua em uso na BAIXA — ver BaixaDialog. */
 export const NOMES_BANCOS = bancos.map((b) => b.nome)
-
-/** SUBSTITUIR POR: GET /financeiro/planos */
-export const NOMES_PLANOS = planoContas.map((p) => p.nome)
-
-/** SUBSTITUIR POR: GET /fornecedores */
-export const NOMES_FORNECEDORES = [...new Set(contasPagar.map((c) => c.fornecedor))].sort()
-
-/** SUBSTITUIR POR: GET /clientes */
-export const NOMES_CLIENTES = clientes.map((c) => c.nome)
-
-export const TIPOS_RECEBIMENTO = [
-  { valor: 'debito', rotulo: 'Cartão de débito' },
-  { valor: 'credito', rotulo: 'Cartão de crédito' },
-  { valor: 'pix', rotulo: 'Pix' },
-  { valor: 'carteira', rotulo: 'Carteira' },
-] as const
 
 /* -------------------------------------------------------------------------- */
 /* Estado das listas                                                          */
@@ -58,38 +46,6 @@ export function listarPlanos(): PlanoContas[] {
 /** SUBSTITUIR POR: GET /financeiro/custos-fixos */
 export function listarCustosFixos(): CustoFixo[] {
   return custosFixos.map((c) => ({ ...c }))
-}
-
-/* -------------------------------------------------------------------------- */
-/* Gravacao de titulos                                                        */
-/* -------------------------------------------------------------------------- */
-
-export type DadosTituloPagar = {
-  banco: string
-  planoContas: string
-  fornecedor: string
-  vencimento: string
-  valor: number
-  descricao: string
-}
-
-export type DadosTituloReceber = {
-  banco: string
-  cliente: string
-  emissao: string
-  vencimento: string
-  referente: string
-  tipo: string
-  valor: number
-}
-
-/** SUBSTITUIR POR: POST /financeiro/titulos */
-export async function salvarTitulo(
-  dados: DadosTituloPagar | DadosTituloReceber,
-): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
-  await delay(800)
-  void dados
-  return { ok: true, id: `tit-${Date.now()}` }
 }
 
 /* -------------------------------------------------------------------------- */
@@ -327,6 +283,21 @@ export type ContasAReceberAgrupadas = {
 
 export const carregarContasAReceber = (): Promise<ResultadoContas<ContasAReceberAgrupadas>> =>
   pedir<ContasAReceberAgrupadas>('/api/contas-a-receber')
+
+/**
+ * Lanca recebivel avulso, que nao vem de venda — RF-065.
+ *
+ * So uma linha, sem recorrencia: RF-065 nao pede parcelamento para o avulso —
+ * quem precisa de varias parcelas lanca uma venda.
+ */
+export const lancarContaAReceber = (entrada: {
+  description: string
+  amountCents: number
+  dueDate: string
+  customerId?: string
+  accountId?: string
+}): Promise<ResultadoContas<ContaAReceber>> =>
+  pedir('/api/contas-a-receber', { method: 'POST', body: JSON.stringify(entrada) })
 
 /* -------------------------------------------------------------------------- */
 /* Baixa e estorno contra a api — NR-081, RF-059, RF-066, RF-067              */

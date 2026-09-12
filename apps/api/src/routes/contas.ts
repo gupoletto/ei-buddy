@@ -1,13 +1,19 @@
-import { createPayableInputSchema, endRecurrenceInputSchema } from '@na-regua/contracts'
+import {
+  createPayableInputSchema,
+  createReceivableInputSchema,
+  endRecurrenceInputSchema,
+} from '@na-regua/contracts'
 import {
   createPayable,
   type CreatePayableDeps,
+  createReceivable,
   endRecurrence,
   type EndRecurrenceDeps,
   listPayables,
   type ListPayablesDeps,
   listReceivables,
   type ListReceivablesDeps,
+  type ManualReceivableUnitOfWork,
 } from '@na-regua/core'
 import type { FastifyInstance } from 'fastify'
 import { requireContext } from '../plugins/execution-context.js'
@@ -29,7 +35,16 @@ import { validate } from '../plugins/validate.js'
 
 export type ContasDeps = CreatePayableDeps &
   EndRecurrenceDeps &
-  ListReceivablesDeps & { readonly queries: ListPayablesDeps }
+  ListReceivablesDeps & {
+    readonly queries: ListPayablesDeps
+    /*
+     * Nome proprio, e nao `uow`: `CreatePayableDeps` ja usa essa chave para a
+     * unidade de trabalho de PAGAR. As duas sao tipos incompativeis — uma
+     * intersecao com o mesmo nome viraria `never`, e o TypeScript recusaria
+     * qualquer objeto que tentasse satisfazer `ContasDeps`.
+     */
+    readonly receivablesUow: ManualReceivableUnitOfWork
+  }
 
 export function registerContasRoutes(app: FastifyInstance, deps: ContasDeps): void {
   /**
@@ -91,6 +106,25 @@ export function registerContasRoutes(app: FastifyInstance, deps: ContasDeps): vo
 
     return reply.code(200).send(await listReceivables(deps, ctx))
   })
+
+  /**
+   * Lancar recebivel avulso, que nao vem de venda — RF-065.
+   *
+   * So uma linha, e nao uma lista como em `/contas-a-pagar`: RF-065 nao pede
+   * recorrencia para o avulso.
+   */
+  app.post(
+    '/contas-a-receber',
+    { config: { rateLimit: LIMITE_DE_ESCRITA } },
+    async (request, reply) => {
+      const ctx = requireContext(request)
+      const input = validate(createReceivableInputSchema, request.body)
+
+      const receivable = await createReceivable({ uow: deps.receivablesUow }, ctx, input)
+
+      return reply.code(201).send(receivable)
+    },
+  )
 
   /**
    * Encerrar a recorrencia — RF-058.
