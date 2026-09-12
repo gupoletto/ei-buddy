@@ -658,6 +658,7 @@ export function buildContasDeps(): ContasDeps {
     queries: createPayableQueries(sql),
     receivables: createReceivableRepository(sql),
     receivablesUow: createManualReceivableUnitOfWork(sql),
+    accounts: createChartOfAccountsRepository(sql),
     ids: { next: () => randomUUID() },
     /* Mesma pendencia da autenticacao: `db` nao expoe repositorio de
        auditoria, entao a trilha do lancamento fica em memoria. */

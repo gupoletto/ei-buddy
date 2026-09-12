@@ -164,23 +164,79 @@ export async function chamarApi<T>(
    * pensados para a tela (RNF-054). Reescrever aqui criaria duas versoes da
    * mesma mensagem, e elas divergiriam.
    */
+  const envelope = await lerEnvelopeDeErro(resposta)
+  return { ok: false, status: resposta.status, ...envelope }
+}
+
+/** O mesmo envelope de erro, para quem nao precisa do corpo cru — so isto e o resto. */
+async function lerEnvelopeDeErro(
+  resposta: Response,
+): Promise<{ code: string; message: string; corpo: unknown }> {
   try {
     const envelope = (await resposta.json()) as EnvelopeDeErro
     return {
-      ok: false,
-      status: resposta.status,
       code: envelope.error?.code ?? 'UNKNOWN',
       message: envelope.error?.message ?? INDISPONIVEL,
       corpo: envelope,
     }
   } catch {
     /* Resposta sem corpo JSON — 502 de um proxy, por exemplo. */
+    return { code: 'UNKNOWN', message: INDISPONIVEL, corpo: null }
+  }
+}
+
+export type RespostaDeArquivo =
+  | {
+      readonly ok: true
+      readonly bytes: ArrayBuffer
+      readonly contentType: string
+      readonly contentDisposition: string | null
+    }
+  | { readonly ok: false; readonly status: number; readonly message: string }
+
+/**
+ * A mesma chamada de `chamarApi`, para uma resposta que NAO e JSON —
+ * exportar contas em CSV/PDF (NR-074).
+ *
+ * Corpo separado, e nao um `T` generico em `chamarApi`: `resposta.json()` la
+ * dentro e incondicional, e chamado num CSV ele lanca antes de o handler poder
+ * fazer qualquer coisa. Sucesso e erro se ATRAVESSAM aqui de proposito — este
+ * caminho nunca precisou do `corpo` cru do erro (nao ha campo extra tipo
+ * `candidates` para um download), so a mensagem.
+ */
+export async function chamarApiArquivo(
+  caminho: string,
+  token: string | undefined,
+): Promise<RespostaDeArquivo> {
+  let resposta: Response
+
+  try {
+    resposta = await fetch(`${API_URL}${caminho}`, {
+      headers: token === undefined ? {} : { authorization: `Bearer ${token}` },
+      cache: 'no-store',
+    })
+  } catch (erro) {
+    console.error('[api-server] chamada a api falhou', {
+      method: 'GET',
+      url: `${API_URL}${caminho}`,
+      causa: erro instanceof Error ? erro.message : erro,
+    })
     return {
       ok: false,
-      status: resposta.status,
-      code: 'UNKNOWN',
-      message: INDISPONIVEL,
-      corpo: null,
+      status: 503,
+      message: PRODUCAO ? INDISPONIVEL : `${INDISPONIVEL} (a api nao respondeu em ${API_URL})`,
     }
+  }
+
+  if (!resposta.ok) {
+    const { message } = await lerEnvelopeDeErro(resposta)
+    return { ok: false, status: resposta.status, message }
+  }
+
+  return {
+    ok: true,
+    bytes: await resposta.arrayBuffer(),
+    contentType: resposta.headers.get('content-type') ?? 'application/octet-stream',
+    contentDisposition: resposta.headers.get('content-disposition'),
   }
 }

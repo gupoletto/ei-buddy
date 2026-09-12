@@ -1,34 +1,20 @@
 /**
  * ============================================================================
- * PONTOS DE INTEGRACAO — MODULO FINANCEIRO
+ * MODULO FINANCEIRO — cliente do BFF
  * ============================================================================
  *
- *  | Funcao                | Endpoint esperado                | Disparo         |
- *  |-----------------------|----------------------------------|-----------------|
- *  | exportar              | GET  /financeiro/titulos/export  | botao exportar  |
- *
- * LANCAR TITULO SAIU DESTA LISTA. O lado PAGAR fala com `POST
- * /contas-a-pagar` (NR-074) e o lado RECEBER com `POST /contas-a-receber`
- * (RF-065) — ver `lancarContaAPagar`/`lancarContaAReceber` mais abaixo, e
- * `FormularioTitulo.tsx` para o formulario que os chama.
- *
- * CUSTOS FIXOS SAIRAM DESTA LISTA — CRUD completo e "gerar as contas do mes"
- * falam com `/custos-fixos` (NR-110), no fim do arquivo. `listarPlanos`/
- * `salvarPlanoContas` tambem saem: eram um plano de contas PROPRIO, duplicado
- * e morto — `apps/web/src/lib/contabilidade-api.ts` e o de verdade (NR-077),
- * usado pela mesma tela, e nada mais chamava os dois daqui.
- *
- * BAIXA E ESTORNO SAIRAM DESTA LISTA TAMBEM — sao reais desde a NR-081, no fim
- * do arquivo. O aviso que morava aqui dizia que a baixa nao podia ser um
- * UPDATE no titulo, e o servidor concorda: cada baixa e uma linha propria, e o
- * estorno e outra linha, negativa, apontando para a primeira. Nunca um DELETE.
+ * Nao ha mais mock aqui: lancar titulo fala com `POST /contas-a-pagar`
+ * (NR-074) e `POST /contas-a-receber` (RF-065) — ver
+ * `lancarContaAPagar`/`lancarContaAReceber` mais abaixo, e
+ * `FormularioTitulo.tsx` para o formulario que os chama. Custos fixos falam
+ * com `/custos-fixos` (NR-110), no fim do arquivo. Baixa e estorno sao reais
+ * desde a NR-081. Exportar fala com `/contas-a-pagar/exportar` e
+ * `/contas-a-receber/exportar` — o ultimo botao que ainda so simulava.
  */
 
 import { bancos } from './mock-data'
 import { pedir, type Resultado } from './http'
 import type { StatusTitulo } from './types'
-
-const delay = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 /* -------------------------------------------------------------------------- */
 /* Listas para os campos "(T)"                                                */
@@ -38,25 +24,55 @@ const delay = (ms: number) => new Promise((r) => setTimeout(r, ms))
 export const NOMES_BANCOS = bancos.map((b) => b.nome)
 
 /* -------------------------------------------------------------------------- */
-/* Exportacao (previsto, ainda nao implementado)                              */
+/* Exportacao — NR-074                                                        */
 /* -------------------------------------------------------------------------- */
 
 export type FormatoExportacao = 'csv' | 'pdf'
 
+/** O nome do arquivo que o servidor sugeriu, tirado de `Content-Disposition`. */
+function nomeDoArquivo(contentDisposition: string | null): string | null {
+  if (contentDisposition === null) return null
+  return /filename="([^"]+)"/.exec(contentDisposition)?.[1] ?? null
+}
+
 /**
- * SUBSTITUIR POR: GET /financeiro/titulos/export?formato=
+ * Exporta a lista de titulos e ja dispara o download — RF-055 a RF-067.
  *
- * A estrutura ja existe para que a exportacao entre sem mexer nas telas: o
- * botao chama esta funcao e o servidor devolve o arquivo pronto. Gerar CSV
- * no cliente daria pressa, mas PDF nao — e ter dois caminhos diferentes
- * para a mesma acao acaba divergindo.
+ * Nao passa por `pedir()`: ele sempre le a resposta como JSON, e um CSV ou
+ * PDF quebraria ali antes de chegar a tela. O sucesso aqui e um ARQUIVO, e
+ * nao um objeto — por isso o retorno so diz se deu certo, e nao devolve dado
+ * nenhum para a tela desenhar.
  */
-export async function exportar(formato: FormatoExportacao): Promise<{ ok: false; error: string }> {
-  await delay(400)
-  return {
-    ok: false,
-    error: `Exportação em ${formato.toUpperCase()} entra quando o backend expuser o endpoint.`,
+export async function exportar(
+  tipo: TipoDeTitulo,
+  formato: FormatoExportacao,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  let resposta: Response
+
+  try {
+    resposta = await fetch(`/api/contas-a-${tipo}/exportar?formato=${formato}`, {
+      credentials: 'same-origin',
+    })
+  } catch {
+    return { ok: false, error: 'Sem conexão. Verifique sua internet.' }
   }
+
+  if (!resposta.ok) {
+    const corpo = (await resposta.json().catch(() => ({}))) as { error?: { message?: string } }
+    return { ok: false, error: corpo.error?.message ?? 'Não foi possível exportar.' }
+  }
+
+  const blob = await resposta.blob()
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = nomeDoArquivo(resposta.headers.get('content-disposition')) ?? `titulos.${formato}`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+
+  return { ok: true }
 }
 
 /* -------------------------------------------------------------------------- */

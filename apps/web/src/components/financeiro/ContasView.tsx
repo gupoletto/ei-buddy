@@ -308,9 +308,13 @@ export default function ContasView({ tipo }: { tipo: 'pagar' | 'receber' }) {
     await carregar()
   }
 
+  const [exportando, setExportando] = useState(false)
+
   async function exportarLista(formato: 'csv' | 'pdf') {
-    const r = await exportar(formato)
-    setToast({ msg: r.error, tone: 'error' })
+    setExportando(true)
+    const r = await exportar(tipo, formato)
+    setExportando(false)
+    if (!r.ok) setToast({ msg: r.error, tone: 'error' })
   }
 
   const limparFiltros = () => {
@@ -330,9 +334,21 @@ export default function ContasView({ tipo }: { tipo: 'pagar' | 'receber' }) {
         subtitle={pagar ? 'Títulos, vencimentos e baixas' : 'Recebíveis, cobrança e baixas'}
         actions={
           <>
-            <Button variant="secondary" onClick={() => exportarLista('csv')}>
+            <Button
+              variant="secondary"
+              disabled={exportando}
+              onClick={() => void exportarLista('csv')}
+            >
               <IconUpload size={16} />
-              Exportar
+              CSV
+            </Button>
+            <Button
+              variant="secondary"
+              disabled={exportando}
+              onClick={() => void exportarLista('pdf')}
+            >
+              <IconUpload size={16} />
+              PDF
             </Button>
             <Button onClick={() => setLancando(true)}>
               <IconPlus size={17} />
