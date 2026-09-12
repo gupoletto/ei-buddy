@@ -1,31 +1,34 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { listarClientes } from '@/lib/clientes-api'
 import {
   COLUNAS,
   criarCard,
   listarCards,
   moverCard,
-  RESPONSAVEIS,
-  ROTULO_ORIGEM,
   type CardCrm,
   type ColunaId,
+  type DadosCard,
+  type TipoCard,
 } from '@/lib/crm-api'
+import { listarEquipe, type MembroDaEquipe } from '@/lib/equipe-api'
 import { daysUntil, formatDate, hoje } from '@/lib/format'
 import { Badge, Card, EmptyState, PageHeader, Stat } from '@/components/ui/UI'
+import { SkeletonLinhas } from '@/components/ui/Skeleton'
 import { Button } from '@/components/ui/Button'
 import Toast from '@/components/ui/Toast'
 import { Spinner } from '@/components/auth/Fields'
 import { IconCalendar, IconList, IconPlus, IconUsers } from '@/components/Icons'
-import CampoTag from '@/components/app/CampoTag'
 import CardDetalhe from './CardDetalhe'
 import styles from './crm.module.css'
 
 type Visao = 'quadro' | 'lista'
 
 export default function CrmQuadro() {
-  const [cards, setCards] = useState<CardCrm[]>(() => listarCards())
+  const [cards, setCards] = useState<CardCrm[]>([])
+  const [carregando, setCarregando] = useState(true)
+  const [erroCarga, setErroCarga] = useState<string | null>(null)
   const [visao, setVisao] = useState<Visao>('quadro')
 
   const [filtroCliente, setFiltroCliente] = useState('')
@@ -38,7 +41,32 @@ export default function CrmQuadro() {
   const [colunaAlvo, setColunaAlvo] = useState<ColunaId | null>(null)
   const [toast, setToast] = useState<{ msg: string; tone: 'success' | 'error' } | null>(null)
 
-  const nomesClientes = useMemo(() => [...new Set(cards.map((c) => c.clienteNome))].sort(), [cards])
+  const buscar = useCallback(async () => {
+    const r = await listarCards()
+    setCarregando(false)
+
+    if (!r.ok) {
+      setErroCarga(r.erro)
+      return
+    }
+
+    setErroCarga(null)
+    setCards(r.dados)
+  }, [])
+
+  useEffect(() => {
+    /* `async` explicito: os `setState` vem todos depois do await, nunca
+       sincronos no corpo do efeito. */
+    void (async () => {
+      await buscar()
+    })()
+  }, [buscar])
+
+  const nomesClientes = useMemo(
+    () =>
+      [...new Set(cards.map((c) => c.clienteNome).filter((n): n is string => n !== null))].sort(),
+    [cards],
+  )
 
   const filtrados = useMemo(() => {
     return cards.filter((c) => {
@@ -63,7 +91,6 @@ export default function CrmQuadro() {
        Se a chamada falhar, desfazemos. */
     setCards((atual) => atual.map((c) => (c.id === id ? { ...c, coluna } : c)))
 
-    /* SUBSTITUIR POR: PATCH /crm/cards/:id */
     const r = await moverCard(id, coluna)
 
     if (!r.ok) {
@@ -82,7 +109,7 @@ export default function CrmQuadro() {
     <>
       <PageHeader
         title="CRM"
-        subtitle="Pendências e contatos, vindos dos clientes ou lançados aqui"
+        subtitle="Pendências e contatos lançados por aqui"
         actions={
           <Button onClick={() => setCriando(true)}>
             <IconPlus size={17} />
@@ -91,193 +118,223 @@ export default function CrmQuadro() {
         }
       />
 
-      <div className="statRow">
-        <Stat
-          label="A fazer"
-          value={String(contagem.afazer)}
-          tone={contagem.afazer ? 'warning' : 'neutral'}
-        />
-        <Stat label="Em andamento" value={String(contagem.andamento)} />
-        <Stat label="Concluídos" value={String(contagem.concluido)} tone="positive" />
-      </div>
+      {cards.length > 0 && !carregando ? (
+        <div className="statRow">
+          <Stat
+            label="A fazer"
+            value={String(contagem.afazer)}
+            tone={contagem.afazer ? 'warning' : 'neutral'}
+          />
+          <Stat label="Em andamento" value={String(contagem.andamento)} />
+          <Stat label="Concluídos" value={String(contagem.concluido)} tone="positive" />
+        </div>
+      ) : null}
 
       <Card>
-        {/* --- Filtros e alternador de visao --- */}
-        <div className={styles.barra}>
-          <div className={styles.filtros}>
-            <select
-              className={styles.select}
-              value={filtroCliente}
-              onChange={(e) => setFiltroCliente(e.target.value)}
-              aria-label="Filtrar por cliente"
-            >
-              <option value="">Todos os clientes</option>
-              {nomesClientes.map((n) => (
-                <option key={n} value={n}>
-                  {n}
-                </option>
-              ))}
-            </select>
-
-            <select
-              className={styles.select}
-              value={filtroTipo}
-              onChange={(e) => setFiltroTipo(e.target.value)}
-              aria-label="Filtrar por tipo"
-            >
-              <option value="">Pendências e contatos</option>
-              <option value="pendencia">Só pendências</option>
-              <option value="contato">So contatos</option>
-            </select>
-
-            <select
-              className={styles.select}
-              value={periodo}
-              onChange={(e) => setPeriodo(Number(e.target.value))}
-              aria-label="Filtrar por período"
-            >
-              <option value={0}>Qualquer data</option>
-              <option value={7}>Últimos/próximos 7 dias</option>
-              <option value={30}>30 dias</option>
-              <option value={90}>90 dias</option>
-            </select>
-          </div>
-
-          {/* No mobile o quadro rola na horizontal; a lista e a alternativa */}
-          <div className={styles.visoes} role="group" aria-label="Modo de visualização">
-            <button
-              type="button"
-              className={`${styles.visao} ${visao === 'quadro' ? styles.visaoAtiva : ''}`}
-              onClick={() => setVisao('quadro')}
-              aria-pressed={visao === 'quadro'}
-            >
-              Quadro
-            </button>
-            <button
-              type="button"
-              className={`${styles.visao} ${visao === 'lista' ? styles.visaoAtiva : ''}`}
-              onClick={() => setVisao('lista')}
-              aria-pressed={visao === 'lista'}
-            >
-              <IconList size={14} />
-              Lista
-            </button>
-          </div>
-        </div>
-
-        {filtrados.length === 0 ? (
-          cards.length === 0 ? (
-            <EmptyState
-              title="Nada no CRM ainda"
-              description="Pendências e contatos lançados na tela de Clientes aparecem aqui automaticamente. Você também pode lançar direto por esta tela."
-              mascote
-              action={
-                <Button onClick={() => setCriando(true)}>
-                  <IconPlus size={16} />
-                  Lançar a primeira
-                </Button>
-              }
-            />
-          ) : (
-            <EmptyState
-              title="Nenhum card com estes filtros"
-              description="Ajuste os filtros para ver outros cards."
-              action={
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    setFiltroCliente('')
-                    setFiltroTipo('')
-                    setPeriodo(0)
-                  }}
-                >
-                  Limpar filtros
-                </Button>
-              }
-            />
-          )
-        ) : visao === 'quadro' ? (
-          /* ============ Quadro Kanban ============ */
-          <div className={styles.quadro}>
-            {COLUNAS.map((coluna) => (
-              <section
-                key={coluna.id}
-                className={`${styles.coluna} ${colunaAlvo === coluna.id ? styles.colunaAlvo : ''}`}
-                onDragOver={(e) => {
-                  e.preventDefault()
-                  setColunaAlvo(coluna.id)
-                }}
-                onDragLeave={() => setColunaAlvo(null)}
-                onDrop={(e) => {
-                  e.preventDefault()
-                  setColunaAlvo(null)
-                  if (arrastando) void mover(arrastando, coluna.id)
-                  setArrastando(null)
+        {/*
+          Carregando, vazio e quebrado sao TRES coisas diferentes — mesmo
+          criterio da tela de suporte: mostrar o vazio antes da lista chegar
+          faria a pessoa lancar um card repetido achando que sumiu.
+        */}
+        {carregando ? (
+          <SkeletonLinhas />
+        ) : erroCarga !== null ? (
+          <EmptyState
+            title="Não deu para carregar o quadro"
+            description={erroCarga}
+            action={
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setCarregando(true)
+                  setErroCarga(null)
+                  void buscar()
                 }}
               >
-                <header className={styles.colunaCabecalho}>
-                  <h2 className={styles.colunaTitulo}>{coluna.titulo}</h2>
-                  <span className={styles.colunaContador}>{porColuna(coluna.id).length}</span>
-                </header>
-
-                <ul className={styles.cards}>
-                  {porColuna(coluna.id).map((card) => (
-                    <li key={card.id}>
-                      <CardKanban
-                        card={card}
-                        onAbrir={() => setAberto(card)}
-                        onMover={(destino) => void mover(card.id, destino)}
-                        onArrastarInicio={() => setArrastando(card.id)}
-                        onArrastarFim={() => {
-                          setArrastando(null)
-                          setColunaAlvo(null)
-                        }}
-                        arrastando={arrastando === card.id}
-                      />
-                    </li>
-                  ))}
-
-                  {porColuna(coluna.id).length === 0 ? (
-                    <li className={styles.colunaVazia}>Nada aqui</li>
-                  ) : null}
-                </ul>
-              </section>
-            ))}
-          </div>
+                Tentar de novo
+              </Button>
+            }
+          />
         ) : (
-          /* ============ Lista ============ */
-          <ul className={styles.lista}>
-            {filtrados.map((card) => {
-              const coluna = COLUNAS.find((c) => c.id === card.coluna)
-              return (
-                <li key={card.id}>
-                  <button
-                    type="button"
-                    className={styles.listaItem}
-                    onClick={() => setAberto(card)}
-                  >
-                    <span className={styles.listaPrincipal}>
-                      <strong>{card.titulo}</strong>
-                      <span>
-                        {card.clienteNome} · {formatDate(card.data)}
-                      </span>
-                    </span>
-                    <Badge
-                      tone={
-                        card.coluna === 'concluido'
-                          ? 'success'
-                          : card.coluna === 'andamento'
-                            ? 'info'
-                            : 'warning'
-                      }
+          <>
+            {/* --- Filtros e alternador de visao --- */}
+            <div className={styles.barra}>
+              <div className={styles.filtros}>
+                <select
+                  className={styles.select}
+                  value={filtroCliente}
+                  onChange={(e) => setFiltroCliente(e.target.value)}
+                  aria-label="Filtrar por cliente"
+                >
+                  <option value="">Todos os clientes</option>
+                  {nomesClientes.map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  className={styles.select}
+                  value={filtroTipo}
+                  onChange={(e) => setFiltroTipo(e.target.value)}
+                  aria-label="Filtrar por tipo"
+                >
+                  <option value="">Pendências e contatos</option>
+                  <option value="pendencia">Só pendências</option>
+                  <option value="contato">So contatos</option>
+                </select>
+
+                <select
+                  className={styles.select}
+                  value={periodo}
+                  onChange={(e) => setPeriodo(Number(e.target.value))}
+                  aria-label="Filtrar por período"
+                >
+                  <option value={0}>Qualquer data</option>
+                  <option value={7}>Últimos/próximos 7 dias</option>
+                  <option value={30}>30 dias</option>
+                  <option value={90}>90 dias</option>
+                </select>
+              </div>
+
+              {/* No mobile o quadro rola na horizontal; a lista e a alternativa */}
+              <div className={styles.visoes} role="group" aria-label="Modo de visualização">
+                <button
+                  type="button"
+                  className={`${styles.visao} ${visao === 'quadro' ? styles.visaoAtiva : ''}`}
+                  onClick={() => setVisao('quadro')}
+                  aria-pressed={visao === 'quadro'}
+                >
+                  Quadro
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.visao} ${visao === 'lista' ? styles.visaoAtiva : ''}`}
+                  onClick={() => setVisao('lista')}
+                  aria-pressed={visao === 'lista'}
+                >
+                  <IconList size={14} />
+                  Lista
+                </button>
+              </div>
+            </div>
+
+            {filtrados.length === 0 ? (
+              cards.length === 0 ? (
+                <EmptyState
+                  title="Nada no CRM ainda"
+                  description="Lance uma pendência ou um contato para começar a acompanhar."
+                  mascote
+                  action={
+                    <Button onClick={() => setCriando(true)}>
+                      <IconPlus size={16} />
+                      Lançar a primeira
+                    </Button>
+                  }
+                />
+              ) : (
+                <EmptyState
+                  title="Nenhum card com estes filtros"
+                  description="Ajuste os filtros para ver outros cards."
+                  action={
+                    <Button
+                      variant="secondary"
+                      onClick={() => {
+                        setFiltroCliente('')
+                        setFiltroTipo('')
+                        setPeriodo(0)
+                      }}
                     >
-                      {coluna?.titulo}
-                    </Badge>
-                  </button>
-                </li>
+                      Limpar filtros
+                    </Button>
+                  }
+                />
               )
-            })}
-          </ul>
+            ) : visao === 'quadro' ? (
+              /* ============ Quadro Kanban ============ */
+              <div className={styles.quadro}>
+                {COLUNAS.map((coluna) => (
+                  <section
+                    key={coluna.id}
+                    className={`${styles.coluna} ${colunaAlvo === coluna.id ? styles.colunaAlvo : ''}`}
+                    onDragOver={(e) => {
+                      e.preventDefault()
+                      setColunaAlvo(coluna.id)
+                    }}
+                    onDragLeave={() => setColunaAlvo(null)}
+                    onDrop={(e) => {
+                      e.preventDefault()
+                      setColunaAlvo(null)
+                      if (arrastando) void mover(arrastando, coluna.id)
+                      setArrastando(null)
+                    }}
+                  >
+                    <header className={styles.colunaCabecalho}>
+                      <h2 className={styles.colunaTitulo}>{coluna.titulo}</h2>
+                      <span className={styles.colunaContador}>{porColuna(coluna.id).length}</span>
+                    </header>
+
+                    <ul className={styles.cards}>
+                      {porColuna(coluna.id).map((card) => (
+                        <li key={card.id}>
+                          <CardKanban
+                            card={card}
+                            onAbrir={() => setAberto(card)}
+                            onMover={(destino) => void mover(card.id, destino)}
+                            onArrastarInicio={() => setArrastando(card.id)}
+                            onArrastarFim={() => {
+                              setArrastando(null)
+                              setColunaAlvo(null)
+                            }}
+                            arrastando={arrastando === card.id}
+                          />
+                        </li>
+                      ))}
+
+                      {porColuna(coluna.id).length === 0 ? (
+                        <li className={styles.colunaVazia}>Nada aqui</li>
+                      ) : null}
+                    </ul>
+                  </section>
+                ))}
+              </div>
+            ) : (
+              /* ============ Lista ============ */
+              <ul className={styles.lista}>
+                {filtrados.map((card) => {
+                  const coluna = COLUNAS.find((c) => c.id === card.coluna)
+                  return (
+                    <li key={card.id}>
+                      <button
+                        type="button"
+                        className={styles.listaItem}
+                        onClick={() => setAberto(card)}
+                      >
+                        <span className={styles.listaPrincipal}>
+                          <strong>{card.titulo}</strong>
+                          <span>
+                            {card.clienteNome ?? 'Sem cliente'} · {formatDate(card.data)}
+                          </span>
+                        </span>
+                        <Badge
+                          tone={
+                            card.coluna === 'concluido'
+                              ? 'success'
+                              : card.coluna === 'andamento'
+                                ? 'info'
+                                : 'warning'
+                          }
+                        >
+                          {coluna?.titulo}
+                        </Badge>
+                      </button>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+          </>
         )}
       </Card>
 
@@ -350,7 +407,7 @@ function CardKanban({
 
         <span className={styles.cardCliente}>
           <IconUsers size={13} />
-          {card.clienteNome}
+          {card.clienteNome ?? 'Sem cliente'}
         </span>
 
         <span className={styles.cardRodape}>
@@ -358,17 +415,12 @@ function CardKanban({
             <IconCalendar size={12} />
             {formatDate(card.data)}
           </span>
-          {card.responsaveis.length > 0 ? (
-            <span className={styles.cardResponsavel}>
-              {card.responsaveis[0].split(' ')[0]}
-              {card.responsaveis.length > 1 ? ` +${card.responsaveis.length - 1}` : ''}
-            </span>
+          {card.responsavelNome ? (
+            <span className={styles.cardResponsavel}>{card.responsavelNome.split(' ')[0]}</span>
           ) : (
             <span className={styles.cardSemResponsavel}>sem responsável</span>
           )}
         </span>
-
-        <span className={styles.cardOrigem}>{ROTULO_ORIGEM[card.origem]}</span>
       </button>
 
       {/* Arrastar nao funciona no toque nem no teclado — este seletor e o
@@ -405,22 +457,18 @@ function FormCard({
 }) {
   const [titulo, setTitulo] = useState('')
   const [descricao, setDescricao] = useState('')
-  const [tipo, setTipo] = useState<'pendencia' | 'contato'>('pendencia')
-  const [cliente, setCliente] = useState('')
+  const [tipo, setTipo] = useState<TipoCard>('pendencia')
+  const [clienteId, setClienteId] = useState('')
   /* O campo de data do cartao novo abria em 24/08/2026 — a pessoa tinha de
      corrigir a data em todo cartao que criasse. */
   const [data, setData] = useState(hoje())
-  const [responsavel, setResponsavel] = useState('')
+  const [responsavelId, setResponsavelId] = useState('')
 
-  /*
-   * Os nomes vem da api, e nao de `mock-data`.
-   *
-   * O campo e um autocompletar: comeca vazio e enche quando a lista chega. Um
-   * valor provisorio com nomes inventados seria pior que campo vazio — a pessoa
-   * escolheria "Maria Silva" achando que e cliente dela.
-   */
-  const [listaClientes, setListaClientes] = useState<string[]>([])
-  const [listaResponsaveis, setListaResponsaveis] = useState(RESPONSAVEIS)
+  /* Cliente e responsavel vem da api, e nao de `mock-data` — um id INVENTADO
+     aqui seria pior que a lista vazia: o card gravaria um vinculo que nao
+     existe. */
+  const [clientes, setClientes] = useState<{ id: string; nome: string }[]>([])
+  const [equipe, setEquipe] = useState<MembroDaEquipe[]>([])
 
   const [erro, setErro] = useState<string | null>(null)
   const [salvando, setSalvando] = useState(false)
@@ -429,48 +477,41 @@ function FormCard({
     /* `async` explicito: o `setState` vem depois do await, nunca sincrono no
        corpo do efeito. */
     void (async () => {
-      const r = await listarClientes({})
-      if (r.ok) setListaClientes(r.dados.clientes.map((c) => c.nome))
+      const [rClientes, rEquipe] = await Promise.all([listarClientes({}), listarEquipe()])
+      if (rClientes.ok)
+        setClientes(rClientes.dados.clientes.map((c) => ({ id: c.id, nome: c.nome })))
+      if (rEquipe.ok) setEquipe(rEquipe.dados)
     })()
   }, [])
 
   async function salvar(event: React.FormEvent) {
     event.preventDefault()
     setErro(null)
-    setSalvando(true)
 
-    /* SUBSTITUIR POR: POST /crm/cards */
-    const r = await criarCard({
-      titulo,
-      descricao,
-      tipo,
-      clienteNome: cliente,
-      data,
-      responsaveis: responsavel ? [responsavel] : [],
-    })
-    setSalvando(false)
-
-    if (!r.ok) {
-      setErro(r.error)
+    if (titulo.trim().length < 2) {
+      setErro('Informe o título.')
       return
     }
 
-    onCriado({
-      id: r.id,
-      titulo: titulo.trim(),
-      descricao: descricao.trim(),
+    setSalvando(true)
+
+    const dados: DadosCard = {
+      titulo,
+      descricao,
       tipo,
-      coluna: 'afazer',
-      /* Nulo quando o nome digitado nao casa com nenhum cliente: o campo
-         aceita texto livre de proposito, para nao travar quem anota um contato
-         antes de cadastrar a pessoa. */
-      clienteId: null,
-      clienteNome: cliente,
+      clienteId: clienteId === '' ? null : clienteId,
       data,
-      responsaveis: responsavel ? [responsavel] : [],
-      origem: 'crm',
-      comentarios: [],
-    })
+      responsavelId: responsavelId === '' ? null : responsavelId,
+    }
+    const r = await criarCard(dados)
+    setSalvando(false)
+
+    if (!r.ok) {
+      setErro(r.erro)
+      return
+    }
+
+    onCriado(r.dados)
   }
 
   return (
@@ -536,13 +577,19 @@ function FormCard({
 
           <label className={styles.campo}>
             <span>Cliente</span>
-            <CampoTag
-              valor={cliente}
-              opcoes={listaClientes}
-              onChange={setCliente}
-              onCriar={(novo) => setListaClientes((c) => [...c, novo])}
-              ariaLabel="Cliente"
-            />
+            <select
+              className={styles.select}
+              value={clienteId}
+              onChange={(e) => setClienteId(e.target.value)}
+              aria-label="Cliente"
+            >
+              <option value="">Sem cliente</option>
+              {clientes.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.nome}
+                </option>
+              ))}
+            </select>
           </label>
 
           <div className={styles.formLinha}>
@@ -558,13 +605,19 @@ function FormCard({
 
             <label className={styles.campo}>
               <span>Responsável</span>
-              <CampoTag
-                valor={responsavel}
-                opcoes={listaResponsaveis}
-                onChange={setResponsavel}
-                onCriar={(novo) => setListaResponsaveis((r) => [...r, novo])}
-                ariaLabel="Responsável"
-              />
+              <select
+                className={styles.select}
+                value={responsavelId}
+                onChange={(e) => setResponsavelId(e.target.value)}
+                aria-label="Responsável"
+              >
+                <option value="">Ninguém ainda</option>
+                {equipe.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.nome}
+                  </option>
+                ))}
+              </select>
             </label>
           </div>
 

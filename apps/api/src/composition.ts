@@ -26,6 +26,7 @@ import {
   createBankTransactionWriter,
   createChartOfAccountsRepository,
   createConnectionRequests,
+  createCrmRepository,
   createInventoryHistory,
   createInventoryQueries,
   createInventoryUnitOfWork,
@@ -39,6 +40,7 @@ import {
   createSettlementQueries,
   createSettlementUnitOfWork,
   createSupportRepository,
+  createTeamRepository,
   createCompanyRepository,
   createCustomerRepository,
   createFiscalCredentials,
@@ -71,6 +73,7 @@ import type { EstoqueDeps } from './routes/estoque.js'
 import type { SuporteDeps } from './routes/suporte.js'
 import type { RelatoriosDeps } from './routes/relatorios.js'
 import type { ContasDeps } from './routes/contas.js'
+import type { CrmRouteDeps } from './routes/crm.js'
 import { createInvoiceQueue } from './invoice-queue.js'
 import { createConnectionNotifier } from './connection-notifier.js'
 import { createBrasilApiCepLookup } from './cep-lookup.js'
@@ -642,5 +645,19 @@ export function buildContasDeps(): ContasDeps {
     ids: { next: () => randomUUID() },
     /* Mesma pendencia da autenticacao: `db` nao expoe repositorio de
        auditoria, entao a trilha do lancamento fica em memoria. */
+  }
+}
+
+/**
+ * O quadro de CRM e a equipe — NR-109.
+ *
+ * `team` le `company_users` direto — nao ha nada de CRM na porta, so o
+ * seletor de responsavel do card e o unico consumidor por enquanto.
+ */
+export function buildCrmDeps(): CrmRouteDeps {
+  const sql = getClient(env.DATABASE_URL)
+  return {
+    crm: createCrmRepository(sql),
+    team: createTeamRepository(sql),
   }
 }
