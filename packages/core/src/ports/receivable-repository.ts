@@ -1,13 +1,21 @@
 import type { ReceivableOutput, ReceivableStatus } from '@na-regua/contracts'
-import type { CompanyId } from '../context.js'
+import type { CompanyId, UserId } from '../context.js'
+import type { TransactionalAuditTrail } from './audit-trail.js'
 
 /**
- * Porta de leitura dos recebiveis — RF-064, RF-066.
+ * Portas dos recebiveis — RF-064 a RF-066.
  *
- * So LEITURA. Quem cria recebivel e a venda (`UnitOfWork`), e quem o baixa e o
- * `SettlementUnitOfWork` — os dois escrevem em mais de uma tabela na mesma
- * transacao, e essa responsabilidade ja tem dono. Uma porta de escrita aqui
- * criaria um segundo caminho para mexer no mesmo saldo.
+ * `ReceivableQueries` e so LEITURA. Quem cria recebivel de VENDA e o
+ * `UnitOfWork` de `sale-writers`, e quem baixa e o `SettlementUnitOfWork` — os
+ * dois escrevem em mais de uma tabela na mesma transacao, e essa
+ * responsabilidade ja tem dono.
+ *
+ * `ManualReceivableUnitOfWork` e OUTRA coisa: o recebivel AVULSO (RF-065), que
+ * nao vem de venda nenhuma — nao ha saldo de venda para duas portas
+ * discordarem sobre. `NewManualReceivable` tem nome proprio, e nao
+ * `NewReceivable`: esse nome ja e de `sale-writers`, para a linha que a venda
+ * grava, com parcela e forma — confundir os dois faria alguem montar o avulso
+ * com campo de venda.
  *
  * `companyId` em toda assinatura por decisao: o isolamento nao pode depender de
  * quem chama lembrar de filtrar.
@@ -24,4 +32,29 @@ export type ReceivableQueries = {
     companyId: CompanyId,
     criterio: { readonly status: readonly ReceivableStatus[] },
   ): Promise<readonly ReceivableOutput[]>
+}
+
+export type NewManualReceivable = {
+  readonly companyId: CompanyId
+  readonly description: string
+  /** Bruto e liquido sao o MESMO valor: recebivel avulso nao passa por
+      adquirente, entao nao ha tarifa a descontar — RF-063 e so para venda. */
+  readonly amountCents: number
+  /** `AAAA-MM-DD`. Recebivel vence num dia, nao num instante. */
+  readonly dueDate: string
+  readonly customerId: string | null
+  readonly accountId: string | null
+  readonly createdBy: UserId
+  readonly createdAt: Date
+}
+
+export type ManualReceivableTransaction = TransactionalAuditTrail & {
+  insert(receivable: NewManualReceivable): Promise<ReceivableOutput>
+}
+
+export type ManualReceivableUnitOfWork = {
+  transaction<T>(
+    companyId: CompanyId,
+    fn: (tx: ManualReceivableTransaction) => Promise<T>,
+  ): Promise<T>
 }
