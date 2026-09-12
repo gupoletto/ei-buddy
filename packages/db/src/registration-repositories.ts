@@ -667,5 +667,35 @@ export function createProductRepository(sql: Sql): ProductRepository {
       )
       return numero(linha?.total ?? 0)
     },
+
+    /**
+     * Categoria e fornecedor ja usados — as sugestoes do formulario.
+     *
+     * Uma varredura so, com as duas listas: `array_agg(DISTINCT col ORDER BY
+     * col)` ja devolve ordenado, e o `FILTER` descarta o nulo antes de
+     * agregar (produto sem categoria/fornecedor nao vira sugestao vazia).
+     * `COALESCE` cobre a empresa sem nenhum produto ainda — `array_agg` sobre
+     * zero linhas e `NULL`, nao lista vazia.
+     */
+    listSuggestions: async (companyId) => {
+      const [linha] = await withTenant(
+        sql,
+        companyId,
+        (tx) => tx<{ categories: string[]; suppliers: string[] }[]>`
+          SELECT
+            COALESCE(
+              array_agg(DISTINCT category ORDER BY category) FILTER (WHERE category IS NOT NULL),
+              '{}'
+            ) AS categories,
+            COALESCE(
+              array_agg(DISTINCT supplier ORDER BY supplier) FILTER (WHERE supplier IS NOT NULL),
+              '{}'
+            ) AS suppliers
+          FROM products
+          WHERE deleted_at IS NULL
+        `,
+      )
+      return { categories: linha?.categories ?? [], suppliers: linha?.suppliers ?? [] }
+    },
   }
 }

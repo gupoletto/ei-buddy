@@ -406,6 +406,23 @@ export class InMemoryProductRepository implements ProductRepository {
     return [...this.registros.values()].filter((p) => p.companyId === companyId).length
   }
 
+  async listSuggestions(companyId: CompanyId): Promise<{
+    readonly categories: readonly string[]
+    readonly suppliers: readonly string[]
+  }> {
+    const meus = [...this.registros.values()].filter((p) => p.companyId === companyId)
+
+    const distintosEmOrdem = (valores: (string | null)[]) =>
+      [...new Set(valores.filter((v): v is string => v !== null))].sort((a, b) =>
+        a.localeCompare(b),
+      )
+
+    return {
+      categories: distintosEmOrdem(meus.map((p) => p.category)),
+      suppliers: distintosEmOrdem(meus.map((p) => p.supplier)),
+    }
+  }
+
   private semTenant(registro: ProductOutput & { companyId: CompanyId }): ProductOutput {
     const { companyId: _omitido, ...resto } = registro
     return resto

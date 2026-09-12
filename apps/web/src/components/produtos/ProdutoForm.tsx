@@ -1,14 +1,13 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import {
   buscarEan,
   buscarNcm,
   calcularMargem,
-  CATEGORIAS_INICIAIS,
-  FORNECEDORES_INICIAIS,
+  carregarSugestoes,
   salvarProduto,
   type SugestaoNcm,
 } from '@/lib/produtos-api'
@@ -57,8 +56,20 @@ export default function ProdutoForm() {
   const [motivoAjuste, setMotivoAjuste] = useState('')
   const [imagem, setImagem] = useState<string | null>(null)
 
-  const [categorias, setCategorias] = useState(CATEGORIAS_INICIAIS)
-  const [fornecedores, setFornecedores] = useState(FORNECEDORES_INICIAIS)
+  const [categorias, setCategorias] = useState<string[]>([])
+  const [fornecedores, setFornecedores] = useState<string[]>([])
+
+  /* Categoria/fornecedor ja usados pela propria loja — nao mais uma lista de
+     exemplo igual para toda empresa. */
+  useEffect(() => {
+    void (async () => {
+      const r = await carregarSugestoes()
+      if (r.ok) {
+        setCategorias(r.dados.categorias)
+        setFornecedores(r.dados.fornecedores)
+      }
+    })()
+  }, [])
 
   const [erros, setErros] = useState<Record<string, FieldError>>({})
   const [buscandoEan, setBuscandoEan] = useState(false)

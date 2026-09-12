@@ -23,6 +23,7 @@ import {
   importProducts,
   generateInternalCode,
   listCatalog,
+  productSuggestions,
   registerProduct,
 } from './register-product.js'
 
@@ -709,6 +710,53 @@ describe('resumo do catalogo — NR-072', () => {
   })
 })
 
+describe('sugestoes do formulario — categoria e fornecedor', () => {
+  const base = {
+    unitOfMeasure: 'un' as const,
+    salePriceCents: 1000,
+    costPriceCents: 400,
+    stock: 0,
+    minStock: 0,
+  }
+
+  it('devolve so o que ja foi usado, distinto e em ordem', async () => {
+    const products = new InMemoryProductRepository()
+    await registerProduct({ products }, contexto(), {
+      ...base,
+      description: 'Cafe',
+      category: 'Mercearia',
+      supplier: 'Torrefacao Aurora',
+    })
+    await registerProduct({ products }, contexto(), {
+      ...base,
+      description: 'Acucar',
+      category: 'Mercearia',
+      supplier: 'Engenho Doce',
+    })
+
+    const r = await productSuggestions({ products }, contexto())
+
+    /* Mercearia aparece nos DOIS produtos — a sugestao nao repete. */
+    expect(r.categories).toEqual(['Mercearia'])
+    expect(r.suppliers).toEqual(['Engenho Doce', 'Torrefacao Aurora'])
+  })
+
+  it('produto sem categoria nem fornecedor nao vira sugestao em branco', async () => {
+    const products = new InMemoryProductRepository()
+    await registerProduct({ products }, contexto(), { ...base, description: 'Item avulso' })
+
+    const r = await productSuggestions({ products }, contexto())
+
+    expect(r).toEqual({ categories: [], suppliers: [] })
+  })
+
+  it('catalogo vazio devolve listas vazias, e nao erro', async () => {
+    const r = await productSuggestions({ products: new InMemoryProductRepository() }, contexto())
+
+    expect(r).toEqual({ categories: [], suppliers: [] })
+  })
+})
+
 describe('importacao de catalogo — NR-072, US-008', () => {
   const linha = (description: string, over: Record<string, unknown> = {}) => ({
     description,
@@ -750,6 +798,7 @@ describe('importacao de catalogo — NR-072, US-008', () => {
       listCatalog: (c, k) => produtos.listCatalog(c, k),
       catalogSummary: (c) => produtos.catalogSummary(c),
       countAll: (c) => produtos.countAll(c),
+      listSuggestions: (c) => produtos.listSuggestions(c),
     }
 
     return {

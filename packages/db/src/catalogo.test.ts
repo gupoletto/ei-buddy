@@ -316,3 +316,134 @@ describe.skipIf(!DATABASE_URL)('cadastro de produto — categoria e fornecedor',
     expect(criado.supplier).toBeNull()
   })
 })
+
+describe.skipIf(!DATABASE_URL)('sugestoes de categoria e fornecedor', () => {
+  let admin: Sql
+  let sql: Sql
+  let aplicacao: ConexaoDeAplicacao
+  let empresaA: string
+  let empresaB: string
+  let repo: ReturnType<typeof createProductRepository>
+
+  async function criarEmpresa(cnpj: string, nome: string): Promise<string> {
+    const id = randomUUID()
+    await withTenant(
+      sql,
+      id,
+      (tx) => tx`
+        INSERT INTO companies (id, legal_name, cnpj, email, phone)
+        VALUES (${id}, ${nome}, ${cnpj}, ${`s@${cnpj}.local`}, '41999990000')
+      `,
+    )
+    return id
+  }
+
+  let sequencia = 0
+
+  async function criarProduto(
+    empresa: string,
+    dados: { description: string; category?: string | null; supplier?: string | null },
+  ): Promise<void> {
+    sequencia += 1
+    await withTenant(
+      sql,
+      empresa,
+      (tx) => tx`
+        INSERT INTO products
+          (company_id, description, internal_code, unit_of_measure,
+           sale_price_cents, cost_price_cents, category, supplier)
+        VALUES (${empresa}, ${dados.description}, ${`SUG-${sequencia}`}, 'un', 1000, 400,
+                ${dados.category ?? null}, ${dados.supplier ?? null})
+      `,
+    )
+  }
+
+  beforeAll(async () => {
+    await migrate(MIGRATION_URL!)
+
+    admin = postgres(DATABASE_URL!, { max: 4, onnotice: () => {} })
+    aplicacao = await conectarComoAplicacao(admin, DATABASE_URL!)
+    sql = aplicacao.sql
+    repo = createProductRepository(sql)
+
+    empresaA = await criarEmpresa(cnpjDeTeste('7'), 'Loja das Sugestoes A')
+    empresaB = await criarEmpresa(cnpjDeTeste('8'), 'Loja das Sugestoes B')
+
+    /* Fornecedor repetido em duas linhas, para provar que o DISTINCT tira a
+       repeticao; uma linha sem categoria nem fornecedor, para provar que o
+       nulo nao vira sugestao em branco; "Zimbro" fora de ordem alfabetica,
+       para provar que quem ordena e o SQL e nao a ordem de insercao. */
+    await criarProduto(empresaA, { description: 'Zimbro', category: 'Temperos', supplier: null })
+    await criarProduto(empresaA, {
+      description: 'Cafe',
+      category: 'Mercearia',
+      supplier: 'Torrefacao Aurora',
+    })
+    await criarProduto(empresaA, {
+      description: 'Acucar',
+      category: 'Mercearia',
+      supplier: 'Engenho Doce',
+    })
+    await criarProduto(empresaA, {
+      description: 'Leite',
+      category: null,
+      supplier: 'Torrefacao Aurora',
+    })
+    await criarProduto(empresaA, { description: 'Sem nada', category: null, supplier: null })
+
+    await criarProduto(empresaB, {
+      description: 'Da outra loja',
+      category: 'Bebidas',
+      supplier: 'Distribuidora Sul',
+    })
+  }, 60_000)
+
+  afterAll(async () => {
+    if (!sql) {
+      await admin?.end({ timeout: 5 })
+      return
+    }
+    for (const empresa of [empresaA, empresaB].filter(Boolean)) {
+      await withTenant(sql, empresa, async (tx) => {
+        await tx`DELETE FROM products`
+        await tx`DELETE FROM companies`
+      })
+    }
+    await aplicacao.encerrar()
+    await admin.end({ timeout: 5 })
+  })
+
+  it('categoria e fornecedor distintos, em ordem alfabetica', async () => {
+    const r = await repo.listSuggestions(empresaA)
+
+    expect(r.categories).toEqual(['Mercearia', 'Temperos'])
+    /* Torrefacao Aurora aparece em DOIS produtos — o DISTINCT tira a
+       repeticao, e nao e "um por produto". */
+    expect(r.suppliers).toEqual(['Engenho Doce', 'Torrefacao Aurora'])
+  })
+
+  it('produto sem categoria nem fornecedor nao vira sugestao em branco', async () => {
+    const r = await repo.listSuggestions(empresaA)
+
+    expect(r.categories).not.toContain(null)
+    expect(r.categories).not.toContain('')
+    expect(r.suppliers).not.toContain(null)
+  })
+
+  it('nao enxerga a categoria nem o fornecedor da outra loja', async () => {
+    const r = await repo.listSuggestions(empresaA)
+
+    expect(r.categories).not.toContain('Bebidas')
+    expect(r.suppliers).not.toContain('Distribuidora Sul')
+  })
+
+  it('empresa sem nenhum produto devolve listas vazias, e nao erro', async () => {
+    const vazia = await criarEmpresa(cnpjDeTeste('9'), 'Loja Vazia')
+
+    const r = await repo.listSuggestions(vazia)
+
+    expect(r).toEqual({ categories: [], suppliers: [] })
+
+    await withTenant(sql, vazia, (tx) => tx`DELETE FROM companies`)
+  })
+})
