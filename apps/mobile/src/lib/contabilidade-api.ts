@@ -1,13 +1,16 @@
 import { chamarApi } from './api'
 
 /**
- * Resultado do periodo — NR-077, RF-085, US-041.
+ * Plano de contas e DRE contra a api — NR-077, RF-081 a RF-086, US-041.
  *
- * Fala com `GET /relatorios/dre`, a mesma rota do web. O app NAO tem uma conta
- * propria: a ordem das subtracoes vem de `domain` e chega pronta, e e
+ * O DRE fala com `GET /relatorios/dre`, a mesma rota do web. O app NAO tem uma
+ * conta propria: a ordem das subtracoes vem de `domain` e chega pronta, e e
  * exatamente a parte que nao pode variar entre a tela do celular, a do
  * computador e o resumo do assistente. Somar aqui daria uma segunda resposta
  * para "o mes fechou no azul".
+ *
+ * Criar, renomear e apagar conta NAO estao aqui de proposito — sao cadastros
+ * feitos uma vez, com calma, e ficam no web. O celular so consulta.
  */
 
 export type TipoDeConta = 'revenue' | 'deduction' | 'cost' | 'expense'
@@ -35,8 +38,17 @@ export type Dre = {
   readonly lines: readonly LinhaDoDre[]
 }
 
-export type ResultadoDre<T> =
+export type Resultado<T> =
   { readonly ok: true; readonly dados: T } | { readonly ok: false; readonly erro: string }
+
+/** Conta do plano — RF-081, RF-082. */
+export type ContaContabil = {
+  readonly id: string
+  readonly name: string
+  readonly type: TipoDeConta
+  /** Conta do plano padrao nao pode ser apagada. So o web oferece apagar. */
+  readonly isDefault: boolean
+}
 
 /**
  * O mes de uma data, em `AAAA-MM-DD`.
@@ -59,10 +71,23 @@ export function mesLocal(agora: Date = new Date()): { de: string; ate: string } 
   }
 }
 
-export async function carregarDre(de: string, ate: string): Promise<ResultadoDre<Dre>> {
+export async function carregarDre(de: string, ate: string): Promise<Resultado<Dre>> {
   const r = await chamarApi<Dre>(
     `/relatorios/dre?from=${encodeURIComponent(de)}&to=${encodeURIComponent(ate)}`,
   )
+
+  return r.ok ? { ok: true, dados: r.dados } : { ok: false, erro: r.message }
+}
+
+/**
+ * O plano de contas — RF-081, RF-082.
+ *
+ * A tela do celular lia `financeiro-api.ts`, com contas de exemplo e um
+ * "gasto no mes" por conta que era numero inventado — mesmo depois de o web
+ * ja falar com esta rota de verdade.
+ */
+export async function carregarPlano(): Promise<Resultado<{ accounts: ContaContabil[] }>> {
+  const r = await chamarApi<{ accounts: ContaContabil[] }>('/contas-contabeis')
 
   return r.ok ? { ok: true, dados: r.dados } : { ok: false, erro: r.message }
 }

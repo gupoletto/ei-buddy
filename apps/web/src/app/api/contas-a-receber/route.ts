@@ -1,4 +1,4 @@
-import { encaminhar } from '@/lib/bff'
+import { corpoDe, encaminhar } from '@/lib/bff'
 
 /**
  * Contas a receber — NR-081, RF-064, RF-066.
@@ -10,4 +10,12 @@ import { encaminhar } from '@/lib/bff'
  */
 export async function GET() {
   return encaminhar('/contas-a-receber')
+}
+
+/** Lancar recebivel avulso, que nao vem de venda — RF-065. */
+export async function POST(request: Request) {
+  return encaminhar('/contas-a-receber', {
+    method: 'POST',
+    body: await corpoDe(request),
+  })
 }

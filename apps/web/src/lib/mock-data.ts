@@ -12,9 +12,7 @@ import type {
   Compromisso,
   ContaPagar,
   ContaReceber,
-  CustoFixo,
   Empresa,
-  PlanoContas,
   Produto,
   Venda,
 } from './types'
@@ -381,58 +379,6 @@ export const bancos: Banco[] = [
     saldo: 2310.0,
     integrado: false,
     ultimaConciliacao: null,
-  },
-]
-
-export const planoContas: PlanoContas[] = [
-  { id: 'pc-1', nome: 'Fornecedores', tipo: 'despesa', gastoMes: 18420.0 },
-  { id: 'pc-2', nome: 'Aluguel', tipo: 'despesa', gastoMes: 3800.0 },
-  { id: 'pc-3', nome: 'Energia e agua', tipo: 'despesa', gastoMes: 1042.3 },
-  { id: 'pc-4', nome: 'Folha de pagamento', tipo: 'despesa', gastoMes: 9600.0 },
-  { id: 'pc-5', nome: 'Marketing', tipo: 'despesa', gastoMes: 780.0 },
-  { id: 'pc-6', nome: 'Vendas de mercadoria', tipo: 'receita', gastoMes: 64200.0 },
-]
-
-export const custosFixos: CustoFixo[] = [
-  {
-    id: 'cf-1',
-    nome: 'Aluguel do ponto',
-    planoContasId: 'pc-2',
-    planoContasNome: 'Aluguel',
-    bancoId: 'bco-1',
-    bancoNome: 'Banco do Brasil',
-    diaVencimento: 5,
-    valor: 3800.0,
-  },
-  {
-    id: 'cf-2',
-    nome: 'Energia eletrica',
-    planoContasId: 'pc-3',
-    planoContasNome: 'Energia e agua',
-    bancoId: 'bco-1',
-    bancoNome: 'Banco do Brasil',
-    diaVencimento: 12,
-    valor: 742.3,
-  },
-  {
-    id: 'cf-3',
-    nome: 'Internet e telefonia',
-    planoContasId: 'pc-3',
-    planoContasNome: 'Energia e agua',
-    bancoId: 'bco-2',
-    bancoNome: 'Nubank PJ',
-    diaVencimento: 15,
-    valor: 289.9,
-  },
-  {
-    id: 'cf-4',
-    nome: 'Contabilidade',
-    planoContasId: 'pc-4',
-    planoContasNome: 'Folha de pagamento',
-    bancoId: 'bco-2',
-    bancoNome: 'Nubank PJ',
-    diaVencimento: 10,
-    valor: 890.0,
   },
 ]
 

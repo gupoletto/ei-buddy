@@ -23,6 +23,7 @@ import {
   importProducts,
   generateInternalCode,
   listCatalog,
+  productSuggestions,
   registerProduct,
 } from './register-product.js'
 
@@ -362,6 +363,33 @@ describe('registerProduct — RF-017, RF-018', () => {
     expect(p.barcode).toBeNull()
   })
 
+  /*
+   * O defeito que isto guarda: a coluna `products.supplier` existia desde a
+   * migration 0007, mas `registerProduct` nunca a repassava — o formulario
+   * mandava o fornecedor e ele era descartado antes de chegar ao repositorio.
+   */
+  it('repassa categoria e fornecedor ao repositorio', async () => {
+    const products = new InMemoryProductRepository()
+
+    const p = await registerProduct({ products }, contexto(), {
+      ...produtoValido,
+      category: 'Mercearia',
+      supplier: 'Torrefacao Aurora',
+    })
+
+    expect(p.category).toBe('Mercearia')
+    expect(p.supplier).toBe('Torrefacao Aurora')
+  })
+
+  it('sem categoria nem fornecedor, os dois voltam nulos — nao ausentes', async () => {
+    const products = new InMemoryProductRepository()
+
+    const p = await registerProduct({ products }, contexto(), produtoValido)
+
+    expect(p.category).toBeNull()
+    expect(p.supplier).toBeNull()
+  })
+
   it('gera codigo interno tambem para produto com codigo de barras', async () => {
     const products = new InMemoryProductRepository()
 
@@ -682,6 +710,53 @@ describe('resumo do catalogo — NR-072', () => {
   })
 })
 
+describe('sugestoes do formulario — categoria e fornecedor', () => {
+  const base = {
+    unitOfMeasure: 'un' as const,
+    salePriceCents: 1000,
+    costPriceCents: 400,
+    stock: 0,
+    minStock: 0,
+  }
+
+  it('devolve so o que ja foi usado, distinto e em ordem', async () => {
+    const products = new InMemoryProductRepository()
+    await registerProduct({ products }, contexto(), {
+      ...base,
+      description: 'Cafe',
+      category: 'Mercearia',
+      supplier: 'Torrefacao Aurora',
+    })
+    await registerProduct({ products }, contexto(), {
+      ...base,
+      description: 'Acucar',
+      category: 'Mercearia',
+      supplier: 'Engenho Doce',
+    })
+
+    const r = await productSuggestions({ products }, contexto())
+
+    /* Mercearia aparece nos DOIS produtos — a sugestao nao repete. */
+    expect(r.categories).toEqual(['Mercearia'])
+    expect(r.suppliers).toEqual(['Engenho Doce', 'Torrefacao Aurora'])
+  })
+
+  it('produto sem categoria nem fornecedor nao vira sugestao em branco', async () => {
+    const products = new InMemoryProductRepository()
+    await registerProduct({ products }, contexto(), { ...base, description: 'Item avulso' })
+
+    const r = await productSuggestions({ products }, contexto())
+
+    expect(r).toEqual({ categories: [], suppliers: [] })
+  })
+
+  it('catalogo vazio devolve listas vazias, e nao erro', async () => {
+    const r = await productSuggestions({ products: new InMemoryProductRepository() }, contexto())
+
+    expect(r).toEqual({ categories: [], suppliers: [] })
+  })
+})
+
 describe('importacao de catalogo — NR-072, US-008', () => {
   const linha = (description: string, over: Record<string, unknown> = {}) => ({
     description,
@@ -723,6 +798,7 @@ describe('importacao de catalogo — NR-072, US-008', () => {
       listCatalog: (c, k) => produtos.listCatalog(c, k),
       catalogSummary: (c) => produtos.catalogSummary(c),
       countAll: (c) => produtos.countAll(c),
+      listSuggestions: (c) => produtos.listSuggestions(c),
     }
 
     return {

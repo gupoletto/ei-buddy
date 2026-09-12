@@ -3,26 +3,27 @@
  * PONTOS DE INTEGRACAO — VENDAS / PDV
  * ============================================================================
  *
- *  | Funcao              | Endpoint esperado              | Disparo          |
- *  |---------------------|--------------------------------|------------------|
- *  | criarVenda          | POST /vendas                   | fim do carrinho  |
- *  | criarCobrancaVenda  | POST /vendas/:id/cobrancas     | etapa pagamento  |
- *  | statusCobrancaVenda | GET  /vendas/:id/cobrancas/:cid| polling          |
- *  | confirmarDinheiro   | POST /vendas/:id/pagamentos    | recebimento manual|
- *  | emitirNota          | POST /vendas/:id/notas         | etapa fiscal     |
- *  | listarVendas        | GET  /vendas?de=&ate=          | historico        |
- *  | estornarVenda       | POST /vendas/:id/estorno       | estorno          |
+ * O que ja e de VERDADE — fala com a api que existe desde a NR-027/NR-042:
  *
- * O SERVIDOR E QUEM FECHA A VENDA. O carrinho vive no navegador so ate o
+ *  | Funcao                 | Endpoint                  | Disparo             |
+ *  |------------------------|----------------------------|--------------------|
+ *  | fecharVenda            | POST /sales                | fim do carrinho    |
+ *  | listarHistoricoDeVendas| GET  /sales?...            | tela de vendas     |
+ *  | situacaoCertificado    | GET  /empresa/credenciais-fiscais | etapa fiscal|
+ *  | pedirNota              | POST /vendas/:id/nota      | etapa fiscal       |
+ *  | estadoDaNota           | GET  /vendas/:id/nota      | polling da nota    |
+ *  | reconciliarContingencia| POST /vendas/notas/reconciliar | abrir a etapa |
+ *
+ * O que AINDA NAO existe no backend, de proposito documentado (nao e so falta
+ * de wiring): cobranca Pix avulsa (`criarCobrancaVenda`/`statusCobrancaVenda`,
+ * depende do adapter Asaas da NR-044) e estorno de venda
+ * (`estornarVenda` — precisa ser transacional em tres tabelas de uma vez, e
+ * essa unidade de trabalho ainda nao foi escrita nem no web).
+ *
+ * O SERVIDOR E QUEM FECHA A VENDA. O carrinho vive no aparelho so ate o
  * fechamento; a partir dai, preco, imposto, taxa e estoque sao calculados
- * e gravados no servidor. Confiar no total que o front mandou permitiria
- * alterar preco pelo devtools.
- *
- * ESTORNO precisa ser transacional e cobrir tres coisas de uma vez:
- * devolver o item ao estoque, estornar o titulo em Contas a Receber e
- * cancelar a nota fiscal (ou emitir a de devolucao). Se uma falhar, nenhuma
- * pode valer — venda estornada com estoque nao devolvido vira furo de
- * inventario que ninguem consegue explicar depois.
+ * e gravados no servidor. Confiar no total que o app mandou permitiria
+ * alterar preco por fora.
  */
 
 import { produtos } from './mock-data'
@@ -187,35 +188,19 @@ export async function statusCobrancaVenda(chargeId: string): Promise<PixChargeSt
 }
 
 /* -------------------------------------------------------------------------- */
-/* Fechamento da venda                                                        */
+/* Documentos fiscais — NR-042, RF-004, RF-045, RF-054                        */
 /* -------------------------------------------------------------------------- */
 
-export type DadosVenda = {
-  clienteId: string | null
-  clienteNome: string
-  itens: ItemCarrinho[]
-  desconto: Desconto | null
-  pagamentos: Pagamento[]
-}
-
-/** SUBSTITUIR POR: POST /vendas */
-export async function criarVenda(
-  dados: DadosVenda,
-): Promise<{ ok: true; id: string; numero: string } | { ok: false; error: string }> {
-  await delay(900)
-
-  if (dados.itens.length === 0) {
-    return { ok: false, error: 'O carrinho está vazio.' }
-  }
-
-  const numero = String(1843 + Math.floor(Math.random() * 50))
-  return { ok: true, id: `ven-${Date.now()}`, numero }
-}
-
-/* -------------------------------------------------------------------------- */
-/* Documentos fiscais                                                         */
-/* -------------------------------------------------------------------------- */
-
+/**
+ * So NFC-e sai por aqui, ao lado do web.
+ *
+ * O tipo mantem `'nfse'` porque a FICHA (`NotaEmitida`, a lista de historico)
+ * precisa poder representar as duas — mas nenhum botao desta tela pede NFS-e:
+ * ela e documento MUNICIPAL, com outro endpoint e outra regra por cidade, e o
+ * emissor que a loja tem (Focus NFe, DEC-004) so faz NFC-e. Oferecer o botao
+ * seria prometer um documento que nao sai, e a descoberta viria com o cliente
+ * esperando no balcao.
+ */
 export type TipoNotaFiscal = 'nfce' | 'nfse'
 export type EstadoEmissao = 'ocioso' | 'processando' | 'emitida' | 'erro'
 
@@ -223,59 +208,79 @@ export type NotaEmitida = {
   tipo: TipoNotaFiscal
   numero: string
   chave: string
-  /** Link do DANFE/PDF devolvido pelo provedor. */
+  /** Link do DANFE/PDF devolvido pelo provedor. Vazio em contingencia. */
   url: string
-  /** Impostos apurados, guardados para relatorio. */
-  impostos: { nome: string; valor: number }[]
 }
 
 /**
- * Certificado digital da empresa.
+ * Certificado digital da empresa — RF-004.
  *
- * SUBSTITUIR POR: GET /empresa/certificado — a emissao depende de um
- * certificado A1 valido, cadastrado na tela de Empresa.
+ * Era `return 'ausente'` fixo: a tela SEMPRE mandava cadastrar certificado,
+ * mesmo com um valido no banco, e o botao de emitir nunca aparecia no
+ * celular. Agora pergunta ao servidor, como o web.
  */
 export type SituacaoCertificado = 'ausente' | 'valido' | 'expirado'
 
 export async function situacaoCertificado(): Promise<SituacaoCertificado> {
-  await delay(300)
-  /* Sem backend, nenhum certificado foi enviado — a tela leva o usuario
-     para o cadastro em vez de deixar tentar emitir e falhar. */
-  return 'ausente'
+  const r = await chamarApi<{ hasCertificate: boolean; certificateExpiresAt: string | null }>(
+    '/empresa/credenciais-fiscais',
+  )
+
+  /* Sem conexao ou 4xx: tratar como ausente leva o lojista a tentar cadastrar
+     de novo um certificado que ja existe, o que e chato mas seguro. Deixar
+     emitir tambem nao serve — a emissao falharia adiante do mesmo jeito. */
+  if (!r.ok || r.dados.hasCertificate !== true) return 'ausente'
+
+  /*
+   * Comparacao em AAAA-MM-DD, e nao com `Date`: os dois lados sao data pura, e
+   * converter para instante traria o fuso de volta ao problema — um
+   * certificado que vence hoje viraria "expirado" as 21h no Brasil.
+   */
+  const hoje = new Date()
+  const dois = (n: number) => String(n).padStart(2, '0')
+  const hojeIso = `${hoje.getFullYear()}-${dois(hoje.getMonth() + 1)}-${dois(hoje.getDate())}`
+
+  return (r.dados.certificateExpiresAt ?? '') < hojeIso ? 'expirado' : 'valido'
 }
 
-/** SUBSTITUIR POR: POST /vendas/:id/notas */
-export async function emitirNota(
+/**
+ * Pede a nota da venda — RF-045.
+ *
+ * O servidor ENFILEIRA e responde 202: a venda nao espera a SEFAZ (RNF-004).
+ * O retorno de sucesso e "entrou na fila", nao "emitida" — dizer emitida aqui
+ * afirmaria um documento que ainda nao existe. A recusa por classificacao
+ * (RF-046) chega com o NOME dos produtos que faltam, e a tela mostra a
+ * mensagem inteira: e ela que manda o lojista ao lugar certo.
+ */
+export async function pedirNota(
   vendaId: string,
-  tipo: TipoNotaFiscal,
-  total: number,
-): Promise<{ ok: true; nota: NotaEmitida } | { ok: false; error: string }> {
-  await delay(1800)
-  void vendaId
+): Promise<{ ok: true } | { ok: false; erro: string }> {
+  const r = await chamarApi(`/vendas/${vendaId}/nota`, { method: 'POST' })
 
-  const numero = String(4200 + Math.floor(Math.random() * 100))
+  return r.ok ? { ok: true } : { ok: false, erro: r.message }
+}
 
-  return {
-    ok: true,
-    nota: {
-      tipo,
-      numero,
-      chave: `4126 0812 3456 7800 0190 5500 1000 0${numero} 1234 5678 90`,
-      url: '#',
-      impostos:
-        tipo === 'nfce'
-          ? [
-              { nome: 'ICMS', valor: total * 0.18 },
-              { nome: 'PIS', valor: total * 0.0165 },
-              { nome: 'COFINS', valor: total * 0.076 },
-            ]
-          : [
-              { nome: 'ISS', valor: total * 0.05 },
-              { nome: 'PIS', valor: total * 0.0065 },
-              { nome: 'COFINS', valor: total * 0.03 },
-            ],
-    },
-  }
+export type EstadoDaNota =
+  | { status: 'pending' }
+  | { status: 'authorized'; accessKey: string; number: number; danfeUrl: string }
+  | { status: 'contingency'; accessKey: string; number: number; reason: string }
+  | { status: 'rejected'; rejection: { code: string; message: string } }
+
+/** O estado fiscal da venda — RF-054. `null` quando a consulta falha. */
+export async function estadoDaNota(vendaId: string): Promise<EstadoDaNota | null> {
+  const r = await chamarApi<EstadoDaNota>(`/vendas/${vendaId}/nota`)
+  return r.ok ? r.dados : null
+}
+
+/**
+ * Pede ao servidor que confira as notas em contingencia — RF-053.
+ *
+ * Silenciosa de proposito: e uma atualizacao de fundo, e falhar nela nao muda
+ * nada do que o lojista veio fazer. O estado de cada nota continua vindo de
+ * `estadoDaNota`.
+ */
+export async function reconciliarContingencia(): Promise<void> {
+  await chamarApi('/vendas/notas/reconciliar', { method: 'POST' }).catch(() => undefined)
 }
 
 /* -------------------------------------------------------------------------- */
@@ -298,7 +303,15 @@ export type VendaHistorico = {
   status: 'concluida' | 'estornada'
 }
 
-/** SUBSTITUIR POR: GET /vendas */
+/**
+ * Dados de exemplo, ainda em uso — mas so pelo assistente.
+ *
+ * A tela de vendas passou a usar `listarHistoricoDeVendas`, real, logo abaixo.
+ * Esta funcao continua aqui porque `assistente-api.ts` a consulta para
+ * responder "quanto vendi hoje" e afins — e o assistente esta fora do escopo
+ * atual (aguarda a DEC-007, modelo de LLM). Trocar a fonte dele agora
+ * misturaria dois trabalhos independentes.
+ */
 export function listarVendas(): VendaHistorico[] {
   return [
     {
@@ -386,10 +399,88 @@ export function listarVendas(): VendaHistorico[] {
   ]
 }
 
+/** A forma de pagamento como o servidor a chama, de volta ao vocabulario da tela. */
+const FORMA_DA_API: Record<string, FormaPagamento> = {
+  cash: 'dinheiro',
+  pix: 'pix',
+  debit: 'debito',
+  credit: 'credito',
+  wallet: 'carteira',
+}
+
+type VendaDaApi = {
+  id: string
+  number: number
+  soldAt: string
+  customerName: string | null
+  status: 'open' | 'settled' | 'cancelled' | 'returned'
+  grossAmountCents: number
+  discountCents: number
+  netAmountCents: number
+  taxAmountCents: number
+  items: { description: string; quantity: number; unitPriceCents: number }[]
+  payments: { method: string; amountCents: number }[]
+  invoiceNumber: number | null
+  invoiceAccessKey: string | null
+}
+
 /**
- * SUBSTITUIR POR: POST /vendas/:id/estorno
+ * O historico de vendas de VERDADE — RF-036, US-021.
  *
- * Precisa ser transacional — ver nota no topo do arquivo.
+ * A tela mostrava cinco vendas de exemplo, sempre as mesmas, com faturamento e
+ * ticket medio somados sobre elas — numeros que pareciam reais e nao eram.
+ *
+ * So a primeira pagina (as mais recentes): a tela de historico do celular nao
+ * tem paginacao ainda, e trazer tudo de uma vez custaria caro numa loja com
+ * meses de venda. Ampliar o filtro fica para quando a tela pedir.
+ */
+export async function listarHistoricoDeVendas(): Promise<
+  { ok: true; vendas: VendaHistorico[] } | { ok: false; erro: string }
+> {
+  const r = await chamarApi<{ sales: VendaDaApi[] }>('/sales')
+
+  if (!r.ok) return { ok: false, erro: r.message }
+
+  return {
+    ok: true,
+    vendas: r.dados.sales.map((v) => ({
+      id: v.id,
+      numero: String(v.number),
+      data: v.soldAt,
+      /* Venda sem cliente identificado e caminho normal no balcao (RF-009) —
+         o rotulo diz isso, em vez de deixar a linha sem contraparte. */
+      clienteNome: v.customerName ?? 'Venda sem cliente',
+      itens: v.items.map((i) => ({
+        descricao: i.description,
+        quantidade: i.quantity,
+        precoUnitario: i.unitPriceCents / 100,
+      })),
+      subtotal: v.grossAmountCents / 100,
+      desconto: v.discountCents / 100,
+      total: (v.grossAmountCents - v.discountCents) / 100,
+      pagamentos: v.payments.map((p) => ({
+        forma: FORMA_DA_API[p.method] ?? 'dinheiro',
+        valor: p.amountCents / 100,
+      })),
+      valorLiquido: v.netAmountCents / 100,
+      imposto: v.taxAmountCents / 100,
+      /* `nfse` nunca aparece aqui: o emissor da loja so faz NFC-e (DEC-004). */
+      nota: v.invoiceNumber === null ? null : { tipo: 'nfce', numero: String(v.invoiceNumber) },
+      status: v.status === 'returned' || v.status === 'cancelled' ? 'estornada' : 'concluida',
+    })),
+  }
+}
+
+/**
+ * Estorno de venda — RF-036.
+ *
+ * AINDA NAO EXISTE no backend, nem no web: precisa ser uma unica transacao
+ * cobrindo tres coisas — devolver o item ao estoque, estornar o titulo em
+ * Contas a Receber e cancelar a nota fiscal (ou emitir a de devolucao). Se uma
+ * falhar, nenhuma pode valer, senao a venda estornada com estoque nao
+ * devolvido vira furo de inventario que ninguem consegue explicar depois.
+ *
+ * Por isso o botao na tela avisa em vez de fingir — ver `vendas.tsx`.
  */
 export async function estornarVenda(
   id: string,

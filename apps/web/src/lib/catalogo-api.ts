@@ -6,19 +6,19 @@ import { pedir, type Resultado } from './http'
  * ## O que este modulo NAO tem, e por que
  *
  * O tipo `Produto` de `lib/types.ts` — o dos dados de exemplo — tem
- * `categoria`, `fornecedor` e `diasSemVenda`. Nenhum dos tres existe do outro
- * lado:
+ * `categoria`, `fornecedor` e `diasSemVenda`.
  *
- * - **fornecedor**: nao ha coluna nenhuma em `products`. O dado nunca foi
- *   cadastrado; ele so existia nos exemplos.
- * - **categoria**: `products.category` e texto livre (db_0909). A tela ainda
- *   pode usar o nome direto, sem tabela `categories`.
- * - **diasSemVenda**: sai das vendas, e nao do cadastro. Seria uma agregacao
- *   propria.
+ * `categoria` e `fornecedor` existem de verdade: `products.category` e
+ * `products.supplier` sao texto livre (nao ha tabela `categories` nem
+ * `suppliers` — sao etiquetas, nao entidades com cadastro proprio). O
+ * fornecedor chegou depois: a coluna existia desde a migration 0007 e o
+ * contrato de cadastro nunca a expunha, entao o lojista digitava e o dado
+ * era descartado em silencio.
  *
- * Um filtro sobre campo que o servidor nao tem e um controle que mente: ele
- * some da tela junto com o dado. Preferir manter os tres com valor inventado
- * seria trocar dados falsos por rotulos falsos.
+ * `diasSemVenda` continua fora: sai das vendas, e nao do cadastro, e seria
+ * uma agregacao propria. Um filtro sobre campo que o servidor nao tem e um
+ * controle que mente: ele some da tela junto com o dado. Preferir manter
+ * numero inventado seria trocar dado falso por rotulo falso.
  */
 
 export type ProdutoDoCatalogo = {
@@ -33,6 +33,8 @@ export type ProdutoDoCatalogo = {
   precoCusto: number
   estoque: number
   estoqueMinimo: number
+  categoria: string | null
+  fornecedor: string | null
 }
 
 export type NivelDeEstoque = 'todos' | 'baixo' | 'esgotado'
@@ -63,6 +65,8 @@ type ProdutoDaApi = {
   costPriceCents: number
   stock: number
   minStock: number
+  category: string | null
+  supplier: string | null
 }
 
 const emReais = (centavos: number) => centavos / 100
@@ -77,6 +81,8 @@ const paraTela = (p: ProdutoDaApi): ProdutoDoCatalogo => ({
   precoCusto: emReais(p.costPriceCents),
   estoque: p.stock,
   estoqueMinimo: p.minStock,
+  categoria: p.category,
+  fornecedor: p.supplier,
 })
 
 export type FiltroDoCatalogo = {

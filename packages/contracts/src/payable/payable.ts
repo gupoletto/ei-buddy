@@ -84,6 +84,18 @@ export const endRecurrenceInputSchema = z.object({ recurrenceId: idSchema }).str
 
 export type EndRecurrenceInput = z.infer<typeof endRecurrenceInputSchema>
 
+/**
+ * Exportar a lista de titulos — botao "Exportar" de `ContasView.tsx`.
+ *
+ * Vale para pagar e para receber: as duas telas exportam a mesma forma de
+ * lista, so a contraparte muda.
+ */
+export const exportarTitulosQuerySchema = z
+  .object({ formato: z.enum(['csv', 'pdf']).default('csv') })
+  .strict()
+
+export type ExportarTitulosQuery = z.infer<typeof exportarTitulosQuerySchema>
+
 export const payableOutputSchema = z.object({
   id: idSchema,
   supplier: z.string(),

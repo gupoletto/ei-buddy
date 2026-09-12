@@ -233,6 +233,7 @@ function cadastroEmMemoria() {
         stock: 0,
         minStock: p.minStock,
         category: p.category ?? null,
+        supplier: p.supplier ?? null,
       }
       produtos.push(pr)
 
@@ -257,6 +258,17 @@ function cadastroEmMemoria() {
     findById: async (companyId, productId) =>
       produtos.find((p) => p.companyId === companyId && p.id === productId),
     countAll: async (companyId) => produtos.filter((p) => p.companyId === companyId).length,
+    listSuggestions: async (companyId) => {
+      const meus = produtos.filter((p) => p.companyId === companyId)
+      const distintosEmOrdem = (valores: (string | null)[]) =>
+        [...new Set(valores.filter((v): v is string => v !== null))].sort((a, b) =>
+          a.localeCompare(b),
+        )
+      return {
+        categories: distintosEmOrdem(meus.map((p) => p.category)),
+        suppliers: distintosEmOrdem(meus.map((p) => p.supplier)),
+      }
+    },
   }
 
   /* O onboarding semeia o plano de contas (RF-081, NR-077), entao a rota
@@ -539,6 +551,35 @@ describe('cadastrar produto — RF-017, RF-019', () => {
     expect(r.statusCode).toBe(201)
   })
 
+  /*
+   * O defeito que isto guarda: `products.supplier` existia desde a migration
+   * 0007, mas o contrato de cadastro nunca a expunha — o lojista digitava o
+   * fornecedor e o cadastro descartava o campo em silencio.
+   */
+  it('grava categoria e fornecedor', async () => {
+    const c = await buildApp()
+    app = c.app
+
+    const r = await app.inject({
+      method: 'POST',
+      url: '/produtos',
+      payload: { ...PRODUTO, category: 'Mercearia', supplier: 'Torrefacao Aurora' },
+    })
+
+    expect(r.json().category).toBe('Mercearia')
+    expect(r.json().supplier).toBe('Torrefacao Aurora')
+  })
+
+  it('sem categoria nem fornecedor, os dois voltam nulos', async () => {
+    const c = await buildApp()
+    app = c.app
+
+    const r = await app.inject({ method: 'POST', url: '/produtos', payload: PRODUTO })
+
+    expect(r.json().category).toBeNull()
+    expect(r.json().supplier).toBeNull()
+  })
+
   /* RF-019: sem codigo de barras, `core` gera o interno. A rota nao participa
      disso — se participasse, o canal WhatsApp geraria outro formato. */
   it('sem codigo de barras, ganha codigo interno', async () => {
@@ -790,6 +831,86 @@ describe('catalogo do backoffice — NR-072, US-008', () => {
        Entao os cinco estao esgotados, e o valor parado e zero. */
     expect(r.json().outOfStock).toBe(5)
     expect(r.json().stockValueCents).toBe(0)
+  })
+})
+
+/**
+ * Sugestoes do formulario — categoria e fornecedor ja usados.
+ *
+ * Ate aqui o formulario oferecia uma lista de exemplo FIXA (`Mercearia`,
+ * `Laticinios`...), sempre a mesma para toda loja: a sugestao nunca refletia
+ * o que o proprio lojista ja tinha digitado.
+ */
+describe('sugestoes de categoria e fornecedor — GET /produtos/sugestoes', () => {
+  it('devolve so o que ja foi usado, sem repetir e em ordem', async () => {
+    const c = await buildApp()
+    app = c.app
+    await app.inject({
+      method: 'POST',
+      url: '/produtos',
+      payload: {
+        description: 'Cafe torrado',
+        unitOfMeasure: 'un',
+        salePriceCents: 1990,
+        costPriceCents: 1200,
+        category: 'Mercearia',
+        supplier: 'Torrefacao Aurora',
+      },
+    })
+    await app.inject({
+      method: 'POST',
+      url: '/produtos',
+      payload: {
+        description: 'Acucar',
+        unitOfMeasure: 'un',
+        salePriceCents: 500,
+        costPriceCents: 300,
+        category: 'Mercearia',
+        supplier: 'Engenho Doce',
+      },
+    })
+
+    const r = await app.inject({ method: 'GET', url: '/produtos/sugestoes' })
+
+    expect(r.statusCode).toBe(200)
+    expect(r.json().categories).toEqual(['Mercearia'])
+    expect(r.json().suppliers).toEqual(['Engenho Doce', 'Torrefacao Aurora'])
+  })
+
+  it('produto sem categoria nem fornecedor nao vira sugestao em branco', async () => {
+    const c = await buildApp()
+    app = c.app
+    await app.inject({
+      method: 'POST',
+      url: '/produtos',
+      payload: {
+        description: 'Item avulso',
+        unitOfMeasure: 'un',
+        salePriceCents: 500,
+        costPriceCents: 300,
+      },
+    })
+
+    const r = await app.inject({ method: 'GET', url: '/produtos/sugestoes' })
+
+    expect(r.json()).toEqual({ categories: [], suppliers: [] })
+  })
+
+  it('catalogo vazio devolve listas vazias, e nao erro', async () => {
+    const c = await buildApp()
+    app = c.app
+
+    const r = await app.inject({ method: 'GET', url: '/produtos/sugestoes' })
+
+    expect(r.statusCode).toBe(200)
+    expect(r.json()).toEqual({ categories: [], suppliers: [] })
+  })
+
+  it('sem sessao responde 401', async () => {
+    const c = await buildApp(null)
+    app = c.app
+
+    expect((await app.inject({ method: 'GET', url: '/produtos/sugestoes' })).statusCode).toBe(401)
   })
 })
 

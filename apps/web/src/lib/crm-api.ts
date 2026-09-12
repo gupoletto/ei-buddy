@@ -1,34 +1,26 @@
+import { pedir, type Resultado } from './http'
+
 /**
- * ============================================================================
- * PONTOS DE INTEGRACAO — CRM
- * ============================================================================
+ * O quadro de CRM — NR-109.
  *
- *  | Funcao            | Endpoint esperado           | Disparo              |
- *  |-------------------|-----------------------------|----------------------|
- *  | listarCards       | GET  /crm/cards             | abertura da tela     |
- *  | criarCard         | POST /crm/cards             | novo lancamento      |
- *  | moverCard         | PATCH /crm/cards/:id        | arrastar / mover     |
- *  | comentarCard      | POST /crm/cards/:id/comentarios | comentario       |
- *  | concluirCard      | PATCH /crm/cards/:id        | marcar como concluido|
+ * Este modulo era inteiro de mentira: `listarCards()` montava o quadro a
+ * partir de contatos e pendencias de `mock-data`, e criar card, mover coluna
+ * e comentar eram `await delay(...)` seguidos de sucesso — nada era gravado, e
+ * o quadro voltava aos mesmos tres cartoes de exemplo a cada abertura.
  *
- * ORIGEM DOS CARDS: o CRM nao e uma ilha. Pendencia e contato lancados na
- * tela de Clientes entram aqui como card na primeira coluna — por isso o
- * card guarda `origem`, para a tela mostrar de onde veio e o backend saber
- * o que sincronizar de volta.
+ * Os nomes em portugues e o formato do modelo ficaram — a traducao do que vem
+ * da api acontece na BORDA, aqui embaixo (mesmo padrao de `suporte-api.ts`).
  *
- * RESPONSAVEIS: o campo e uma LISTA desde ja, mesmo com um unico usuario
- * hoje. Conta compartilhada esta no roadmap, e migrar de campo unico para
- * lista depois exigiria mexer em dado gravado.
+ * DUAS COISAS QUE O MOCK TINHA E O BACKEND NAO TEM, DE PROPOSITO:
+ *
+ * - `origem` (o card veio de Clientes, do Financeiro ou foi lancado aqui):
+ *   nao ha sincronizacao automatica com outros modulos neste recorte. Todo
+ *   card hoje nasce no CRM, entao o campo deixou de existir — mante-lo so
+ *   diria sempre a mesma coisa.
+ * - `responsaveis: string[]`: o formulario sempre escolheu UMA pessoa. Virou
+ *   `responsavelId`/`responsavelNome`, um par id+nome do jeito que
+ *   `GET /equipe` devolve.
  */
-
-import { contatosDoCliente, pendenciasDoCliente } from './clientes-api'
-import { clientes } from './mock-data'
-
-const delay = (ms: number) => new Promise((r) => setTimeout(r, ms))
-
-/* -------------------------------------------------------------------------- */
-/* Modelo                                                                     */
-/* -------------------------------------------------------------------------- */
 
 export type ColunaId = 'afazer' | 'andamento' | 'concluido'
 
@@ -39,7 +31,6 @@ export const COLUNAS: { id: ColunaId; titulo: string; descricao: string }[] = [
 ]
 
 export type TipoCard = 'pendencia' | 'contato'
-export type OrigemCard = 'clientes' | 'financeiro' | 'crm'
 
 export type Comentario = {
   id: string
@@ -55,128 +46,87 @@ export type CardCrm = {
   tipo: TipoCard
   coluna: ColunaId
   clienteId: string | null
-  clienteNome: string
+  clienteNome: string | null
   data: string
-  /** Lista desde ja — ver nota sobre conta compartilhada no topo. */
-  responsaveis: string[]
-  origem: OrigemCard
+  responsavelId: string | null
+  responsavelNome: string | null
   comentarios: Comentario[]
-}
-
-export const ROTULO_ORIGEM: Record<OrigemCard, string> = {
-  clientes: 'Lançado em Clientes',
-  financeiro: 'Veio do Financeiro',
-  crm: 'Criado no CRM',
+  criadoEm: string
 }
 
 /* -------------------------------------------------------------------------- */
-/* Carga inicial                                                              */
+/* Traducao na borda                                                          */
 /* -------------------------------------------------------------------------- */
 
-/**
- * SUBSTITUIR POR: GET /crm/cards
- *
- * Enquanto nao ha backend, o quadro e montado a partir do que ja existe:
- * contatos e pendencias dos clientes viram cards, mais alguns lancados
- * direto no CRM. E assim que a integracao vai funcionar de verdade.
- */
-export function listarCards(): CardCrm[] {
-  const cards: CardCrm[] = []
+type ColunaDaApi = 'todo' | 'doing' | 'done'
+type TipoDaApi = 'task' | 'contact'
 
-  /* Contatos lancados na tela de Clientes */
-  for (const cliente of clientes) {
-    for (const contato of contatosDoCliente(cliente.id)) {
-      cards.push({
-        id: `crm-ct-${contato.id}`,
-        titulo: contato.descricao,
-        descricao: `Contato por ${contato.tipo}`,
-        tipo: 'contato',
-        /* Contato registrado ja aconteceu — entra como concluido. */
-        coluna: 'concluido',
-        clienteId: cliente.id,
-        clienteNome: cliente.nome,
-        data: contato.data,
-        responsaveis: ['Marina Alves'],
-        origem: 'clientes',
-        comentarios: [],
-      })
-    }
+const PARA_COLUNA: Record<ColunaDaApi, ColunaId> = {
+  todo: 'afazer',
+  doing: 'andamento',
+  done: 'concluido',
+}
+const DA_COLUNA: Record<ColunaId, ColunaDaApi> = {
+  afazer: 'todo',
+  andamento: 'doing',
+  concluido: 'done',
+}
+const PARA_TIPO: Record<TipoDaApi, TipoCard> = { task: 'pendencia', contact: 'contato' }
+const DO_TIPO: Record<TipoCard, TipoDaApi> = { pendencia: 'task', contato: 'contact' }
 
-    /* Pendencia financeira em aberto vira card de acompanhamento */
-    for (const pendencia of pendenciasDoCliente(cliente.id)) {
-      if (pendencia.status === 'vencido') {
-        cards.push({
-          id: `crm-pd-${pendencia.id}`,
-          titulo: `Cobrar ${pendencia.referente}`,
-          descricao: `Título vencido de ${cliente.nome}`,
-          tipo: 'pendencia',
-          coluna: 'afazer',
-          clienteId: cliente.id,
-          clienteNome: cliente.nome,
-          data: pendencia.vencimento,
-          responsaveis: [],
-          origem: 'financeiro',
-          comentarios: [],
-        })
-      }
-    }
-  }
-
-  /* Lancamentos feitos direto no CRM */
-  cards.push(
-    {
-      id: 'crm-1',
-      titulo: 'Retomar contato com quem sumiu',
-      descricao: 'Clientes sem comprar há mais de 60 dias — mandar catálogo.',
-      tipo: 'contato',
-      coluna: 'andamento',
-      clienteId: 'cli-5',
-      clienteNome: 'Carla Menezes',
-      data: '2026-08-22',
-      responsaveis: ['Marina Alves'],
-      origem: 'crm',
-      comentarios: [
-        {
-          id: 'cm-1',
-          autor: 'Marina Alves',
-          data: '2026-08-22',
-          texto: 'Mandei o catálogo de agosto. Aguardando resposta.',
-        },
-      ],
-    },
-    {
-      id: 'crm-2',
-      titulo: 'Negociar prazo com Padaria Sol',
-      descricao: 'Pedido grande para setembro, cliente pediu 45 dias.',
-      tipo: 'pendencia',
-      coluna: 'andamento',
-      clienteId: 'cli-2',
-      clienteNome: 'Padaria Sol LTDA',
-      data: '2026-08-23',
-      responsaveis: ['Marina Alves'],
-      origem: 'crm',
-      comentarios: [],
-    },
-    {
-      id: 'crm-3',
-      titulo: 'Levar amostra de azeite',
-      descricao: 'Restaurante demonstrou interesse na linha importada.',
-      tipo: 'contato',
-      coluna: 'afazer',
-      clienteId: 'cli-4',
-      clienteNome: 'Restaurante Boa Mesa',
-      data: '2026-08-26',
-      responsaveis: [],
-      origem: 'crm',
-      comentarios: [],
-    },
-  )
-
-  return cards
+type ComentarioDaApi = {
+  id: string
+  authorId: string | null
+  authorName: string | null
+  text: string
+  createdAt: string
 }
 
-/** Pessoas que podem ser responsaveis. SUBSTITUIR POR: GET /equipe */
-export const RESPONSAVEIS = ['Marina Alves', 'Joao Pedro', 'Equipe de vendas']
+type CardDaApi = {
+  id: string
+  title: string
+  description: string | null
+  kind: TipoDaApi
+  column: ColunaDaApi
+  customerId: string | null
+  customerName: string | null
+  dueOn: string
+  assigneeUserId: string | null
+  assigneeName: string | null
+  comments: ComentarioDaApi[]
+  createdAt: string
+}
+
+const paraComentario = (c: ComentarioDaApi): Comentario => ({
+  id: c.id,
+  autor: c.authorName ?? 'Alguém da equipe',
+  data: c.createdAt,
+  texto: c.text,
+})
+
+const paraCard = (c: CardDaApi): CardCrm => ({
+  id: c.id,
+  titulo: c.title,
+  descricao: c.description ?? '',
+  tipo: PARA_TIPO[c.kind],
+  coluna: PARA_COLUNA[c.column],
+  clienteId: c.customerId,
+  clienteNome: c.customerName,
+  data: c.dueOn,
+  responsavelId: c.assigneeUserId,
+  responsavelNome: c.assigneeName,
+  comentarios: c.comments.map(paraComentario),
+  criadoEm: c.createdAt,
+})
+
+/* -------------------------------------------------------------------------- */
+/* Leitura                                                                    */
+/* -------------------------------------------------------------------------- */
+
+export async function listarCards(): Promise<Resultado<CardCrm[]>> {
+  const r = await pedir<{ cards: CardDaApi[] }>('/api/crm/cards')
+  return r.ok ? { ok: true, dados: r.dados.cards.map(paraCard) } : r
+}
 
 /* -------------------------------------------------------------------------- */
 /* Acoes                                                                      */
@@ -186,48 +136,46 @@ export type DadosCard = {
   titulo: string
   descricao: string
   tipo: TipoCard
-  clienteNome: string
+  /**
+   * O id de um cliente REAL, ou nulo. Nao ha campo para nome digitado sem
+   * cadastro: o card so guarda cliente quando ele existe de verdade, do
+   * contrario o vinculo nao teria onde ser salvo.
+   */
+  clienteId: string | null
   data: string
-  responsaveis: string[]
+  responsavelId: string | null
 }
 
-/** SUBSTITUIR POR: POST /crm/cards */
-export async function criarCard(
-  dados: DadosCard,
-): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
-  await delay(700)
+export async function criarCard(dados: DadosCard): Promise<Resultado<CardCrm>> {
+  const r = await pedir<CardDaApi>('/api/crm/cards', {
+    method: 'POST',
+    body: JSON.stringify({
+      title: dados.titulo.trim(),
+      ...(dados.descricao.trim() === '' ? {} : { description: dados.descricao.trim() }),
+      kind: DO_TIPO[dados.tipo],
+      ...(dados.clienteId === null ? {} : { customerId: dados.clienteId }),
+      dueOn: dados.data,
+      ...(dados.responsavelId === null ? {} : { assigneeUserId: dados.responsavelId }),
+    }),
+  })
 
-  if (!dados.titulo.trim()) return { ok: false, error: 'Informe o título.' }
-  if (!dados.clienteNome.trim()) return { ok: false, error: 'Escolha o cliente.' }
-
-  return { ok: true, id: `crm-${Date.now()}` }
+  return r.ok ? { ok: true, dados: paraCard(r.dados) } : r
 }
 
-/** SUBSTITUIR POR: PATCH /crm/cards/:id { coluna } */
-export async function moverCard(id: string, coluna: ColunaId): Promise<{ ok: true }> {
-  await delay(300)
-  void id
-  void coluna
-  return { ok: true }
+export async function moverCard(id: string, coluna: ColunaId): Promise<Resultado<CardCrm>> {
+  const r = await pedir<CardDaApi>(`/api/crm/cards/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ column: DA_COLUNA[coluna] }),
+  })
+
+  return r.ok ? { ok: true, dados: paraCard(r.dados) } : r
 }
 
-/** SUBSTITUIR POR: POST /crm/cards/:id/comentarios */
-export async function comentarCard(
-  id: string,
-  texto: string,
-): Promise<{ ok: true; comentario: Comentario } | { ok: false; error: string }> {
-  await delay(500)
-  void id
+export async function comentarCard(id: string, texto: string): Promise<Resultado<Comentario>> {
+  const r = await pedir<ComentarioDaApi>(`/api/crm/cards/${id}/comentarios`, {
+    method: 'POST',
+    body: JSON.stringify({ text: texto.trim() }),
+  })
 
-  if (!texto.trim()) return { ok: false, error: 'Escreva o comentário.' }
-
-  return {
-    ok: true,
-    comentario: {
-      id: `cm-${Date.now()}`,
-      autor: 'Marina Alves',
-      data: '2026-08-24',
-      texto: texto.trim(),
-    },
-  }
+  return r.ok ? { ok: true, dados: paraComentario(r.dados) } : r
 }
