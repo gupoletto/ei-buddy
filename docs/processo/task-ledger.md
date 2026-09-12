@@ -52,8 +52,8 @@ consome. A porta é declarada pelo núcleo; a seta aponta para dentro
 | ----------------------------- | ------: | ---: |
 | Total                         |      89 |  226 |
 | ✅ Concluídas                 |      79 |  191 |
-| 🚧 Bloqueadas por decisão     |       7 |   25 |
-| 🚧 Bloqueadas por dependência |       1 |    2 |
+| 🚧 Bloqueadas por decisão     |       6 |   20 |
+| 🚧 Bloqueadas por dependência |       2 |    7 |
 | ⬜ A fazer, pode começar hoje |       2 |    8 |
 
 > **Números conferidos contra a `main` em 2026-09-12**, não estimados: cada
@@ -347,7 +347,7 @@ O retrabalho que resta é visual (tokens), não naming.
 | 🟢 3 — Clientes                 |      25 |   62 | custos fixos gera conta a pagar (NR-110)       |
 | Compartilhada                   |       3 |    6 | documentação (NR-002, NR-088, NR-106)          |
 
-Somando: **218 dias-desenvolvedor** em 87 tarefas. Com 3 pessoas, isso é cerca
+Somando: **226 dias-desenvolvedor** em 89 tarefas. Com 3 pessoas, isso é cerca
 de 13 semanas de trabalho — desde que nada fique bloqueado, o que não é o caso
 hoje.
 
