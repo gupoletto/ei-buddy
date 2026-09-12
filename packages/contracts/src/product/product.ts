@@ -242,3 +242,17 @@ export const importProductsOutputSchema = z.object({
 })
 
 export type ImportProductsOutput = z.infer<typeof importProductsOutputSchema>
+
+/**
+ * Sugestoes do formulario de cadastro — categoria e fornecedor ja usados por
+ * algum produto da empresa.
+ *
+ * Nenhum dos dois normaliza numa tabela propria (ver `category`/`supplier`
+ * acima): a lista e literal o que ja foi digitado antes, e nao um cadastro.
+ */
+export const productSuggestionsOutputSchema = z.object({
+  categories: z.array(z.string()),
+  suppliers: z.array(z.string()),
+})
+
+export type ProductSuggestionsOutput = z.infer<typeof productSuggestionsOutputSchema>

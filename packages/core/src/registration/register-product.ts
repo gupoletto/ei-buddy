@@ -7,6 +7,7 @@ import type {
   ImportProductsOutput,
   ImportRejection,
   ProductOutput,
+  ProductSuggestionsOutput,
 } from '@na-regua/contracts'
 import { AppError, isAppError } from '../app-error.js'
 import { assertCanWrite } from '../authorization.js'
@@ -191,6 +192,21 @@ export async function catalogSummary(
   ctx: ExecutionContext,
 ): Promise<CatalogSummaryOutput> {
   return deps.products.catalogSummary(ctx.companyId)
+}
+
+/**
+ * Sugestoes do formulario de cadastro — categoria e fornecedor ja digitados
+ * antes, e nao uma lista de exemplo fixa.
+ *
+ * Leitura, sem `assertCanWrite`: e a mesma politica do catalogo que a
+ * alimenta.
+ */
+export async function productSuggestions(
+  deps: SearchProductsDeps,
+  ctx: ExecutionContext,
+): Promise<ProductSuggestionsOutput> {
+  const { categories, suppliers } = await deps.products.listSuggestions(ctx.companyId)
+  return { categories: [...categories], suppliers: [...suppliers] }
 }
 
 export type ImportProductsDeps = RegisterProductDeps & {

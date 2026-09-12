@@ -11,13 +11,18 @@
  *  | confirmarImportacao   | POST /produtos/importar        | importar planilha |
  *  | importarXmlCompra     | POST /compras/xml              | importar XML      |
  *
+ * CATEGORIA E FORNECEDOR SAIRAM DESTA LISTA — `carregarSugestoes` fala com
+ * `GET /produtos/sugestoes`, real desde a NR-072.1: nao e mais a mesma lista
+ * de exemplo para toda loja, e sim categoria/fornecedor que o proprio
+ * lojista ja digitou.
+ *
  * O XML da nota de compra e lido no navegador so para MOSTRAR os itens
  * antes de confirmar. Quem grava entrada de estoque e custo e o servidor:
  * ele precisa validar a chave de acesso, evitar lancar a mesma nota duas
  * vezes e registrar quem importou.
  */
 
-import { pedir } from './http'
+import { pedir, type Resultado } from './http'
 import { produtos } from './mock-data'
 import type { Produto } from './types'
 
@@ -27,25 +32,24 @@ const delay = (ms: number) => new Promise((r) => setTimeout(r, ms))
 /* Categorias e fornecedores                                                  */
 /* -------------------------------------------------------------------------- */
 
-/** SUBSTITUIR POR: GET /produtos/categorias */
-export const CATEGORIAS_INICIAIS = [
-  'Mercearia',
-  'Laticinios',
-  'Bebidas',
-  'Utilidades',
-  'Limpeza',
-  'Higiene',
-]
+export type SugestoesDoFormulario = {
+  categorias: string[]
+  fornecedores: string[]
+}
 
-/** SUBSTITUIR POR: GET /fornecedores */
-export const FORNECEDORES_INICIAIS = [
-  'Torrefacao Aurora',
-  'Engenho Doce',
-  'Laticinios Campo Verde',
-  'Alimentos Boa Safra',
-  'Importadora Oliva',
-  'Distribuidora Sul',
-]
+/**
+ * Categoria e fornecedor ja usados por algum produto da empresa.
+ *
+ * Ate aqui a lista era fixa (`Mercearia`, `Torrefacao Aurora`...), a mesma
+ * para toda loja: quem vendia roupa via sugestao de mercearia, e quem digitava
+ * um fornecedor novo nunca o via de novo na proxima visita ao formulario.
+ */
+export const carregarSugestoes = (): Promise<Resultado<SugestoesDoFormulario>> =>
+  pedir<{ categories: string[]; suppliers: string[] }>('/api/produtos/sugestoes').then((r) =>
+    r.ok
+      ? { ok: true, dados: { categorias: r.dados.categories, fornecedores: r.dados.suppliers } }
+      : r,
+  )
 
 /* -------------------------------------------------------------------------- */
 /* Consulta por EAN                                                           */

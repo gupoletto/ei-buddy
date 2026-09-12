@@ -184,6 +184,7 @@ export {
   importProducts,
   generateInternalCode,
   listCatalog,
+  productSuggestions,
   registerProduct,
   searchProducts,
   TETO_DO_CATALOGO,

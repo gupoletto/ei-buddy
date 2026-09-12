@@ -20,6 +20,7 @@ import {
   listCatalog,
   listCustomers,
   type ManageCompanyDeps,
+  productSuggestions,
   registerCompany,
   type RegisterCompanyDeps,
   updateCompany,
@@ -276,6 +277,21 @@ export function registerCadastroRoutes(app: FastifyInstance, deps: CadastroDeps)
     const resumo = await catalogSummary(deps, ctx)
 
     return reply.code(200).send(resumo)
+  })
+
+  /**
+   * Sugestoes do formulario — categoria e fornecedor ja usados.
+   *
+   * Ate aqui o formulario oferecia uma lista de exemplo fixa, sempre a mesma
+   * para toda loja — a sugestao nunca refletia o que o proprio lojista ja
+   * tinha digitado.
+   */
+  app.get('/produtos/sugestoes', async (request, reply) => {
+    const ctx = requireContext(request)
+
+    const sugestoes = await productSuggestions(deps, ctx)
+
+    return reply.code(200).send(sugestoes)
   })
 
   app.get('/produtos/codigo-de-barras/:codigo', async (request, reply) => {

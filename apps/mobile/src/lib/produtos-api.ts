@@ -25,30 +25,6 @@ import type { Produto } from './types'
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 /* -------------------------------------------------------------------------- */
-/* Categorias e fornecedores                                                  */
-/* -------------------------------------------------------------------------- */
-
-/** SUBSTITUIR POR: GET /produtos/categorias */
-export const CATEGORIAS_INICIAIS = [
-  'Mercearia',
-  'Laticínios',
-  'Bebidas',
-  'Utilidades',
-  'Limpeza',
-  'Higiene',
-]
-
-/** SUBSTITUIR POR: GET /fornecedores */
-export const FORNECEDORES_INICIAIS = [
-  'Torrefação Aurora',
-  'Engenho Doce',
-  'Laticínios Campo Verde',
-  'Alimentos Boa Safra',
-  'Importadora Oliva',
-  'Distribuidora Sul',
-]
-
-/* -------------------------------------------------------------------------- */
 /* Consulta por EAN                                                           */
 /* -------------------------------------------------------------------------- */
 

@@ -268,4 +268,16 @@ export type ProductRepository = {
    * regra mora em `core`. O repositorio informa o fato.
    */
   countAll(companyId: CompanyId): Promise<number>
+
+  /**
+   * Categoria e fornecedor ja usados por algum produto — as sugestoes do
+   * formulario de cadastro.
+   *
+   * Distintos e ordenados: e a mesma lista que `CampoTag` mostra como opcao,
+   * e uma lista fora de ordem faria a sugestao pular a cada letra digitada.
+   */
+  listSuggestions(companyId: CompanyId): Promise<{
+    readonly categories: readonly string[]
+    readonly suppliers: readonly string[]
+  }>
 }
