@@ -27,6 +27,21 @@
 -- coluna por tabela — e havera um caso de uso pedindo por ela.
 
 -- ---------------------------------------------------------------------------
+-- Remove o esqueleto do baseline 0909
+-- ---------------------------------------------------------------------------
+--
+-- A 0007_acrescimos.sql ja criava `crm_cards` — um placeholder do recorte
+-- "A-J que a main nao tinha", de proposito vazio e sem caso de uso ligado
+-- (`board_column text`, `comments jsonb`, sem `kind`, `due_on` nem
+-- `assignee_user_id`). Nunca teve porta, repositorio nem linha gravada —
+-- `privacy-repository.ts` documentava isso no proprio `FORA_DA_EXPORTACAO`
+-- ("tabela vazia no baseline"). Essa migration e que implementa o caso de
+-- uso de verdade, e o formato e outro; em vez de ALTER em cima do esqueleto,
+-- o DROP deixa explicito que o placeholder morre aqui. Seguro: a tabela
+-- nunca teve dado, e nenhuma FK de fora aponta para ela.
+DROP TABLE IF EXISTS crm_cards;
+
+-- ---------------------------------------------------------------------------
 -- crm_cards — o cartao
 -- ---------------------------------------------------------------------------
 
