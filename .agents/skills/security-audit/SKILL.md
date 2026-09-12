@@ -58,13 +58,13 @@ npm audit --omit=dev
 
 `refs/nextjs-checklist.md` — marcar itens conforme deps detectadas (ex.: sem Stripe → pular webhook).
 
-| Categoria   | Foco                                                  |
-| ----------- | ----------------------------------------------------- |
-| Injeção     | Prisma/Drizzle raw, XSS real, SSRF                    |
-| AuthZ/AuthN | Server Actions, `route.ts`, BOLA/IDOR, sessão         |
-| Dados       | PII em logs/API, rotas públicas                       |
-| Crypto      | tokens fracos, hash obsoleto                          |
-| Lógica      | webhooks, race, rate limit                            |
+| Categoria   | Foco                                                                                  |
+| ----------- | ------------------------------------------------------------------------------------- |
+| Injeção     | Prisma/Drizzle raw, XSS real, SSRF                                                    |
+| AuthZ/AuthN | Server Actions, `route.ts`, BOLA/IDOR, sessão                                         |
+| Dados       | PII em logs/API, rotas públicas                                                       |
+| Crypto      | tokens fracos, hash obsoleto                                                          |
+| Lógica      | webhooks, race, rate limit                                                            |
 | Config      | `NEXT_PUBLIC_*`, `allowedOrigins` (proxy); CSP/HSTS só via `refs/security-headers.md` |
 
 **Não** auditar Python/Java/Go salvo pedido explícito.
@@ -91,12 +91,12 @@ Before/after; frase: **"Revise cada patch antes de aplicar. Nada foi alterado no
 
 ## Guia de severidade
 
-| Nível    | Significado                                                      |
-| -------- | ---------------------------------------------------------------- |
-| CRITICAL | Exploração imediata (SQLi, RCE, bypass auth, secret live no Git) |
-| HIGH     | Exploit claro (IDOR, XSS stored, webhook sem assinatura)         |
-| MEDIUM   | Condições ou encadeamento (CSRF em proxy mal configurado)        |
-| LOW      | Boas práticas pontuais                                           |
+| Nível    | Significado                                                         |
+| -------- | ------------------------------------------------------------------- |
+| CRITICAL | Exploração imediata (SQLi, RCE, bypass auth, secret live no Git)    |
+| HIGH     | Exploit claro (IDOR, XSS stored, webhook sem assinatura)            |
+| MEDIUM   | Condições ou encadeamento (CSRF em proxy mal configurado)           |
+| LOW      | Boas práticas pontuais                                              |
 | INFO     | Sem CVE; versão atrás da latest; CSP/HSTS não custom no Next config |
 
 ## Regras de saída
@@ -110,16 +110,16 @@ Before/after; frase: **"Revise cada patch antes de aplicar. Nada foi alterado no
 
 ## Referências
 
-| Arquivo                    | Uso                                    |
-| -------------------------- | -------------------------------------- |
-| `refs/project-stack.md`    | Step 1 — versões e gates (obrigatório) |
-| `refs/language.md`         | Padrões JS/TS/React/Next por major     |
-| `refs/nextjs-checklist.md` | Steps 4–5                              |
-| `refs/secrets.md`          | Step 3                                 |
-| `refs/false-positives.md`  | Step 6                                 |
-| `refs/security-headers.md` | CSP/HSTS — não patch genérico cross-version |
+| Arquivo                    | Uso                                                  |
+| -------------------------- | ---------------------------------------------------- |
+| `refs/project-stack.md`    | Step 1 — versões e gates (obrigatório)               |
+| `refs/language.md`         | Padrões JS/TS/React/Next por major                   |
+| `refs/nextjs-checklist.md` | Steps 4–5                                            |
+| `refs/secrets.md`          | Step 3                                               |
+| `refs/false-positives.md`  | Step 6                                               |
+| `refs/security-headers.md` | CSP/HSTS — não patch genérico cross-version          |
 | `refs/proxy-middleware.md` | Next ≥ 16: `proxy.ts`; Next &lt; 16: `middleware.ts` |
-| `refs/report.md`           | Step 7                                 |
+| `refs/report.md`           | Step 7                                               |
 
 ## Documentação externa (por versão instalada)
 

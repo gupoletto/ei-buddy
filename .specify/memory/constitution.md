@@ -327,10 +327,10 @@ Emenda MUST NOT ser feita só no código ou só num README de módulo.
 
 `CONSTITUTION_VERSION` segue SemVer:
 
-| Bump  | Quando                                                              |
-| ----- | ------------------------------------------------------------------- |
-| MAJOR | Remoção ou redefinição incompatível de princípio                    |
-| MINOR | Novo princípio ou seção, ou expansão material de regra existente    |
+| Bump  | Quando                                                                |
+| ----- | --------------------------------------------------------------------- |
+| MAJOR | Remoção ou redefinição incompatível de princípio                      |
+| MINOR | Novo princípio ou seção, ou expansão material de regra existente      |
 | PATCH | Esclarecimento, correção de texto, refinamentos sem mudança semântica |
 
 `RATIFICATION_DATE` é a adoção original e não muda. `LAST_AMENDED_DATE` é

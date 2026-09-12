@@ -81,10 +81,10 @@ Público: todo o time.
 
 ### 📎 Material de origem
 
-| Arquivo                                                                                                           | O que é                                                                                                      |
-| ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| [`assets/ZapGestor_Apresentacao.pdf`](assets/ZapGestor_Apresentacao.pdf) · [md](assets/zapgestor-apresentacao.md) | Apresentação comercial — fonte primária do escopo de produto                                                 |
-| [`assets/PagMaxx-Documentacao-da-API.pdf`](assets/PagMaxx-Documentacao-da-API.pdf) · [md](assets/pagmaxx-api.md)  | Documentação da API do PSP — avaliada em [`integracoes/pagmaxx.md`](arquitetura/integracoes/pagmaxx.md)      |
+| Arquivo                                                                                                           | O que é                                                                                                                                      |
+| ----------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`assets/ZapGestor_Apresentacao.pdf`](assets/ZapGestor_Apresentacao.pdf) · [md](assets/zapgestor-apresentacao.md) | Apresentação comercial — fonte primária do escopo de produto                                                                                 |
+| [`assets/PagMaxx-Documentacao-da-API.pdf`](assets/PagMaxx-Documentacao-da-API.pdf) · [md](assets/pagmaxx-api.md)  | Documentação da API do PSP — avaliada em [`integracoes/pagmaxx.md`](arquitetura/integracoes/pagmaxx.md)                                      |
 | [`assets/Pro Comércio KV Rebranding.pdf`](assets/) · [md](assets/pro-comercio-rebranding.md)                      | Identidade visual ProComércio — paleta provisória em `packages/ui`. Nome do produto: [ADR-0011](decisoes/adr/0011-eibuddy-nome-e-dominio.md) |
 
 Os `.md` ao lado de cada PDF são conversões geradas por

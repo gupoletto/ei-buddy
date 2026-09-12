@@ -55,18 +55,18 @@ The curl examples below use `$BASE` and `"${AUTH[@]}"`; for the local proxy, rep
 
 Every route has a CLI command. Positional args carry `entityId`/`themeId`; the JSON input carries the query params from the [route summary](#route-summary). Pass `--schema` to any command to print its input schema, and `--pretty` for readable output.
 
-| Command | Route |
-| --- | --- |
-| `mastra api learning entities '{"entityType":"agent"}'` | `/api/learning/entities` |
-| `mastra api learning snapshots <entityId> <input>` | `.../theme-snapshots` |
-| `mastra api learning flow <entityId> <input>` | `.../theme-flow` |
-| `mastra api learning paths <entityId> <input>` | `.../theme-paths` |
-| `mastra api learning theme list <entityId> <input>` | `.../themes` |
-| `mastra api learning theme get <entityId> <themeId> <input>` | `.../themes/:themeId` |
+| Command                                                           | Route                          |
+| ----------------------------------------------------------------- | ------------------------------ |
+| `mastra api learning entities '{"entityType":"agent"}'`           | `/api/learning/entities`       |
+| `mastra api learning snapshots <entityId> <input>`                | `.../theme-snapshots`          |
+| `mastra api learning flow <entityId> <input>`                     | `.../theme-flow`               |
+| `mastra api learning paths <entityId> <input>`                    | `.../theme-paths`              |
+| `mastra api learning theme list <entityId> <input>`               | `.../themes`                   |
+| `mastra api learning theme get <entityId> <themeId> <input>`      | `.../themes/:themeId`          |
 | `mastra api learning theme examples <entityId> <themeId> <input>` | `.../themes/:themeId/examples` |
-| `mastra api learning theme history <entityId> <themeId> <input>` | `.../themes/:themeId/history` |
-| `mastra api learning noise get <entityId> <input>` | `.../noise` |
-| `mastra api learning noise examples <entityId> <input>` | `.../noise/examples` |
+| `mastra api learning theme history <entityId> <themeId> <input>`  | `.../themes/:themeId/history`  |
+| `mastra api learning noise get <entityId> <input>`                | `.../noise`                    |
+| `mastra api learning noise examples <entityId> <input>`           | `.../noise/examples`           |
 
 Same workflow as the curl steps below:
 
@@ -188,18 +188,18 @@ curl -fsS "${AUTH[@]}" \
 
 ## Route summary
 
-| Route | Required query params | Optional |
-| --- | --- | --- |
-| `GET /api/learning/entities` | `entityType` | `limit` |
-| `GET .../:entityId/theme-snapshots` | `entityType`, `signalNames` | `limit`, `cursor`, `from`, `to` |
-| `GET .../:entityId/theme-flow` | `entityType`, `signalNames`, `snapshotId` | `themeLimitPerStage` |
-| `GET .../:entityId/theme-paths` | `entityType`, `signalNames`, `snapshotId` | `limit`, `offset` |
-| `GET .../:entityId/themes` | `entityType`, `signalName`, `snapshotId` | — |
-| `GET .../:entityId/themes/:themeId` | `entityType`, `signalName`, `snapshotId` | — |
-| `GET .../:entityId/themes/:themeId/examples` | `entityType`, `signalName`, `snapshotId` | `limit`, `offset` |
-| `GET .../:entityId/themes/:themeId/history` | `entityType`, `signalName` | `limit`, `cursor` |
-| `GET .../:entityId/noise` | `entityType`, `signalName`, `snapshotId` | — |
-| `GET .../:entityId/noise/examples` | `entityType`, `signalName`, `snapshotId` | `limit`, `offset` |
+| Route                                        | Required query params                     | Optional                        |
+| -------------------------------------------- | ----------------------------------------- | ------------------------------- |
+| `GET /api/learning/entities`                 | `entityType`                              | `limit`                         |
+| `GET .../:entityId/theme-snapshots`          | `entityType`, `signalNames`               | `limit`, `cursor`, `from`, `to` |
+| `GET .../:entityId/theme-flow`               | `entityType`, `signalNames`, `snapshotId` | `themeLimitPerStage`            |
+| `GET .../:entityId/theme-paths`              | `entityType`, `signalNames`, `snapshotId` | `limit`, `offset`               |
+| `GET .../:entityId/themes`                   | `entityType`, `signalName`, `snapshotId`  | —                               |
+| `GET .../:entityId/themes/:themeId`          | `entityType`, `signalName`, `snapshotId`  | —                               |
+| `GET .../:entityId/themes/:themeId/examples` | `entityType`, `signalName`, `snapshotId`  | `limit`, `offset`               |
+| `GET .../:entityId/themes/:themeId/history`  | `entityType`, `signalName`                | `limit`, `cursor`               |
+| `GET .../:entityId/noise`                    | `entityType`, `signalName`, `snapshotId`  | —                               |
+| `GET .../:entityId/noise/examples`           | `entityType`, `signalName`, `snapshotId`  | `limit`, `offset`               |
 
 `:themeId` is numeric. Flow/paths/snapshots take plural ordered `signalNames`; theme/noise routes take singular `signalName`.
 

@@ -19,19 +19,19 @@ git ls-files | findstr /i "\.env credentials \.pem \.key id_rsa"
 
 ## Prefixos de alto risco (reportar se literal no código tracked)
 
-| Prefixo / padrão | Serviço |
-|------------------|---------|
-| `sk_live_`, `rk_live_` | Stripe (secreto) |
-| `sk_test_` em repo público | Stripe test (MEDIUM em repo privado pode ser INFO) |
-| `whsec_` | Stripe webhook secret |
-| `pk_live_` em arquivo **sem** `NEXT_PUBLIC_` | Stripe — possível misconfig |
-| `AKIA[0-9A-Z]{16}` | AWS access key |
-| `-----BEGIN (RSA \|EC \|OPENSSH )?PRIVATE KEY-----` | Chave privada |
-| `xox[baprs]-` | Slack |
-| `ghp_`, `gho_`, `github_pat_` | GitHub |
-| `AIza[0-9A-Za-z\-_]{35}` | Google API |
-| `mongodb(\+srv)?:\/\/[^:]+:[^@]+@` | MongoDB com senha na URL |
-| `postgresql:\/\/[^:]+:[^@]+@` | Postgres com senha na URL |
+| Prefixo / padrão                                    | Serviço                                            |
+| --------------------------------------------------- | -------------------------------------------------- |
+| `sk_live_`, `rk_live_`                              | Stripe (secreto)                                   |
+| `sk_test_` em repo público                          | Stripe test (MEDIUM em repo privado pode ser INFO) |
+| `whsec_`                                            | Stripe webhook secret                              |
+| `pk_live_` em arquivo **sem** `NEXT_PUBLIC_`        | Stripe — possível misconfig                        |
+| `AKIA[0-9A-Z]{16}`                                  | AWS access key                                     |
+| `-----BEGIN (RSA \|EC \|OPENSSH )?PRIVATE KEY-----` | Chave privada                                      |
+| `xox[baprs]-`                                       | Slack                                              |
+| `ghp_`, `gho_`, `github_pat_`                       | GitHub                                             |
+| `AIza[0-9A-Za-z\-_]{35}`                            | Google API                                         |
+| `mongodb(\+srv)?:\/\/[^:]+:[^@]+@`                  | MongoDB com senha na URL                           |
+| `postgresql:\/\/[^:]+:[^@]+@`                       | Postgres com senha na URL                          |
 
 ---
 

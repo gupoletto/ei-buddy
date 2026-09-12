@@ -8,11 +8,11 @@ Carregar no **Step 1** (com `refs/project-stack.md`) e ao auditar auth/headers n
 
 ## 1. Regra por major do `next` (lockfile)
 
-| Next instalado | Arquivo canônico | Export da função | Notas |
-|----------------|------------------|------------------|--------|
-| **&lt; 16** | `middleware.ts` / `.js` | `middleware` (default ou named) | Doc e exemplos usam `middleware` |
-| **≥ 16** | `proxy.ts` / `.js` (preferido) | `proxy` (default ou named) | `middleware.ts` **deprecated** — migrar, não criar novo |
-| **≥ 16** + `middleware.ts` ainda no repo | Legado / migração pendente | `middleware` | **INFO** “codemod `middleware-to-proxy`”, não HIGH por “nome errado” sozinho |
+| Next instalado                           | Arquivo canônico               | Export da função                | Notas                                                                        |
+| ---------------------------------------- | ------------------------------ | ------------------------------- | ---------------------------------------------------------------------------- |
+| **&lt; 16**                              | `middleware.ts` / `.js`        | `middleware` (default ou named) | Doc e exemplos usam `middleware`                                             |
+| **≥ 16**                                 | `proxy.ts` / `.js` (preferido) | `proxy` (default ou named)      | `middleware.ts` **deprecated** — migrar, não criar novo                      |
+| **≥ 16** + `middleware.ts` ainda no repo | Legado / migração pendente     | `middleware`                    | **INFO** “codemod `middleware-to-proxy`”, não HIGH por “nome errado” sozinho |
 
 **Local:** raiz do projeto ou `src/`, no mesmo nível que `app/` ou `pages/` — **um único arquivo** `proxy.ts` (lógica extra em módulos importados).
 
@@ -20,12 +20,12 @@ Carregar no **Step 1** (com `refs/project-stack.md`) e ao auditar auth/headers n
 
 ## 2. O que NÃO reportar
 
-| Situação (Next ≥ 16) | Motivo |
-|----------------------|--------|
-| “Ausência de `middleware.ts`” | Arquivo correto pode ser **`proxy.ts`** — procurar os dois nomes antes de concluir |
-| “Falta middleware de auth” com `proxy.ts` + `auth` reexport | Equivalente funcional |
-| Sugerir **criar** `middleware.ts` em projeto Next 16+ | Desatualizado — indicar `proxy.ts` e export `proxy` |
-| Exigir Proxy para auth completa | Doc oficial: Proxy é para checks **otimistas** (redirect), não substitui auth em Server Actions / Route Handlers |
+| Situação (Next ≥ 16)                                        | Motivo                                                                                                           |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| “Ausência de `middleware.ts`”                               | Arquivo correto pode ser **`proxy.ts`** — procurar os dois nomes antes de concluir                               |
+| “Falta middleware de auth” com `proxy.ts` + `auth` reexport | Equivalente funcional                                                                                            |
+| Sugerir **criar** `middleware.ts` em projeto Next 16+       | Desatualizado — indicar `proxy.ts` e export `proxy`                                                              |
+| Exigir Proxy para auth completa                             | Doc oficial: Proxy é para checks **otimistas** (redirect), não substitui auth em Server Actions / Route Handlers |
 
 ---
 
@@ -103,9 +103,9 @@ export function proxy(request: NextRequest) {
 
 ## 8. Integração
 
-| Arquivo | Uso |
-|---------|-----|
-| `refs/project-stack.md` | Major do Next |
-| `refs/false-positives.md` | Não exigir middleware.ts em Next 16+ |
-| `refs/security-headers.md` | Headers em proxy/middleware |
-| `refs/language.md` | Exemplos Auth por versão |
+| Arquivo                    | Uso                                  |
+| -------------------------- | ------------------------------------ |
+| `refs/project-stack.md`    | Major do Next                        |
+| `refs/false-positives.md`  | Não exigir middleware.ts em Next 16+ |
+| `refs/security-headers.md` | Headers em proxy/middleware          |
+| `refs/language.md`         | Exemplos Auth por versão             |

@@ -6,13 +6,13 @@ Os pipelines do GitHub Actions, o que cada um barra, e o que ainda não existe.
 
 ## Visão geral
 
-| Workflow                                                       | Gatilho              | O que faz                                                      | Barra o merge        |
-| -------------------------------------------------------------- | -------------------- | -------------------------------------------------------------- | -------------------- |
-| [`ci.yml`](../../.github/workflows/ci.yml)                     | PR e push na `main`  | formatação, fronteiras, tipos, lint, testes, build             | ✅                   |
-| [`pr-checks.yml`](../../.github/workflows/pr-checks.yml)       | PR aberto ou editado | título, nome da branch, referência à tarefa                    | ✅                   |
-| [`security.yml`](../../.github/workflows/security.yml)         | PR, push, semanal    | vulnerabilidades, segredos vazados, CodeQL                     | ✅ (severidade alta) |
-| [`deploy-api.yml`](../../.github/workflows/deploy-api.yml)     | tag / manual         | **esqueleto** — [DEC-009](../decisoes/README.md#dec-009)       | —                    |
-| [`deploy-web.yml`](../../.github/workflows/deploy-web.yml)     | tag / manual         | **esqueleto** — [DEC-009](../decisoes/README.md#dec-009)       | —                    |
+| Workflow                                                       | Gatilho              | O que faz                                                                                                 | Barra o merge        |
+| -------------------------------------------------------------- | -------------------- | --------------------------------------------------------------------------------------------------------- | -------------------- |
+| [`ci.yml`](../../.github/workflows/ci.yml)                     | PR e push na `main`  | formatação, fronteiras, tipos, lint, testes, build                                                        | ✅                   |
+| [`pr-checks.yml`](../../.github/workflows/pr-checks.yml)       | PR aberto ou editado | título, nome da branch, referência à tarefa                                                               | ✅                   |
+| [`security.yml`](../../.github/workflows/security.yml)         | PR, push, semanal    | vulnerabilidades, segredos vazados, CodeQL                                                                | ✅ (severidade alta) |
+| [`deploy-api.yml`](../../.github/workflows/deploy-api.yml)     | tag / manual         | **esqueleto** — [DEC-009](../decisoes/README.md#dec-009)                                                  | —                    |
+| [`deploy-web.yml`](../../.github/workflows/deploy-web.yml)     | tag / manual         | **esqueleto** — [DEC-009](../decisoes/README.md#dec-009)                                                  | —                    |
 | [`mobile-build.yml`](../../.github/workflows/mobile-build.yml) | manual               | **esqueleto** — EAS; nome nas lojas: EiBuddy ([ADR-0011](../decisoes/adr/0011-eibuddy-nome-e-dominio.md)) | —                    |
 
 ## `ci.yml` — a verificação principal

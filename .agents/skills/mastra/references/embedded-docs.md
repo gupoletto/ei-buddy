@@ -64,7 +64,7 @@ cat node_modules/@mastra/core/dist/agent/agent.d.ts
 
 | Package          | Path                                     | Contains                                  |
 | ---------------- | ---------------------------------------- | ----------------------------------------- |
-| `@mastra/core`   | `node_modules/@mastra/core/dist/docs/`   | Agents, Workflows, Tools, Mastra instance  |
+| `@mastra/core`   | `node_modules/@mastra/core/dist/docs/`   | Agents, Workflows, Tools, Mastra instance |
 | `@mastra/memory` | `node_modules/@mastra/memory/dist/docs/` | Memory systems, conversation history      |
 | `@mastra/rag`    | `node_modules/@mastra/rag/dist/docs/`    | RAG features, vector stores               |
 | `@mastra/pg`     | `node_modules/@mastra/pg/dist/docs/`     | PostgreSQL storage                        |

@@ -213,11 +213,11 @@ Isso aumenta confiança no relatório e evita ruído em PRs.
 
 ## Guia de confiança
 
-| Confiança | Quando usar |
-|-----------|-------------|
-| **HIGH** | Exploit claro; sem sanitização/auth no caminho |
-| **MEDIUM** | Provável; depende de deploy, proxy ou chamador não visto |
-| **LOW** | Padrão suspeito; exige revisão humana — preferir descartar ou INFO |
+| Confiança  | Quando usar                                                        |
+| ---------- | ------------------------------------------------------------------ |
+| **HIGH**   | Exploit claro; sem sanitização/auth no caminho                     |
+| **MEDIUM** | Provável; depende de deploy, proxy ou chamador não visto           |
+| **LOW**    | Padrão suspeito; exige revisão humana — preferir descartar ou INFO |
 
 Nunca omitir confiança. Se LOW e não for vulnerabilidade clara → mover para **§6 Descartados** em vez de achado.
 
@@ -225,11 +225,11 @@ Nunca omitir confiança. Se LOW e não for vulnerabilidade clara → mover para 
 
 ## Ordem das seções no output final
 
-1. Cabeçalho  
-2. Resumo executivo (tabela)  
-3. Achados por categoria  
-4. Dependências  
-5. Segredos  
-6. Patches (se CRITICAL/HIGH)  
-7. Falsos positivos descartados  
-8. Cobertura e próximos passos  
+1. Cabeçalho
+2. Resumo executivo (tabela)
+3. Achados por categoria
+4. Dependências
+5. Segredos
+6. Patches (se CRITICAL/HIGH)
+7. Falsos positivos descartados
+8. Cobertura e próximos passos

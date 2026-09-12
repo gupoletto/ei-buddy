@@ -43,7 +43,7 @@ provedor nenhum.
 | Tarefa     | Dias | O que a decisão realmente segura           | O que dá para fazer **hoje**                                      | Dias livres |
 | ---------- | ---: | ------------------------------------------ | ----------------------------------------------------------------- | ----------: |
 | **NR-046** |    4 | o adapter HTTP do provedor                 | consentimento (RF-016), webhook de entrada, roteamento de comando |          ~3 |
-| **NR-060** |    5 | o adapter HTTP do WhatsApp (DEC-003)           | as tools tipadas, o laço Mastra e o `LlmClient` falso |          ~4 |
+| **NR-060** |    5 | o adapter HTTP do WhatsApp (DEC-003)       | as tools tipadas, o laço Mastra e o `LlmClient` falso             |          ~4 |
 | **NR-061** |    2 | nada próprio — herda de NR-060             | a máquina de estados da confirmação e a expiração são `core` puro |           2 |
 | **NR-062** |    3 | **onde** o contexto persiste (DEC-011)     | o isolamento por empresa é a mesma RLS que já existe              |          ~2 |
 | **NR-063** |    4 | a cobrança em si                           | trial, estados e o que cada estado permite                        |          ~2 |

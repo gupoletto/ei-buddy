@@ -12,17 +12,17 @@ Fontes (ajustar à major instalada): [Authentication](https://nextjs.org/docs/ap
 
 Localizar e listar no relatório:
 
-| Tipo | Glob / padrão |
-|------|----------------|
-| Route Handlers | `src/app/api/**/route.ts` |
-| Server Actions | arquivos com `'use server'` ou `*_actions/*.ts` |
-| Server Components com dados sensíveis | `app/(panel)/**`, `dashboard/**` |
-| Rotas públicas | `app/(public)/**` |
-| Auth | `lib/auth.ts`, `api/auth/[...nextauth]/route.ts` |
-| Webhooks | `api/webhook/**` |
-| Uploads | `api/image/**`, integrações Cloudinary/S3 |
-| Proxy / Middleware | Next ≥ 16: `proxy.ts`; Next &lt; 16: `middleware.ts` — `refs/proxy-middleware.md` |
-| ORM | `lib/prisma.ts`, `prisma/schema.prisma` |
+| Tipo                                  | Glob / padrão                                                                     |
+| ------------------------------------- | --------------------------------------------------------------------------------- |
+| Route Handlers                        | `src/app/api/**/route.ts`                                                         |
+| Server Actions                        | arquivos com `'use server'` ou `*_actions/*.ts`                                   |
+| Server Components com dados sensíveis | `app/(panel)/**`, `dashboard/**`                                                  |
+| Rotas públicas                        | `app/(public)/**`                                                                 |
+| Auth                                  | `lib/auth.ts`, `api/auth/[...nextauth]/route.ts`                                  |
+| Webhooks                              | `api/webhook/**`                                                                  |
+| Uploads                               | `api/image/**`, integrações Cloudinary/S3                                         |
+| Proxy / Middleware                    | Next ≥ 16: `proxy.ts`; Next &lt; 16: `middleware.ts` — `refs/proxy-middleware.md` |
+| ORM                                   | `lib/prisma.ts`, `prisma/schema.prisma`                                           |
 
 **Inventário dinâmico:** listar no relatório só dependências presentes (`next-auth`, `prisma`, `stripe`, `zod`, etc.) com versão do lockfile.
 

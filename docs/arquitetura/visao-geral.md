@@ -161,16 +161,16 @@ validações e a auditoria.
 | ORM                    | Drizzle                    | SQL explícito e tipado, essencial para trabalhar com RLS sem surpresa                                                |
 | Isolamento             | RLS no PostgreSQL          | Isolamento que não depende de o desenvolvedor lembrar do `WHERE` — [ADR-0001](../decisoes/adr/0001-rls-por-linha.md) |
 | Validação              | Zod em `contracts`         | O mesmo schema serve a HTTP, tipos e tools do agente                                                                 |
-| Runtime do agente      | Mastra + `gpt-4o-mini`     | Tools em Zod, modelo trocável por config — [ADR-0010](../decisoes/adr/0010-mastra-e-gpt-4o-mini.md)                   |
+| Runtime do agente      | Mastra + `gpt-4o-mini`     | Tools em Zod, modelo trocável por config — [ADR-0010](../decisoes/adr/0010-mastra-e-gpt-4o-mini.md)                  |
 
 ## Decisões estruturais ainda em aberto
 
 Estas **não** estão decididas e não devem ser assumidas em código:
 
-| Tema                            | Decisão                                  | Impacto se decidida errado                       |
-| ------------------------------- | ---------------------------------------- | ------------------------------------------------ |
-| Hospedagem e deploy             | [DEC-009](../decisoes/README.md#dec-009) | Define `infra/` e os workflows de deploy         |
-| Memória da conversa             | [DEC-011](../decisoes/README.md#dec-011) | O que o assistente lembra, por quanto tempo, onde |
+| Tema                | Decisão                                  | Impacto se decidida errado                        |
+| ------------------- | ---------------------------------------- | ------------------------------------------------- |
+| Hospedagem e deploy | [DEC-009](../decisoes/README.md#dec-009) | Define `infra/` e os workflows de deploy          |
+| Memória da conversa | [DEC-011](../decisoes/README.md#dec-011) | O que o assistente lembra, por quanto tempo, onde |
 
 ## Documentos relacionados
 

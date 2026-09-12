@@ -284,19 +284,19 @@ esses repositórios, e uma rota ligada a um _fake_ não é uma rota.
 
 ## Bloqueios por decisão
 
-| Decisão                                                                                  | Diretas       | Em cascata | Dias parados |
-| ---------------------------------------------------------------------------------------- | ------------- | ---------: | -----------: |
-| [DEC-007](../decisoes/README.md#dec-007) LLM ✅ Mastra + `gpt-4o-mini`                    | — (NR-060 via DEC-003) |          — |            0 |
-| [DEC-004](../decisoes/README.md#dec-004) fiscal ✅                                       | — (NR-042 ✅) |          — |            0 |
-| [DEC-003](../decisoes/README.md#dec-003) WhatsApp                                        | NR-046        |          2 |           11 |
-| [DEC-010](../decisoes/README.md#dec-010) cobrança ✅                                     | — (NR-063 ⬜) |          — |            0 |
-| [DEC-006](../decisoes/README.md#dec-006)/[DEC-015](../decisoes/README.md#dec-015) PSP ✅ | — (NR-044 ⬜) |          — |            0 |
-| [DEC-005](../decisoes/README.md#dec-005) Open Finance                                    | NR-048        |          — |            4 |
-| [DEC-003](../decisoes/README.md#dec-003) fluxo 3 do E2E                                  | NR-049        |          — |            3 |
-| [DEC-009](../decisoes/README.md#dec-009) hospedagem                                      | NR-015        |          — |            3 |
-| [DEC-011](../decisoes/README.md#dec-011) contexto da conversa                            | NR-062        |          — |            3 |
-| [DEC-012](../decisoes/README.md#dec-012) usuário e cupons                                | NR-075        |          — |            3 |
-| [DEC-001](../decisoes/README.md#dec-001) nome/marca                                      | — (NR-011 ✅) |          — |            0 |
+| Decisão                                                                                  | Diretas                | Em cascata | Dias parados |
+| ---------------------------------------------------------------------------------------- | ---------------------- | ---------: | -----------: |
+| [DEC-007](../decisoes/README.md#dec-007) LLM ✅ Mastra + `gpt-4o-mini`                   | — (NR-060 via DEC-003) |          — |            0 |
+| [DEC-004](../decisoes/README.md#dec-004) fiscal ✅                                       | — (NR-042 ✅)          |          — |            0 |
+| [DEC-003](../decisoes/README.md#dec-003) WhatsApp                                        | NR-046                 |          2 |           11 |
+| [DEC-010](../decisoes/README.md#dec-010) cobrança ✅                                     | — (NR-063 ⬜)          |          — |            0 |
+| [DEC-006](../decisoes/README.md#dec-006)/[DEC-015](../decisoes/README.md#dec-015) PSP ✅ | — (NR-044 ⬜)          |          — |            0 |
+| [DEC-005](../decisoes/README.md#dec-005) Open Finance                                    | NR-048                 |          — |            4 |
+| [DEC-003](../decisoes/README.md#dec-003) fluxo 3 do E2E                                  | NR-049                 |          — |            3 |
+| [DEC-009](../decisoes/README.md#dec-009) hospedagem                                      | NR-015                 |          — |            3 |
+| [DEC-011](../decisoes/README.md#dec-011) contexto da conversa                            | NR-062                 |          — |            3 |
+| [DEC-012](../decisoes/README.md#dec-012) usuário e cupons                                | NR-075                 |          — |            3 |
+| [DEC-001](../decisoes/README.md#dec-001) nome/marca                                      | — (NR-011 ✅)          |          — |            0 |
 
 > **Bloqueio de tarefa não é bloqueio de trabalho.** Quebrando as tarefas na
 > costura da porta — como a NR-042 fez de fato com a DEC-004 — cerca de 19 dos

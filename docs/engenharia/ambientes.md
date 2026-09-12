@@ -127,11 +127,11 @@ do sistema — ver [`seguranca.md`](../arquitetura/seguranca.md#certificado-digi
 
 ### Agente / LLM — [ADR-0010](../decisoes/adr/0010-mastra-e-gpt-4o-mini.md)
 
-| Variável                     | Obr. | Seg. | local                 | Descrição                                                             |
-| ---------------------------- | :--: | :--: | --------------------- | --------------------------------------------------------------------- |
-| `AGENT_PROVIDER`             |  ✅  |      | `fake`                | `fake` \| `mastra`                                                    |
-| `OPENAI_API_KEY`             |      |  🔒  | vazio                 | obrigatória só com `AGENT_PROVIDER=mastra`                            |
-| `AGENT_MODEL`                |      |      | `openai/gpt-4o-mini`  | formato Mastra `provedor/modelo`                                      |
+| Variável                     | Obr. | Seg. | local                | Descrição                                                             |
+| ---------------------------- | :--: | :--: | -------------------- | --------------------------------------------------------------------- |
+| `AGENT_PROVIDER`             |  ✅  |      | `fake`               | `fake` \| `mastra`                                                    |
+| `OPENAI_API_KEY`             |      |  🔒  | vazio                | obrigatória só com `AGENT_PROVIDER=mastra`                            |
+| `AGENT_MODEL`                |      |      | `openai/gpt-4o-mini` | formato Mastra `provedor/modelo`                                      |
 | `AGENT_MONTHLY_BUDGET_CENTS` |      |      | —                    | teto por empresa ([RNF-073](../produto/requisitos-nao-funcionais.md)) |
 
 ### Webhooks em desenvolvimento

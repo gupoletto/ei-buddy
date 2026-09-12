@@ -14,8 +14,8 @@ Investigar sempre que **input do usuário** possa alcançar:
 eval()
 new Function()
 child_process.exec / execSync / spawn
-fs.readFile / writeFile / unlink  // path controlado pelo usuário
-fetch(url)  // url controlada pelo usuário → SSRF
+fs.readFile / writeFile / unlink // path controlado pelo usuário
+fetch(url) // url controlada pelo usuário → SSRF
 dangerouslySetInnerHTML
 element.innerHTML
 document.write()
@@ -185,12 +185,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 })
 ```
 
-| Verificar | Notas |
-|-----------|--------|
-| `AUTH_SECRET` / `NEXTAUTH_SECRET` | Forte, só env |
-| `trustHost: true` | Comum em Vercel; não é achado isolado |
-| Session em Server Component | `const session = await auth()` + redirect se null |
-| API | Wrapper `auth(handler)` ou checagem manual |
+| Verificar                         | Notas                                             |
+| --------------------------------- | ------------------------------------------------- |
+| `AUTH_SECRET` / `NEXTAUTH_SECRET` | Forte, só env                                     |
+| `trustHost: true`                 | Comum em Vercel; não é achado isolado             |
+| Session em Server Component       | `const session = await auth()` + redirect se null |
+| API                               | Wrapper `auth(handler)` ou checagem manual        |
 
 **IDOR típico:** `prisma.appointment.findMany({ where: { userId: params.id } })` com `params.id` da URL em rota autenticada — corrigir para `session.user.id`.
 
@@ -210,9 +210,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 import Stripe from 'stripe'
 
 const event = stripe.webhooks.constructEvent(
-  body,           // raw string/Buffer — não JSON parseado antes
+  body, // raw string/Buffer — não JSON parseado antes
   signature,
-  process.env.STRIPE_WEBHOOK_SECRET!
+  process.env.STRIPE_WEBHOOK_SECRET!,
 )
 // só após sucesso: atualizar subscription, etc.
 ```
@@ -258,12 +258,12 @@ Reportar se `.env` ou chaves aparecem em `git ls-files` mesmo com `.gitignore` (
 
 ## Integração com outras refs
 
-| Tema | Arquivo |
-|------|---------|
-| Versões instaladas / gates | `refs/project-stack.md` |
-| O que não reportar | `refs/false-positives.md` |
-| Roteiro Next | `refs/nextjs-checklist.md` |
-| Segredos | `refs/secrets.md` |
-| CSP / HSTS | `refs/security-headers.md` |
-| Proxy vs middleware | `refs/proxy-middleware.md` |
-| Relatório | `refs/report.md` |
+| Tema                       | Arquivo                    |
+| -------------------------- | -------------------------- |
+| Versões instaladas / gates | `refs/project-stack.md`    |
+| O que não reportar         | `refs/false-positives.md`  |
+| Roteiro Next               | `refs/nextjs-checklist.md` |
+| Segredos                   | `refs/secrets.md`          |
+| CSP / HSTS                 | `refs/security-headers.md` |
+| Proxy vs middleware        | `refs/proxy-middleware.md` |
+| Relatório                  | `refs/report.md`           |

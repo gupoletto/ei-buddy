@@ -10,17 +10,17 @@
 
 **Fonte de verdade**: esta spec amarra o recorte do MVP já documentado em `docs/` para o fluxo Spec Kit (`/speckit-plan`, `/speckit-tasks`, `/speckit-implement`). Não substitui os catálogos permanentes. Em conflito de detalhe, prevalecem a [constitution](../../.specify/memory/constitution.md), o [escopo do MVP](../../docs/produto/escopo-mvp.md) e os IDs `US-xxx` / `RF-xxx` / `RNF-xxx`.
 
-| Artefato permanente                                              | Papel nesta spec                                      |
-| ---------------------------------------------------------------- | ----------------------------------------------------- |
-| [Visão](../../docs/produto/visao.md)                             | Problema, público, princípios e métricas              |
-| [Escopo do MVP](../../docs/produto/escopo-mvp.md)                | O que entra, o que fica fora, critérios de saída      |
-| [User Stories](../../docs/produto/user-stories.md)               | 64 histórias com aceite (US-001–064)                  |
-| [Requisitos funcionais](../../docs/produto/requisitos-funcionais.md) | 131 RFs rastreáveis                               |
-| [RNFs](../../docs/produto/requisitos-nao-funcionais.md)          | Comportamento mensurável                              |
-| [Personas](../../docs/produto/personas.md)                       | Cláudia, Marcos, Roberto, João, Ana                   |
-| [Glossário](../../docs/produto/glossario.md)                     | Linguagem ubíqua                                      |
+| Artefato permanente                                                  | Papel nesta spec                                 |
+| -------------------------------------------------------------------- | ------------------------------------------------ |
+| [Visão](../../docs/produto/visao.md)                                 | Problema, público, princípios e métricas         |
+| [Escopo do MVP](../../docs/produto/escopo-mvp.md)                    | O que entra, o que fica fora, critérios de saída |
+| [User Stories](../../docs/produto/user-stories.md)                   | 64 histórias com aceite (US-001–064)             |
+| [Requisitos funcionais](../../docs/produto/requisitos-funcionais.md) | 131 RFs rastreáveis                              |
+| [RNFs](../../docs/produto/requisitos-nao-funcionais.md)              | Comportamento mensurável                         |
+| [Personas](../../docs/produto/personas.md)                           | Cláudia, Marcos, Roberto, João, Ana              |
+| [Glossário](../../docs/produto/glossario.md)                         | Linguagem ubíqua                                 |
 
-## User Scenarios & Testing *(mandatory)*
+## User Scenarios & Testing _(mandatory)_
 
 Critério de corte do MVP ([escopo](../../docs/produto/escopo-mvp.md)): a Cláudia (P1, papel `owner`) opera o mês **sem planilha paralela** — registra vendas, emite nota, sabe o que tem a receber e a pagar, e cobra quem está devendo. App e WhatsApp acionam **as mesmas regras**, com as mesmas validações e a mesma trilha de auditoria.
 
@@ -275,7 +275,7 @@ A Cláudia cadastra contas bancárias, importa extrato (arquivo) sem duplicar li
 - Administradora da plataforma (P5) acessando dado de loja: só com justificativa registrada; não vê conversa sem consentimento explícito.
 - Provedor fiscal, de mensagens, de cobrança ou de banco indisponível: o restante do sistema continua; a lojista vê o que falhou em linguagem clara.
 
-## Requirements *(mandatory)*
+## Requirements _(mandatory)_
 
 Requisitos abaixo são o recorte testável desta spec. O catálogo canônico permanece em [`requisitos-funcionais.md`](../../docs/produto/requisitos-funcionais.md). IDs `RF-xxx` são permanentes.
 
@@ -368,7 +368,7 @@ Requisitos abaixo são o recorte testável desta spec. O catálogo canônico per
 - **FR-055**: O assistente SHOULD enviar resumo de período (faturamento, custo, despesas, resultado) e, se o relatório for grande demais para uma mensagem, um resumo mais arquivo ou link. (RF-108, RF-109)
 - **FR-056**: O sistema SHOULD aplicar cupom de assinatura mostrando o valor final antes de confirmar, e recusar cupom inválido, expirado ou já usado com o motivo. (RF-114, RF-115)
 
-### Key Entities *(include if feature involves data)*
+### Key Entities _(include if feature involves data)_
 
 Nomes de negócio em PT-BR; identificadores em inglês conforme o [glossário](../../docs/produto/glossario.md).
 
@@ -389,7 +389,7 @@ Nomes de negócio em PT-BR; identificadores em inglês conforme o [glossário](.
 - **Auditoria (`AuditLog`)**: somente inclusão; autor humano inclusive quando o canal é o assistente.
 - **Exportação**: pacote completo da empresa em formato aberto; pacote mensal CSV+XML para o contador.
 
-## Success Criteria *(mandatory)*
+## Success Criteria _(mandatory)_
 
 Alvos M1–M7 da [visão](../../docs/produto/visao.md#métricas-de-sucesso) são hipóteses iniciais (QST-007), não metas validadas. Servem como critério de produto desta spec até revisão com clientes reais.
 
@@ -445,14 +445,14 @@ Itens explícitos de [Fora do MVP](../../docs/produto/escopo-mvp.md#fora-do-mvp)
 
 Decisões que travam implementação de provedor (portas e testes com dublê podem existir antes):
 
-| Decisão   | Impacto na spec                                      |
-| --------- | ---------------------------------------------------- |
-| DEC-003   | Canal WhatsApp (RF-015, 016, 048, 068, 094, 095)     |
-| DEC-004   | Provedor fiscal (RF-045–054)                         |
-| DEC-005   | Open Finance (RF-074, 075) — SHOULD                  |
-| DEC-011   | Memória do assistente (RF-105, 106)                  |
-| DEC-012   | Cupons (RF-114, 115) — SHOULD                        |
-| QST-002   | Preço, trial e limites comerciais                    |
-| QST-007   | Recalibração das métricas de sucesso                 |
+| Decisão | Impacto na spec                                  |
+| ------- | ------------------------------------------------ |
+| DEC-003 | Canal WhatsApp (RF-015, 016, 048, 068, 094, 095) |
+| DEC-004 | Provedor fiscal (RF-045–054)                     |
+| DEC-005 | Open Finance (RF-074, 075) — SHOULD              |
+| DEC-011 | Memória do assistente (RF-105, 106)              |
+| DEC-012 | Cupons (RF-114, 115) — SHOULD                    |
+| QST-002 | Preço, trial e limites comerciais                |
+| QST-007 | Recalibração das métricas de sucesso             |
 
 Já fechadas e assumidas: marca e domínio EiBuddy / eibuddy.com.br (ADR-0011); identidade própria no aplicativo (ADR-0002 / ADR-0003); isolamento por linha (ADR-0001).

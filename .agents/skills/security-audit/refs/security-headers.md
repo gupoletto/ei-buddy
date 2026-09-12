@@ -12,7 +12,7 @@ Carregar no **Step 4** ao revisar `next.config.*`, `proxy.ts` / `middleware.ts` 
 | ----- | ----------------------------------------------------------------------------------------------------------------------------- |
 | 1     | Versão **instalada** de `next` (`refs/project-stack.md`)                                                                      |
 | 2     | `next.config.ts` / `.js` / `.mjs` **do projeto** (não template de outra versão)                                               |
-| 3     | `proxy.ts` (Next ≥ 16) ou `middleware.ts` (Next &lt; 16) — headers na resposta |
+| 3     | `proxy.ts` (Next ≥ 16) ou `middleware.ts` (Next &lt; 16) — headers na resposta                                                |
 | 4     | `vercel.json`, `netlify.toml`, `nginx.conf`, Cloudflare dashboard (mencionar no relatório se não estiver no repo)             |
 | 5     | Dependências que **quebram** com CSP rígido: Stripe.js, OAuth (GitHub/Google), Cloudinary, analytics, Recharts, `next/script` |
 
@@ -79,12 +79,12 @@ A forma canônica evoluiu entre majors (Pages vs App Router, `async headers()`, 
 
 ## 6. Onde headers podem já existir (não reportar “ausência”)
 
-| Fonte           | Exemplos                                                                         |
-| --------------- | -------------------------------------------------------------------------------- |
-| Plataforma      | Vercel security headers, Cloudflare managed rules                                |
-| `proxy.ts` / `middleware.ts` | Redirects otimistas, headers na borda (ver versão do Next) |
-| Route Handler   | `NextResponse` com headers pontuais                                              |
-| Meta / React 19 | Alguns hints de recurso — não substituem CSP completa, mas não é “zero proteção” |
+| Fonte                        | Exemplos                                                                         |
+| ---------------------------- | -------------------------------------------------------------------------------- |
+| Plataforma                   | Vercel security headers, Cloudflare managed rules                                |
+| `proxy.ts` / `middleware.ts` | Redirects otimistas, headers na borda (ver versão do Next)                       |
+| Route Handler                | `NextResponse` com headers pontuais                                              |
+| Meta / React 19              | Alguns hints de recurso — não substituem CSP completa, mas não é “zero proteção” |
 
 Se não estiver no repositório, escrever no relatório: _“Headers na borda não auditáveis neste scan estático.”_
 

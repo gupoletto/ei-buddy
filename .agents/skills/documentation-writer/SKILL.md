@@ -1,6 +1,6 @@
 ---
 name: documentation-writer
-description: "Cria e mantém documentação clara, objetiva e atualizada para qualquer projeto. Analisa o código atual, compara com os documentos existentes e atualiza apenas o que mudou. Invocável APENAS via comando /documentation-writer."
+description: 'Cria e mantém documentação clara, objetiva e atualizada para qualquer projeto. Analisa o código atual, compara com os documentos existentes e atualiza apenas o que mudou. Invocável APENAS via comando /documentation-writer.'
 disable-model-invocation: true
 ---
 

@@ -40,38 +40,38 @@ valeriam.
 
 O ERP ganha marca própria; ProComércio fica como ecossistema.
 
-| Prós                                      | Contras                                                         |
-| ----------------------------------------- | --------------------------------------------------------------- |
-| Usa o investimento de identidade visual   | Exige escolher o nome do ERP e, em tese, uma paleta derivada    |
-| Evita colar o produto na marca guarda-chuva | Duas marcas para um time pequeno explicar                     |
+| Prós                                        | Contras                                                      |
+| ------------------------------------------- | ------------------------------------------------------------ |
+| Usa o investimento de identidade visual     | Exige escolher o nome do ERP e, em tese, uma paleta derivada |
+| Evita colar o produto na marca guarda-chuva | Duas marcas para um time pequeno explicar                    |
 
 ### Opção B — ProComércio é o nome do ERP
 
 Abandona ZapGestor; a paleta já existe.
 
-| Prós                    | Contras                                                          |
-| ----------------------- | ---------------------------------------------------------------- |
-| Marca e KV prontos      | O material fala em várias soluções, não num ERP único            |
-| Sem segundo naming      | Trava o produto a um nome que pode ser o do grupo, não do app    |
+| Prós               | Contras                                                       |
+| ------------------ | ------------------------------------------------------------- |
+| Marca e KV prontos | O material fala em várias soluções, não num ERP único         |
+| Sem segundo naming | Trava o produto a um nome que pode ser o do grupo, não do app |
 
 ### Opção C — Manter ZapGestor
 
 Continua o nome de trabalho da apresentação.
 
-| Prós                         | Contras                                                    |
-| ---------------------------- | ---------------------------------------------------------- |
-| Já está em PDF e wireframes  | A própria apresentação declara que é nome de trabalho      |
-| Zero retrabalho de copy      | Contradiz o investimento no rebranding ProComércio         |
+| Prós                        | Contras                                               |
+| --------------------------- | ----------------------------------------------------- |
+| Já está em PDF e wireframes | A própria apresentação declara que é nome de trabalho |
+| Zero retrabalho de copy     | Contradiz o investimento no rebranding ProComércio    |
 
 ### Opção D — EiBuddy, domínio eibuddy.com.br
 
 Nome próprio para o ERP, grafia única, domínio `.com.br` correspondente.
 
-| Prós                                                         | Contras                                                                 |
-| ------------------------------------------------------------ | ----------------------------------------------------------------------- |
-| Encerra a ambiguidade ZapGestor / ProComércio / `na-regua`   | Identidade visual (paleta, fontes) ainda não é arte própria do EiBuddy  |
-| Domínio alinhado ao `scheme` `eibuddy` já usado no mobile    | DNS, certificado e loja de apps ainda dependem da [DEC-009](../README.md#dec-009) |
-| Pacotes podem continuar `@na-regua/*`                        | Nome interno (`na-regua`) ≠ nome comercial — custo consciente de comunicação |
+| Prós                                                       | Contras                                                                           |
+| ---------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Encerra a ambiguidade ZapGestor / ProComércio / `na-regua` | Identidade visual (paleta, fontes) ainda não é arte própria do EiBuddy            |
+| Domínio alinhado ao `scheme` `eibuddy` já usado no mobile  | DNS, certificado e loja de apps ainda dependem da [DEC-009](../README.md#dec-009) |
+| Pacotes podem continuar `@na-regua/*`                      | Nome interno (`na-regua`) ≠ nome comercial — custo consciente de comunicação      |
 
 ## Decisão
 

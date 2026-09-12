@@ -1,10 +1,10 @@
 ---
 name: mastra-factory
-description: "Operate and supervise Mastra Factory through `mastra api factory`. Use for Factory status or queue summaries, project and work-item inspection, metrics, health, decisions, attention, supervisor sessions, and user-authorized autonomous or interactive Factory operations on hosted, local, remote, or self-hosted servers."
+description: 'Operate and supervise Mastra Factory through `mastra api factory`. Use for Factory status or queue summaries, project and work-item inspection, metrics, health, decisions, attention, supervisor sessions, and user-authorized autonomous or interactive Factory operations on hosted, local, remote, or self-hosted servers.'
 license: Apache-2.0
 metadata:
   author: Mastra
-  version: "1.0.0"
+  version: '1.0.0'
   repository: https://github.com/mastra-ai/skills
 ---
 

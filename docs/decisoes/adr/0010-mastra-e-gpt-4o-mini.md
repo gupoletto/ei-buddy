@@ -11,12 +11,12 @@ substituida_por: null
 
 # ADR-0010 — Mastra como runtime do agente, gpt-4o-mini como modelo inicial
 
-|                       |                                               |
-| --------------------- | --------------------------------------------- |
-| **Status**            | Aceita                                        |
-| **Data**              | 2026-09-11                                    |
-| **Decisores**         | Trilha 2 — Plataforma & Integrações           |
-| **Decisão de origem** | [DEC-007](../README.md#dec-007)               |
+|                       |                                     |
+| --------------------- | ----------------------------------- |
+| **Status**            | Aceita                              |
+| **Data**              | 2026-09-11                          |
+| **Decisores**         | Trilha 2 — Plataforma & Integrações |
+| **Decisão de origem** | [DEC-007](../README.md#dec-007)     |
 
 ## Contexto
 
@@ -50,35 +50,35 @@ que custa mais para reverter.
 `createTool` com schema Zod, roteamento de modelo no formato
 `provedor/modelo`. O modelo inicial é `openai/gpt-4o-mini`.
 
-| Prós                                                                                          | Contras                                                                                          |
-| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| Tools em Zod — o mesmo tipo de schema que `contracts` já é                                    | Framework a mais no caminho entre a mensagem e `core`                                            |
-| Trocar de modelo é string (`openai/gpt-4o-mini` → outro), não reescrever o laço               | OpenAI é subprocessador nos EUA — dado de conversa sai do Brasil ([RNF-036](../../produto/requisitos-nao-funcionais.md)) |
-| `gpt-4o-mini` é barato o bastante para caber no teto enquanto [QST-002](../README.md#qst-002) não fecha | Mini erra mais em desambiguação e português coloquial que um modelo maior                        |
-| Dá para chamar `agent.generate()` como biblioteca, dentro de `apps/api`                       | Mastra traz memória, RAG e um servidor HTTP próprios — todos os três são armadilha neste desenho |
+| Prós                                                                                                    | Contras                                                                                                                  |
+| ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Tools em Zod — o mesmo tipo de schema que `contracts` já é                                              | Framework a mais no caminho entre a mensagem e `core`                                                                    |
+| Trocar de modelo é string (`openai/gpt-4o-mini` → outro), não reescrever o laço                         | OpenAI é subprocessador nos EUA — dado de conversa sai do Brasil ([RNF-036](../../produto/requisitos-nao-funcionais.md)) |
+| `gpt-4o-mini` é barato o bastante para caber no teto enquanto [QST-002](../README.md#qst-002) não fecha | Mini erra mais em desambiguação e português coloquial que um modelo maior                                                |
+| Dá para chamar `agent.generate()` como biblioteca, dentro de `apps/api`                                 | Mastra traz memória, RAG e um servidor HTTP próprios — todos os três são armadilha neste desenho                         |
 
 ### Opção B — Laço próprio (Vercel AI SDK ou `fetch`) + modelo a escolher
 
-| Prós                                      | Contras                                                         |
-| ----------------------------------------- | --------------------------------------------------------------- |
-| Menos dependência, superfície menor       | O laço de tool call, retry e streaming vira código nosso        |
-| Troca de modelo continua sendo um adapter | Três pessoas pagam o custo que o framework já resolveu          |
+| Prós                                      | Contras                                                  |
+| ----------------------------------------- | -------------------------------------------------------- |
+| Menos dependência, superfície menor       | O laço de tool call, retry e streaming vira código nosso |
+| Troca de modelo continua sendo um adapter | Três pessoas pagam o custo que o framework já resolveu   |
 
 ### Opção C — Anthropic Claude como primeiro provedor
 
 É o que o `.env.example` sugeria (`ANTHROPIC_API_KEY`, `claude-sonnet-5`).
 
-| Prós                                         | Contras                                                    |
-| -------------------------------------------- | ---------------------------------------------------------- |
+| Prós                                         | Contras                                                               |
+| -------------------------------------------- | --------------------------------------------------------------------- |
 | Qualidade em português e tool calling fortes | Custo por token mais alto no começo, com mensalidade ainda indefinida |
-|                                              | A sugestão no exemplo nunca foi uma decisão                |
+|                                              | A sugestão no exemplo nunca foi uma decisão                           |
 
 ### Opção D — LangChain / LangGraph
 
-| Prós                        | Contras                                                                  |
-| --------------------------- | ------------------------------------------------------------------------ |
-| Ecossistema grande          | Python-first; o stack inteiro é TypeScript                               |
-|                             | Abstrações demais para um agente que só pode chamar casos de uso nossos  |
+| Prós               | Contras                                                                 |
+| ------------------ | ----------------------------------------------------------------------- |
+| Ecossistema grande | Python-first; o stack inteiro é TypeScript                              |
+|                    | Abstrações demais para um agente que só pode chamar casos de uso nossos |
 
 ## Decisão
 

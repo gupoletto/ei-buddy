@@ -42,13 +42,13 @@ PR**, e a linha sai da tabela de abertas.
 
 ## Painel
 
-| Estado             | Qtd | Quais                                           |
-| ------------------ | --: | ----------------------------------------------- |
-| 🔴 Aberta          |   8 | DEC-003, 005, 009, 011, 012, 013, 016, 018      |
-| 🟡 Em análise      |   0 | —                                               |
-| ⚪ Adiada          |   1 | DEC-014                                         |
+| Estado             | Qtd | Quais                                                     |
+| ------------------ | --: | --------------------------------------------------------- |
+| 🔴 Aberta          |   8 | DEC-003, 005, 009, 011, 012, 013, 016, 018                |
+| 🟡 Em análise      |   0 | —                                                         |
+| ⚪ Adiada          |   1 | DEC-014                                                   |
 | 🟢 Decidida        |  11 | DEC-001, 002, 006, 007, 008, 010, 015, 019, 020, 021, 022 |
-| ❓ Pergunta aberta |   9 | QST-001 a QST-008, QST-012                      |
+| ❓ Pergunta aberta |   9 | QST-001 a QST-008, QST-012                                |
 
 **Bloqueando o MVP agora:** DEC-003, DEC-009.
 Essas duas travam trabalho de implementação já na Sprint 1. A DEC-016 não trava
@@ -185,12 +185,12 @@ mesma porta `BankStatementProvider`.
 
 ### <a id="dec-007"></a>DEC-007 — Modelo de LLM e mecanismo de recuperação de informação
 
-|              |                                                                                                                                     |
-| ------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**   | 🟢 **Decidida — [ADR-0010](adr/0010-mastra-e-gpt-4o-mini.md)**                                                                      |
-| **Dono**     | Trilha 2 — Plataforma & Integrações                                                                                                 |
-| **Prazo**    | Sprint 3                                                                                                                            |
-| **Bloqueia** | — (NR-060 ainda espera o canal: [DEC-003](#dec-003) / NR-046). Memória da conversa continua [DEC-011](#dec-011).                    |
+|              |                                                                                                                  |
+| ------------ | ---------------------------------------------------------------------------------------------------------------- |
+| **Status**   | 🟢 **Decidida — [ADR-0010](adr/0010-mastra-e-gpt-4o-mini.md)**                                                   |
+| **Dono**     | Trilha 2 — Plataforma & Integrações                                                                              |
+| **Prazo**    | Sprint 3                                                                                                         |
+| **Bloqueia** | — (NR-060 ainda espera o canal: [DEC-003](#dec-003) / NR-046). Memória da conversa continua [DEC-011](#dec-011). |
 
 **Decisão (2026-09-11): Mastra + OpenAI `gpt-4o-mini` no começo.**
 
@@ -332,14 +332,14 @@ inventário de fato e é gerada a partir de
 
 **O que falta, e não dá para inferir de código nenhum:**
 
-| Lacuna                                       | Por que só o negócio decide                                                         |
-| -------------------------------------------- | ----------------------------------------------------------------------------------- |
-| Razão social e CNPJ do controlador           | Nome do produto é EiBuddy ([ADR-0011](adr/0011-eibuddy-nome-e-dominio.md)); razão social e CNPJ ainda são da empresa |
-| Contato do encarregado (LGPD art. 41)        | Exige uma pessoa designada, não um endereço genérico                                |
-| Prazo de retenção após encerramento da conta | Escolha de negócio acima do mínimo fiscal, que já são 5 anos                        |
+| Lacuna                                       | Por que só o negócio decide                                                                                                     |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Razão social e CNPJ do controlador           | Nome do produto é EiBuddy ([ADR-0011](adr/0011-eibuddy-nome-e-dominio.md)); razão social e CNPJ ainda são da empresa            |
+| Contato do encarregado (LGPD art. 41)        | Exige uma pessoa designada, não um endereço genérico                                                                            |
+| Prazo de retenção após encerramento da conta | Escolha de negócio acima do mínimo fiscal, que já são 5 anos                                                                    |
 | Lista completa de operadores                 | Asaas ([ADR-0004](adr/0004-asaas.md)) e OpenAI ([ADR-0010](adr/0010-mastra-e-gpt-4o-mini.md)) já são; faltam DEC-003, 005 e 009 |
-| Preço, prazo de pagamento e nível de serviço | [QST-002](#qst-002) — o provedor já é Asaas ([ADR-0004](adr/0004-asaas.md))         |
-| Limite de responsabilidade, rescisão e foro  | Cláusula contratual; escrita por quem responde por ela                              |
+| Preço, prazo de pagamento e nível de serviço | [QST-002](#qst-002) — o provedor já é Asaas ([ADR-0004](adr/0004-asaas.md))                                                     |
+| Limite de responsabilidade, rescisão e foro  | Cláusula contratual; escrita por quem responde por ela                                                                          |
 
 **Por que as lacunas estão visíveis na página, e não preenchidas com texto
 plausível.** Documento com cara de oficial e conteúdo inventado é pior que a
@@ -381,20 +381,20 @@ Quando fechar: ADR nova e o mesmo PR atualiza o adapter.
 Resolvem-se com informação, não com escolha. Uma pergunta respondida vira
 atualização de documento — e às vezes abre uma `DEC`.
 
-| ID                              | Pergunta                                                                                                                   | Para quem            | Por que importa                                                                                                                                                   | Prazo      |
-| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| <a id="qst-001"></a>**QST-001** | Quantos lojistas se espera nos primeiros 12 meses?                                                                         | Produto              | Dimensiona [RNF-016/017](../produto/requisitos-nao-funcionais.md) e o custo de [DEC-009](#dec-009)                                                                | Sprint 1   |
-| <a id="qst-002"></a>**QST-002** | Qual o preço da mensalidade e quantos planos?                                                                              | Produto              | [RNF-072](../produto/requisitos-nao-funcionais.md) e [RNF-074](../produto/requisitos-nao-funcionais.md) são percentuais dela — sem o valor, não há como verificar | Sprint 1   |
-| <a id="qst-003"></a>**QST-003** | Existe lojista-piloto comprometido em usar o MVP?                                                                          | Produto              | Sem piloto não há como validar o [critério de saída do MVP](../produto/escopo-mvp.md#critérios-de-saída-do-mvp)                                                   | Sprint 1   |
-| <a id="qst-004"></a>**QST-004** | Quem é controlador e quem é operador de dados na LGPD?                                                                     | Jurídico             | Define quem responde por vazamento e o que vai no contrato — ver [`seguranca.md`](../arquitetura/seguranca.md#lgpd)                                               | Sprint 2   |
-| <a id="qst-005"></a>**QST-005** | Qual contador valida o formato de exportação?                                                                              | Produto              | [RF-087](../produto/requisitos-funcionais.md) sem validação real vira retrabalho                                                                                  | Sprint 4   |
-| <a id="qst-006"></a>**QST-006** | As [personas](../produto/personas.md) foram validadas com lojistas reais?                                                  | Produto              | Hoje são inferência a partir da apresentação comercial                                                                                                            | Sprint 2   |
-| <a id="qst-007"></a>**QST-007** | As metas [M1–M7](../produto/visao.md#métricas-de-sucesso) são realistas?                                                   | Produto              | São hipóteses; meta errada leva a decisão errada                                                                                                                  | Sprint 2   |
-| <a id="qst-008"></a>**QST-008** | Os alvos numéricos dos [RNFs](../produto/requisitos-nao-funcionais.md) batem com o aparelho e a internet do público-alvo?  | Produto + Trilha 3   | Calibrados por estimativa, não por medição                                                                                                                        | Sprint 3   |
-| <a id="qst-009"></a>**QST-009** | ~~A PagMaxx pode estender o escopo da API Key?~~ Respondida: Asaas autentica por API Key ([ADR-0004](adr/0004-asaas.md))   | —                    | Encerrada com a troca de PSP                                                                                                                                      | Respondida |
-| <a id="qst-010"></a>**QST-010** | ~~A PagMaxx tem API de captura presencial?~~ Respondida: Asaas também não; PDV só registra ([ADR-0004](adr/0004-asaas.md)) | —                    | Encerrada — o desenho do PDV não muda                                                                                                                             | Respondida |
-| <a id="qst-011"></a>**QST-011** | ~~ProComércio é a marca guarda-chuva e este ERP é uma das soluções dela, ou é o nome do próprio ERP?~~ Respondida: o ERP é **EiBuddy** ([ADR-0011](adr/0011-eibuddy-nome-e-dominio.md)); ProComércio não é o nome do produto. Paleta provisória segue em `packages/ui`. | —                    | Encerrada com a DEC-001                                                                                                                                           | Respondida |
-| <a id="qst-012"></a>**QST-012** | Já existe conta Asaas de sandbox e acesso para testar `packages/payments`?                                                 | Produto              | Sem sandbox não há como ligar o adapter da [NR-044](../processo/task-ledger.md)                                                                                   | Sprint 2   |
+| ID                              | Pergunta                                                                                                                                                                                                                                                                | Para quem          | Por que importa                                                                                                                                                   | Prazo      |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| <a id="qst-001"></a>**QST-001** | Quantos lojistas se espera nos primeiros 12 meses?                                                                                                                                                                                                                      | Produto            | Dimensiona [RNF-016/017](../produto/requisitos-nao-funcionais.md) e o custo de [DEC-009](#dec-009)                                                                | Sprint 1   |
+| <a id="qst-002"></a>**QST-002** | Qual o preço da mensalidade e quantos planos?                                                                                                                                                                                                                           | Produto            | [RNF-072](../produto/requisitos-nao-funcionais.md) e [RNF-074](../produto/requisitos-nao-funcionais.md) são percentuais dela — sem o valor, não há como verificar | Sprint 1   |
+| <a id="qst-003"></a>**QST-003** | Existe lojista-piloto comprometido em usar o MVP?                                                                                                                                                                                                                       | Produto            | Sem piloto não há como validar o [critério de saída do MVP](../produto/escopo-mvp.md#critérios-de-saída-do-mvp)                                                   | Sprint 1   |
+| <a id="qst-004"></a>**QST-004** | Quem é controlador e quem é operador de dados na LGPD?                                                                                                                                                                                                                  | Jurídico           | Define quem responde por vazamento e o que vai no contrato — ver [`seguranca.md`](../arquitetura/seguranca.md#lgpd)                                               | Sprint 2   |
+| <a id="qst-005"></a>**QST-005** | Qual contador valida o formato de exportação?                                                                                                                                                                                                                           | Produto            | [RF-087](../produto/requisitos-funcionais.md) sem validação real vira retrabalho                                                                                  | Sprint 4   |
+| <a id="qst-006"></a>**QST-006** | As [personas](../produto/personas.md) foram validadas com lojistas reais?                                                                                                                                                                                               | Produto            | Hoje são inferência a partir da apresentação comercial                                                                                                            | Sprint 2   |
+| <a id="qst-007"></a>**QST-007** | As metas [M1–M7](../produto/visao.md#métricas-de-sucesso) são realistas?                                                                                                                                                                                                | Produto            | São hipóteses; meta errada leva a decisão errada                                                                                                                  | Sprint 2   |
+| <a id="qst-008"></a>**QST-008** | Os alvos numéricos dos [RNFs](../produto/requisitos-nao-funcionais.md) batem com o aparelho e a internet do público-alvo?                                                                                                                                               | Produto + Trilha 3 | Calibrados por estimativa, não por medição                                                                                                                        | Sprint 3   |
+| <a id="qst-009"></a>**QST-009** | ~~A PagMaxx pode estender o escopo da API Key?~~ Respondida: Asaas autentica por API Key ([ADR-0004](adr/0004-asaas.md))                                                                                                                                                | —                  | Encerrada com a troca de PSP                                                                                                                                      | Respondida |
+| <a id="qst-010"></a>**QST-010** | ~~A PagMaxx tem API de captura presencial?~~ Respondida: Asaas também não; PDV só registra ([ADR-0004](adr/0004-asaas.md))                                                                                                                                              | —                  | Encerrada — o desenho do PDV não muda                                                                                                                             | Respondida |
+| <a id="qst-011"></a>**QST-011** | ~~ProComércio é a marca guarda-chuva e este ERP é uma das soluções dela, ou é o nome do próprio ERP?~~ Respondida: o ERP é **EiBuddy** ([ADR-0011](adr/0011-eibuddy-nome-e-dominio.md)); ProComércio não é o nome do produto. Paleta provisória segue em `packages/ui`. | —                  | Encerrada com a DEC-001                                                                                                                                           | Respondida |
+| <a id="qst-012"></a>**QST-012** | Já existe conta Asaas de sandbox e acesso para testar `packages/payments`?                                                                                                                                                                                              | Produto            | Sem sandbox não há como ligar o adapter da [NR-044](../processo/task-ledger.md)                                                                                   | Sprint 2   |
 
 ---
 
@@ -403,27 +403,27 @@ atualização de documento — e às vezes abre uma `DEC`.
 Fechadas viram ADR em [`adr/`](adr/). A âncora `DEC-xxx` permanece para os
 links que já apontam para cá.
 
-| ADR                                                          | Decisão                                                          | Data       |
-| ------------------------------------------------------------ | ---------------------------------------------------------------- | ---------- |
-| [ADR-0001](adr/0001-rls-por-linha.md)                        | Isolamento multi-tenant por RLS por linha                        | 2026-09-01 |
-| [ADR-0002](adr/0002-autenticacao-identidade-propria.md)      | Identidade e autorização próprias, prova terceirizada            | 2026-09-03 |
-| [ADR-0003](adr/0003-better-auth-como-prova-de-identidade.md) | Better Auth como prova de identidade, em schema próprio          | 2026-09-08 |
-| [ADR-0004](adr/0004-asaas.md)                                | Asaas como PSP das vendas e da assinatura SaaS                   | 2026-09-04 |
-| [ADR-0005](adr/0005-subconta-asaas-nao-baas.md)              | Subconta Asaas não-BaaS por lojista; KYC fora do caminho crítico | 2026-09-04 |
-| [ADR-0006](adr/0006-catalogo-0909-mais-plataforma.md)        | Catálogo 0909 no domínio; identidade, cofre e banco às margens   | 2026-09-09 |
-| [ADR-0007](adr/0007-super-admin-por-sessao-auditada.md)      | Super Admin por troca de sessão auditada, não `BYPASSRLS`        | 2026-09-10 |
-| [ADR-0008](adr/0008-conexao-entre-usuarios-por-proximidade.md) | Rede B2B por proximidade entra agora, com risco de massa crítica | 2026-09-10 |
-| [ADR-0009](adr/0009-sugestao-de-conexao-por-ramo.md)         | Sugestão de conexão por ramo, sem lista de palavra-chave e sem IA | 2026-09-10 |
-| [ADR-0010](adr/0010-mastra-e-gpt-4o-mini.md)                 | Mastra como runtime do agente; `gpt-4o-mini` no começo           | 2026-09-11 |
-| [ADR-0011](adr/0011-eibuddy-nome-e-dominio.md)               | Produto EiBuddy; domínio eibuddy.com.br; pacotes `@na-regua/*`   | 2026-09-11 |
+| ADR                                                            | Decisão                                                           | Data       |
+| -------------------------------------------------------------- | ----------------------------------------------------------------- | ---------- |
+| [ADR-0001](adr/0001-rls-por-linha.md)                          | Isolamento multi-tenant por RLS por linha                         | 2026-09-01 |
+| [ADR-0002](adr/0002-autenticacao-identidade-propria.md)        | Identidade e autorização próprias, prova terceirizada             | 2026-09-03 |
+| [ADR-0003](adr/0003-better-auth-como-prova-de-identidade.md)   | Better Auth como prova de identidade, em schema próprio           | 2026-09-08 |
+| [ADR-0004](adr/0004-asaas.md)                                  | Asaas como PSP das vendas e da assinatura SaaS                    | 2026-09-04 |
+| [ADR-0005](adr/0005-subconta-asaas-nao-baas.md)                | Subconta Asaas não-BaaS por lojista; KYC fora do caminho crítico  | 2026-09-04 |
+| [ADR-0006](adr/0006-catalogo-0909-mais-plataforma.md)          | Catálogo 0909 no domínio; identidade, cofre e banco às margens    | 2026-09-09 |
+| [ADR-0007](adr/0007-super-admin-por-sessao-auditada.md)        | Super Admin por troca de sessão auditada, não `BYPASSRLS`         | 2026-09-10 |
+| [ADR-0008](adr/0008-conexao-entre-usuarios-por-proximidade.md) | Rede B2B por proximidade entra agora, com risco de massa crítica  | 2026-09-10 |
+| [ADR-0009](adr/0009-sugestao-de-conexao-por-ramo.md)           | Sugestão de conexão por ramo, sem lista de palavra-chave e sem IA | 2026-09-10 |
+| [ADR-0010](adr/0010-mastra-e-gpt-4o-mini.md)                   | Mastra como runtime do agente; `gpt-4o-mini` no começo            | 2026-09-11 |
+| [ADR-0011](adr/0011-eibuddy-nome-e-dominio.md)                 | Produto EiBuddy; domínio eibuddy.com.br; pacotes `@na-regua/*`    | 2026-09-11 |
 
 ### <a id="dec-001"></a>DEC-001 — Nome do produto
 
-|             |                                                                     |
-| ----------- | ------------------------------------------------------------------- |
-| **Status**  | 🟢 Decidida — [ADR-0011](adr/0011-eibuddy-nome-e-dominio.md)        |
-| **Escolha** | **EiBuddy**, domínio **eibuddy.com.br**; pacotes `@na-regua/*`      |
-| **Data**    | 2026-09-11                                                          |
+|             |                                                                |
+| ----------- | -------------------------------------------------------------- |
+| **Status**  | 🟢 Decidida — [ADR-0011](adr/0011-eibuddy-nome-e-dominio.md)   |
+| **Escolha** | **EiBuddy**, domínio **eibuddy.com.br**; pacotes `@na-regua/*` |
+| **Data**    | 2026-09-11                                                     |
 
 ZapGestor fica como nome de trabalho da apresentação comercial (fonte bruta).
 ProComércio não é o nome do ERP. Paleta e fontes em `packages/ui` continuam
