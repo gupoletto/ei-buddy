@@ -1,11 +1,10 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { criarConta, carregarPlano, type ContaContabil } from '@/lib/contabilidade-api'
 import {
+  lancarContaAPagar,
   NOMES_BANCOS,
-  NOMES_CLIENTES,
-  NOMES_FORNECEDORES,
-  NOMES_PLANOS,
   salvarTitulo,
   TIPOS_RECEBIMENTO,
 } from '@/lib/financeiro-api'
@@ -36,13 +35,21 @@ function paraNumero(valor: string): number {
  * As duas telas compartilham este formulario porque a estrutura e a mesma
  * — muda a contraparte (fornecedor x cliente) e os campos proprios de
  * recebimento (emissao e tipo).
+ *
+ * So o lado PAGAR fala com a api de verdade (`POST /contas-a-pagar` existe
+ * desde a NR-074). O lado RECEBER continua em `salvarTitulo`, mock: lancar
+ * recebivel avulso (RF-065) nao tem porta, caso de uso nem rota ainda — so o
+ * contrato existe. Ver `createReceivableInputSchema` em `packages/contracts`.
  */
 export default function FormularioTitulo({
   tipo,
+  contrapartesConhecidas,
   onSalvo,
   onCancelar,
 }: {
   tipo: 'pagar' | 'receber'
+  /** Nomes de quem ja apareceu na lista — sugestao real, e nao inventada. */
+  contrapartesConhecidas: string[]
   onSalvo: (mensagem: string) => void
   onCancelar: () => void
 }) {
@@ -60,10 +67,30 @@ export default function FormularioTitulo({
   /* Listas locais para o "(T)": criar um item aqui ja o deixa disponivel
      no campo, sem recarregar a tela. */
   const [bancos, setBancos] = useState(NOMES_BANCOS)
-  const [planos, setPlanos] = useState(NOMES_PLANOS)
-  const [contrapartes, setContrapartes] = useState(
-    tipo === 'pagar' ? NOMES_FORNECEDORES : NOMES_CLIENTES,
-  )
+  const [contrapartes, setContrapartes] = useState(contrapartesConhecidas)
+
+  /*
+   * O plano de conta do lado PAGAR e o plano de contas DE VERDADE
+   * (`GET /contas-contabeis`) — nao a lista de exemplo. `CampoTag` so
+   * conhece nome (string); resolver para `accountId` acontece no envio
+   * (`contaPeloNome`), e nao aqui: criar a conta so quando o formulario for
+   * de fato enviado evita sobrar uma conta vazia se a pessoa desistir no
+   * meio do preenchimento.
+   */
+  const [contas, setContas] = useState<ContaContabil[]>([])
+  /* Nomes digitados nesta sessao que ainda nao existem de verdade — so para
+     a sugestao reaparecer se a pessoa abrir o campo de novo. A conta em si
+     so nasce no envio (`contaPeloNome`), e por isso este array nunca entra
+     na busca por id. */
+  const [planosNovos, setPlanosNovos] = useState<string[]>([])
+
+  useEffect(() => {
+    if (tipo !== 'pagar') return
+    void (async () => {
+      const r = await carregarPlano()
+      if (r.ok) setContas(r.dados.accounts.filter((c) => c.type === 'cost' || c.type === 'expense'))
+    })()
+  }, [tipo])
 
   const [erros, setErros] = useState<Record<string, string>>({})
   const [salvando, setSalvando] = useState(false)
@@ -83,11 +110,27 @@ export default function FormularioTitulo({
 
   const rotuloContraparte = tipo === 'pagar' ? 'Fornecedor' : 'Cliente'
 
+  /**
+   * O id da conta pelo NOME digitado — criando de verdade se o nome nao
+   * bate com nenhuma conta existente.
+   *
+   * `CampoTag` so devolve string porque e o mesmo campo usado para banco,
+   * fornecedor e categoria — nenhum deles tem id. Plano de conta tem, e esta
+   * e a unica peca do formulario que precisa de ponte entre nome e id.
+   */
+  async function contaPeloNome(nome: string): Promise<{ ok: true; id: string } | { ok: false }> {
+    const existente = contas.find((c) => c.name.toLowerCase() === nome.trim().toLowerCase())
+    if (existente) return { ok: true, id: existente.id }
+
+    const criada = await criarConta({ name: nome.trim(), type: 'expense' })
+    return criada.ok ? { ok: true, id: criada.dados.id } : { ok: false }
+  }
+
   async function salvar(event: React.FormEvent) {
     event.preventDefault()
 
     const novos: Record<string, string> = {}
-    if (!banco) novos.banco = 'Escolha o banco.'
+    if (tipo === 'receber' && !banco) novos.banco = 'Escolha o banco.'
     if (!contraparte) novos.contraparte = `Escolha o ${rotuloContraparte.toLowerCase()}.`
     if (tipo === 'pagar' && !plano) novos.plano = 'Escolha o plano de conta.'
     if (!vencimento) novos.vencimento = 'Informe a data de vencimento.'
@@ -101,27 +144,42 @@ export default function FormularioTitulo({
 
     setSalvando(true)
 
-    /* SUBSTITUIR POR: POST /financeiro/titulos */
-    const r = await salvarTitulo(
-      tipo === 'pagar'
-        ? {
-            banco,
-            planoContas: plano,
-            fornecedor: contraparte,
-            vencimento,
-            valor: paraNumero(valor),
-            descricao,
-          }
-        : {
-            banco,
-            cliente: contraparte,
-            emissao,
-            vencimento,
-            referente: descricao,
-            tipo: tipoRecebimento,
-            valor: paraNumero(valor),
-          },
-    )
+    if (tipo === 'pagar') {
+      const conta = await contaPeloNome(plano)
+      if (!conta.ok) {
+        setSalvando(false)
+        setErros({ geral: 'Não foi possível gravar o plano de conta. Tente de novo.' })
+        return
+      }
+
+      const r = await lancarContaAPagar({
+        supplier: contraparte.trim(),
+        description: descricao.trim(),
+        amountCents: Math.round(paraNumero(valor) * 100),
+        dueDate: vencimento,
+        accountId: conta.id,
+      })
+      setSalvando(false)
+
+      if (!r.ok) {
+        setErros({ geral: r.erro })
+        return
+      }
+
+      onSalvo('Conta a pagar lançada.')
+      return
+    }
+
+    /* SUBSTITUIR POR: POST /financeiro/titulos — so o lado RECEBER. */
+    const r = await salvarTitulo({
+      banco,
+      cliente: contraparte,
+      emissao,
+      vencimento,
+      referente: descricao,
+      tipo: tipoRecebimento,
+      valor: paraNumero(valor),
+    })
     setSalvando(false)
 
     if (!r.ok) {
@@ -129,7 +187,7 @@ export default function FormularioTitulo({
       return
     }
 
-    onSalvo(tipo === 'pagar' ? 'Conta a pagar lancada.' : 'Conta a receber lancada.')
+    onSalvo('Conta a receber lancada.')
   }
 
   const erroDe = (campo: string) =>
@@ -173,18 +231,20 @@ export default function FormularioTitulo({
 
         <form onSubmit={salvar} noValidate className={styles.formCampos}>
           <div className={styles.formLinha}>
-            <label className={styles.campo}>
-              <span>Banco</span>
-              <CampoTag
-                valor={banco}
-                opcoes={bancos}
-                onChange={setBanco}
-                onCriar={(novo) => setBancos((b) => [...b, novo])}
-                ariaLabel="Banco"
-                invalido={Boolean(erros.banco)}
-              />
-              {erroDe('banco')}
-            </label>
+            {tipo === 'receber' ? (
+              <label className={styles.campo}>
+                <span>Banco</span>
+                <CampoTag
+                  valor={banco}
+                  opcoes={bancos}
+                  onChange={setBanco}
+                  onCriar={(novo) => setBancos((b) => [...b, novo])}
+                  ariaLabel="Banco"
+                  invalido={Boolean(erros.banco)}
+                />
+                {erroDe('banco')}
+              </label>
+            ) : null}
 
             <label className={styles.campo}>
               <span>{rotuloContraparte}</span>
@@ -205,9 +265,9 @@ export default function FormularioTitulo({
               <span>Plano de conta</span>
               <CampoTag
                 valor={plano}
-                opcoes={planos}
+                opcoes={[...contas.map((c) => c.name), ...planosNovos]}
                 onChange={setPlano}
-                onCriar={(novo) => setPlanos((p) => [...p, novo])}
+                onCriar={(novo) => setPlanosNovos((p) => [...p, novo])}
                 ariaLabel="Plano de conta"
                 invalido={Boolean(erros.plano)}
               />
