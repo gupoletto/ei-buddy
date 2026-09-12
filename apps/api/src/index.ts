@@ -7,6 +7,7 @@ import {
   buildConciliacaoDeps,
   buildConnectionsDeps,
   buildContabilidadeDeps,
+  buildCustosFixosDeps,
   buildEmissaoDeps,
   buildFiscalDeps,
   buildContasDeps,
@@ -35,6 +36,7 @@ import { registerCadastroRoutes } from './routes/cadastro.js'
 import { registerConciliacaoRoutes } from './routes/conciliacao.js'
 import { registerConnectionsRoutes } from './routes/connections.js'
 import { registerContabilidadeRoutes } from './routes/contabilidade.js'
+import { registerCustosFixosRoutes } from './routes/custos-fixos.js'
 import { registerBaixasRoutes } from './routes/baixas.js'
 import { registerContasRoutes } from './routes/contas.js'
 import { registerCrmRoutes } from './routes/crm.js'
@@ -108,6 +110,7 @@ async function registrarRotas(): Promise<void> {
   registerBaixasRoutes(app, buildBaixasDeps())
   registerConciliacaoRoutes(app, buildConciliacaoDeps())
   registerContabilidadeRoutes(app, buildContabilidadeDeps())
+  registerCustosFixosRoutes(app, buildCustosFixosDeps())
   registerRelatoriosRoutes(app, buildRelatoriosDeps())
   registerEstoqueRoutes(app, buildEstoqueDeps())
   registerSuporteRoutes(app, buildSuporteDeps())

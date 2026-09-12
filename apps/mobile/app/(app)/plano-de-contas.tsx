@@ -110,8 +110,8 @@ export default function PlanoDeContas() {
           etiqueta={<Etiqueta tom="neutro">Web</Etiqueta>}
         >
           <Text style={estilos.avisoTexto}>
-            Custo fixo recorrente e a geração automática das contas do mês ainda não têm essa tela
-            pronta — nem no computador. Por enquanto não há onde cadastrar isso.
+            Custo fixo recorrente e a geração das contas do mês já funcionam no computador
+            (Financeiro → Plano de contas) — essa tela aqui ainda não tem o cadastro pronto.
           </Text>
         </Sanfona>
 

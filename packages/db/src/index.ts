@@ -29,6 +29,10 @@ export {
   createReceivableRepository,
 } from './receivable-repository.js'
 export { createChartOfAccountsRepository } from './chart-of-accounts-repository.js'
+export {
+  createFixedCostPayableGenerator,
+  createFixedCostRepository,
+} from './fixed-cost-repository.js'
 export { createInvoiceStore } from './invoice-repository.js'
 export {
   createBankTransactionWriter,

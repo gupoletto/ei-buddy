@@ -112,6 +112,8 @@ export const FORA_DA_EXPORTACAO: Readonly<Record<string, string>> = {
     'Quadro de CRM (NR-109) — tem caso de uso ligado, mas a exportacao ainda nao foi conectada. Fast-follow.',
   crm_card_comments:
     'Comentarios do quadro de CRM (NR-109) — mesmo motivo de `crm_cards`: exportacao ainda nao conectada.',
+  fixed_costs:
+    'Previsao de gasto recorrente (NR-110), nao movimento — o gasto de verdade e a conta a pagar gerada, essa sim incluida na exportacao.',
   conversations: 'Assistente ainda sem caso de uso ligado — tabela vazia no baseline.',
   messages: 'Assistente ainda sem caso de uso ligado — tabela vazia no baseline.',
   confirmations: 'Assistente ainda sem caso de uso ligado — tabela vazia no baseline.',

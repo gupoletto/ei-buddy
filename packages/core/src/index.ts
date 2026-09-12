@@ -354,3 +354,25 @@ export type { CrmDeps, TeamDeps } from './crm/crm.js'
 export type { CrmRepository, NewCrmCard, NewCrmComment } from './ports/crm-repository.js'
 export type { TeamRepository } from './ports/team-repository.js'
 export { InMemoryCrm, InMemoryTeam } from './crm/fakes.js'
+
+/* Custos fixos — NR-110. */
+export {
+  createFixedCost,
+  deleteFixedCost,
+  listFixedCosts,
+  updateFixedCost,
+} from './fixed-costs/manage-fixed-costs.js'
+export type { FixedCostDeps } from './fixed-costs/manage-fixed-costs.js'
+export { generateFixedCostPayables } from './fixed-costs/generate-payables.js'
+export type {
+  GenerateFixedCostPayablesDeps,
+  GenerateFixedCostPayablesResult,
+} from './fixed-costs/generate-payables.js'
+export { InMemoryFixedCostGenerator, InMemoryFixedCosts } from './fixed-costs/fakes.js'
+export type {
+  FixedCostChanges,
+  FixedCostPayableDraft,
+  FixedCostPayableGenerator,
+  FixedCostRepository,
+  NewFixedCost,
+} from './ports/fixed-cost-repository.js'

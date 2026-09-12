@@ -5,9 +5,6 @@
  *
  *  | Funcao                | Endpoint esperado                | Disparo         |
  *  |-----------------------|----------------------------------|-----------------|
- *  | salvarPlanoContas     | POST/PUT /financeiro/planos      | submit          |
- *  | salvarCustoFixo       | POST/PUT /financeiro/custos-fixos| submit          |
- *  | gerarContasDeCustosFixos | POST /financeiro/custos-fixos/gerar | botao      |
  *  | exportar              | GET  /financeiro/titulos/export  | botao exportar  |
  *
  * LANCAR TITULO SAIU DESTA LISTA. O lado PAGAR fala com `POST
@@ -15,15 +12,21 @@
  * (RF-065) — ver `lancarContaAPagar`/`lancarContaAReceber` mais abaixo, e
  * `FormularioTitulo.tsx` para o formulario que os chama.
  *
+ * CUSTOS FIXOS SAIRAM DESTA LISTA — CRUD completo e "gerar as contas do mes"
+ * falam com `/custos-fixos` (NR-110), no fim do arquivo. `listarPlanos`/
+ * `salvarPlanoContas` tambem saem: eram um plano de contas PROPRIO, duplicado
+ * e morto — `apps/web/src/lib/contabilidade-api.ts` e o de verdade (NR-077),
+ * usado pela mesma tela, e nada mais chamava os dois daqui.
+ *
  * BAIXA E ESTORNO SAIRAM DESTA LISTA TAMBEM — sao reais desde a NR-081, no fim
  * do arquivo. O aviso que morava aqui dizia que a baixa nao podia ser um
  * UPDATE no titulo, e o servidor concorda: cada baixa e uma linha propria, e o
  * estorno e outra linha, negativa, apontando para a primeira. Nunca um DELETE.
  */
 
-import { contasPagar, planoContas, custosFixos, bancos } from './mock-data'
+import { bancos } from './mock-data'
 import { pedir, type Resultado } from './http'
-import type { CustoFixo, PlanoContas, StatusTitulo } from './types'
+import type { StatusTitulo } from './types'
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
@@ -33,85 +36,6 @@ const delay = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 /** SUBSTITUIR POR: GET /bancos. Continua em uso na BAIXA — ver BaixaDialog. */
 export const NOMES_BANCOS = bancos.map((b) => b.nome)
-
-/* -------------------------------------------------------------------------- */
-/* Estado das listas                                                          */
-/* -------------------------------------------------------------------------- */
-
-/** SUBSTITUIR POR: GET /financeiro/planos */
-export function listarPlanos(): PlanoContas[] {
-  return planoContas.map((p) => ({ ...p }))
-}
-
-/** SUBSTITUIR POR: GET /financeiro/custos-fixos */
-export function listarCustosFixos(): CustoFixo[] {
-  return custosFixos.map((c) => ({ ...c }))
-}
-
-/* -------------------------------------------------------------------------- */
-/* Plano de contas e custos fixos                                             */
-/* -------------------------------------------------------------------------- */
-
-/** SUBSTITUIR POR: POST/PUT /financeiro/planos */
-export async function salvarPlanoContas(
-  nome: string,
-): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
-  await delay(600)
-  if (!nome.trim()) return { ok: false, error: 'Informe o nome do plano de conta.' }
-  return { ok: true, id: `pc-${Date.now()}` }
-}
-
-export type DadosCustoFixo = {
-  id?: string
-  nome: string
-  diaVencimento: number
-  valor: number
-  planoContasNome: string
-  bancoNome: string
-}
-
-/** SUBSTITUIR POR: POST/PUT /financeiro/custos-fixos */
-export async function salvarCustoFixo(
-  dados: DadosCustoFixo,
-): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
-  await delay(700)
-
-  if (!dados.nome.trim()) return { ok: false, error: 'Informe o nome do custo fixo.' }
-  if (dados.diaVencimento < 1 || dados.diaVencimento > 31) {
-    return { ok: false, error: 'O dia do vencimento deve estar entre 1 e 31.' }
-  }
-  if (dados.valor <= 0) return { ok: false, error: 'Informe um valor maior que zero.' }
-
-  return { ok: true, id: dados.id ?? `cf-${Date.now()}` }
-}
-
-/** SUBSTITUIR POR: DELETE /financeiro/custos-fixos/:id */
-export async function excluirCustoFixo(id: string): Promise<{ ok: true }> {
-  await delay(500)
-  void id
-  return { ok: true }
-}
-
-/**
- * SUBSTITUIR POR: POST /financeiro/custos-fixos/gerar
- *
- * Gera as contas a pagar do mes a partir dos custos fixos. O servidor
- * precisa ser idempotente por (custo fixo, competencia): rodar duas vezes
- * no mesmo mes nao pode duplicar a conta.
- */
-export async function gerarContasDeCustosFixos(
-  custos: CustoFixo[],
-  competencia: string,
-): Promise<{ ok: true; geradas: number; jaExistiam: number }> {
-  await delay(1100)
-  void competencia
-
-  /* No exemplo, os que ja tem conta lancada no mes ficam de fora. */
-  const jaLancados = new Set(contasPagar.map((c) => c.fornecedor.toLowerCase()))
-  const geradas = custos.filter((c) => !jaLancados.has(c.nome.toLowerCase())).length
-
-  return { ok: true, geradas, jaExistiam: custos.length - geradas }
-}
 
 /* -------------------------------------------------------------------------- */
 /* Exportacao (previsto, ainda nao implementado)                              */
@@ -134,6 +58,94 @@ export async function exportar(formato: FormatoExportacao): Promise<{ ok: false;
     error: `Exportação em ${formato.toUpperCase()} entra quando o backend expuser o endpoint.`,
   }
 }
+
+/* -------------------------------------------------------------------------- */
+/* Custos fixos contra a api — NR-110                                        */
+/* -------------------------------------------------------------------------- */
+
+export type CustoFixo = {
+  id: string
+  nome: string
+  valorCents: number
+  diaVencimento: number
+  planoContasId: string | null
+  planoContasNome: string | null
+}
+
+type CustoFixoDaApi = {
+  id: string
+  name: string
+  amountCents: number
+  dueDay: number
+  accountId: string | null
+  accountName: string | null
+}
+
+const paraCustoFixo = (c: CustoFixoDaApi): CustoFixo => ({
+  id: c.id,
+  nome: c.name,
+  valorCents: c.amountCents,
+  diaVencimento: c.dueDay,
+  planoContasId: c.accountId,
+  planoContasNome: c.accountName,
+})
+
+export const carregarCustosFixos = (): Promise<Resultado<CustoFixo[]>> =>
+  pedir<{ fixedCosts: CustoFixoDaApi[] }>('/api/custos-fixos').then((r) =>
+    r.ok ? { ok: true, dados: r.dados.fixedCosts.map(paraCustoFixo) } : r,
+  )
+
+export type DadosCustoFixo = {
+  nome: string
+  valorCents: number
+  diaVencimento: number
+  planoContasId: string | null
+}
+
+const corpoCustoFixo = (dados: DadosCustoFixo) => ({
+  name: dados.nome.trim(),
+  amountCents: dados.valorCents,
+  dueDay: dados.diaVencimento,
+  ...(dados.planoContasId === null ? {} : { accountId: dados.planoContasId }),
+})
+
+export const criarCustoFixo = (dados: DadosCustoFixo): Promise<Resultado<CustoFixo>> =>
+  pedir<CustoFixoDaApi>('/api/custos-fixos', {
+    method: 'POST',
+    body: JSON.stringify(corpoCustoFixo(dados)),
+  }).then((r) => (r.ok ? { ok: true, dados: paraCustoFixo(r.dados) } : r))
+
+export const editarCustoFixo = (id: string, dados: DadosCustoFixo): Promise<Resultado<CustoFixo>> =>
+  pedir<CustoFixoDaApi>(`/api/custos-fixos/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(corpoCustoFixo(dados)),
+  }).then((r) => (r.ok ? { ok: true, dados: paraCustoFixo(r.dados) } : r))
+
+export const excluirCustoFixo = (id: string): Promise<Resultado<unknown>> =>
+  pedir(`/api/custos-fixos/${encodeURIComponent(id)}`, { method: 'DELETE' })
+
+/**
+ * Gera as contas a pagar do mes — NR-110.
+ *
+ * Idempotente por (custo fixo, competencia): a garantia e do servidor — o
+ * indice unico parcial em `payables`, via `ON CONFLICT ... DO NOTHING`. Rodar
+ * duas vezes no mesmo mes nao duplica, e a resposta diz quantas entraram e
+ * quantas ja existiam.
+ */
+export const gerarContasDeCustosFixos = (
+  competencia: string,
+): Promise<Resultado<{ geradas: number; jaExistiam: number }>> =>
+  pedir<{ generatedCount: number; alreadyExistedCount: number }>('/api/custos-fixos/gerar', {
+    method: 'POST',
+    body: JSON.stringify({ competencia }),
+  }).then((r) =>
+    r.ok
+      ? {
+          ok: true,
+          dados: { geradas: r.dados.generatedCount, jaExistiam: r.dados.alreadyExistedCount },
+        }
+      : r,
+  )
 
 /* -------------------------------------------------------------------------- */
 /* Utilitarios de status                                                      */
