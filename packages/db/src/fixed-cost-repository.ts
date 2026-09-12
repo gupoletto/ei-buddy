@@ -175,10 +175,7 @@ export function createFixedCostPayableGenerator(sql: Sql): FixedCostPayableGener
         sql,
         companyId,
         (tx) => tx<LinhaPayable[]>`
-          INSERT INTO payables
-            (company_id, fixed_cost_id, supplier, description, amount_cents, due_date,
-             account_id, created_by, created_at, updated_at)
-          VALUES ${tx(
+          INSERT INTO payables ${tx(
             drafts.map((d) => ({
               company_id: d.companyId,
               fixed_cost_id: d.fixedCostId,
@@ -191,6 +188,16 @@ export function createFixedCostPayableGenerator(sql: Sql): FixedCostPayableGener
               created_at: d.createdAt,
               updated_at: d.createdAt,
             })),
+            'company_id',
+            'fixed_cost_id',
+            'supplier',
+            'description',
+            'amount_cents',
+            'due_date',
+            'account_id',
+            'created_by',
+            'created_at',
+            'updated_at',
           )}
           ON CONFLICT (company_id, fixed_cost_id, due_date) WHERE fixed_cost_id IS NOT NULL
             DO NOTHING
