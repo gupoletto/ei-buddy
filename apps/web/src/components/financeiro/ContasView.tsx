@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { carregarPlano } from '@/lib/contabilidade-api'
 import {
   baixarTitulo,
   carregarContasAPagar,
@@ -46,7 +47,7 @@ function statusDaApi(status: string, vencimento: string): StatusTitulo {
   return daysUntil(vencimento) < 0 ? 'vencido' : 'aberto'
 }
 
-function paraLinhaAPagar(c: ContaAPagar): Linha {
+function paraLinhaAPagar(c: ContaAPagar, nomeDaConta: (accountId: string | null) => string): Linha {
   return {
     id: c.id,
     contraparte: c.supplier,
@@ -55,10 +56,9 @@ function paraLinhaAPagar(c: ContaAPagar): Linha {
     valorCents: c.amountCents,
     valorBaixadoCents: c.settledAmountCents,
     status: statusDaApi(c.status, c.dueDate),
-    /* A classificacao agora e id de conta (NR-077), e esta lista mostra NOME.
-       Buscar o nome exige o plano carregado; a tela de contas ainda nao o
-       carrega, entao mostra vazio em vez de mostrar um uuid. */
-    classificacao: '',
+    /* A classificacao e id de conta (NR-077) — o plano vem carregado junto
+       com a lista, exatamente para resolver o nome aqui. */
+    classificacao: nomeDaConta(c.accountId),
   }
 }
 
@@ -152,14 +152,21 @@ export default function ContasView({ tipo }: { tipo: 'pagar' | 'receber' }) {
        divergir do relatorio, e "quanto preciso ter em caixa" nao pode ter
        duas respostas. */
     if (pagar) {
-      const r = await carregarContasAPagar()
+      const [r, planos] = await Promise.all([carregarContasAPagar(), carregarPlano()])
       setCarregando(false)
       if (!r.ok) {
         setErroCarga(r.erro)
         return
       }
       setErroCarga(null)
-      setLinhas(r.dados.grupos.flatMap((g) => g.payables.map(paraLinhaAPagar)))
+      /* O plano pode falhar (ex.: sessao instavel) sem travar a lista de
+         contas — nesse caso a classificacao fica vazia, como antes. */
+      const nomes = new Map(planos.ok ? planos.dados.accounts.map((c) => [c.id, c.name]) : [])
+      const nomeDaConta = (accountId: string | null) =>
+        accountId === null ? '' : (nomes.get(accountId) ?? '')
+      setLinhas(
+        r.dados.grupos.flatMap((g) => g.payables.map((p) => paraLinhaAPagar(p, nomeDaConta))),
+      )
       return
     }
 
@@ -534,9 +541,11 @@ export default function ContasView({ tipo }: { tipo: 'pagar' | 'receber' }) {
       {lancando ? (
         <FormularioTitulo
           tipo={tipo}
+          contrapartesConhecidas={contrapartes}
           onSalvo={(msg) => {
             setLancando(false)
             setToast({ msg, tone: 'success' })
+            void carregar()
           }}
           onCancelar={() => setLancando(false)}
         />
