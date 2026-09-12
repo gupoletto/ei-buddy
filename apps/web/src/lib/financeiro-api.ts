@@ -1,183 +1,167 @@
 /**
  * ============================================================================
- * PONTOS DE INTEGRACAO — MODULO FINANCEIRO
+ * MODULO FINANCEIRO — cliente do BFF
  * ============================================================================
  *
- *  | Funcao                | Endpoint esperado                | Disparo         |
- *  |-----------------------|----------------------------------|-----------------|
- *  | salvarTitulo          | POST/PUT /financeiro/titulos     | submit do form  |
- *  | salvarPlanoContas     | POST/PUT /financeiro/planos      | submit          |
- *  | salvarCustoFixo       | POST/PUT /financeiro/custos-fixos| submit          |
- *  | gerarContasDeCustosFixos | POST /financeiro/custos-fixos/gerar | botao      |
- *  | exportar              | GET  /financeiro/titulos/export  | botao exportar  |
- *
- * BAIXA E ESTORNO SAIRAM DESTA LISTA — sao reais desde a NR-081, no fim do
- * arquivo. O aviso que morava aqui dizia que a baixa nao podia ser um UPDATE
- * no titulo, e o servidor concorda: cada baixa e uma linha propria, e o estorno
- * e outra linha, negativa, apontando para a primeira. Nunca um DELETE.
+ * Nao ha mais mock aqui: lancar titulo fala com `POST /contas-a-pagar`
+ * (NR-074) e `POST /contas-a-receber` (RF-065) — ver
+ * `lancarContaAPagar`/`lancarContaAReceber` mais abaixo, e
+ * `FormularioTitulo.tsx` para o formulario que os chama. Custos fixos falam
+ * com `/custos-fixos` (NR-110), no fim do arquivo. Baixa e estorno sao reais
+ * desde a NR-081. Exportar fala com `/contas-a-pagar/exportar` e
+ * `/contas-a-receber/exportar` — o ultimo botao que ainda so simulava.
  */
 
-import { contasPagar, planoContas, custosFixos, bancos, clientes } from './mock-data'
+import { bancos } from './mock-data'
 import { pedir, type Resultado } from './http'
-import type { CustoFixo, PlanoContas, StatusTitulo } from './types'
-
-const delay = (ms: number) => new Promise((r) => setTimeout(r, ms))
+import type { StatusTitulo } from './types'
 
 /* -------------------------------------------------------------------------- */
 /* Listas para os campos "(T)"                                                */
 /* -------------------------------------------------------------------------- */
 
-/** SUBSTITUIR POR: GET /bancos */
+/** SUBSTITUIR POR: GET /bancos. Continua em uso na BAIXA — ver BaixaDialog. */
 export const NOMES_BANCOS = bancos.map((b) => b.nome)
 
-/** SUBSTITUIR POR: GET /financeiro/planos */
-export const NOMES_PLANOS = planoContas.map((p) => p.nome)
-
-/** SUBSTITUIR POR: GET /fornecedores */
-export const NOMES_FORNECEDORES = [...new Set(contasPagar.map((c) => c.fornecedor))].sort()
-
-/** SUBSTITUIR POR: GET /clientes */
-export const NOMES_CLIENTES = clientes.map((c) => c.nome)
-
-export const TIPOS_RECEBIMENTO = [
-  { valor: 'debito', rotulo: 'Cartão de débito' },
-  { valor: 'credito', rotulo: 'Cartão de crédito' },
-  { valor: 'pix', rotulo: 'Pix' },
-  { valor: 'carteira', rotulo: 'Carteira' },
-] as const
-
 /* -------------------------------------------------------------------------- */
-/* Estado das listas                                                          */
-/* -------------------------------------------------------------------------- */
-
-/** SUBSTITUIR POR: GET /financeiro/planos */
-export function listarPlanos(): PlanoContas[] {
-  return planoContas.map((p) => ({ ...p }))
-}
-
-/** SUBSTITUIR POR: GET /financeiro/custos-fixos */
-export function listarCustosFixos(): CustoFixo[] {
-  return custosFixos.map((c) => ({ ...c }))
-}
-
-/* -------------------------------------------------------------------------- */
-/* Gravacao de titulos                                                        */
-/* -------------------------------------------------------------------------- */
-
-export type DadosTituloPagar = {
-  banco: string
-  planoContas: string
-  fornecedor: string
-  vencimento: string
-  valor: number
-  descricao: string
-}
-
-export type DadosTituloReceber = {
-  banco: string
-  cliente: string
-  emissao: string
-  vencimento: string
-  referente: string
-  tipo: string
-  valor: number
-}
-
-/** SUBSTITUIR POR: POST /financeiro/titulos */
-export async function salvarTitulo(
-  dados: DadosTituloPagar | DadosTituloReceber,
-): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
-  await delay(800)
-  void dados
-  return { ok: true, id: `tit-${Date.now()}` }
-}
-
-/* -------------------------------------------------------------------------- */
-/* Plano de contas e custos fixos                                             */
-/* -------------------------------------------------------------------------- */
-
-/** SUBSTITUIR POR: POST/PUT /financeiro/planos */
-export async function salvarPlanoContas(
-  nome: string,
-): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
-  await delay(600)
-  if (!nome.trim()) return { ok: false, error: 'Informe o nome do plano de conta.' }
-  return { ok: true, id: `pc-${Date.now()}` }
-}
-
-export type DadosCustoFixo = {
-  id?: string
-  nome: string
-  diaVencimento: number
-  valor: number
-  planoContasNome: string
-  bancoNome: string
-}
-
-/** SUBSTITUIR POR: POST/PUT /financeiro/custos-fixos */
-export async function salvarCustoFixo(
-  dados: DadosCustoFixo,
-): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
-  await delay(700)
-
-  if (!dados.nome.trim()) return { ok: false, error: 'Informe o nome do custo fixo.' }
-  if (dados.diaVencimento < 1 || dados.diaVencimento > 31) {
-    return { ok: false, error: 'O dia do vencimento deve estar entre 1 e 31.' }
-  }
-  if (dados.valor <= 0) return { ok: false, error: 'Informe um valor maior que zero.' }
-
-  return { ok: true, id: dados.id ?? `cf-${Date.now()}` }
-}
-
-/** SUBSTITUIR POR: DELETE /financeiro/custos-fixos/:id */
-export async function excluirCustoFixo(id: string): Promise<{ ok: true }> {
-  await delay(500)
-  void id
-  return { ok: true }
-}
-
-/**
- * SUBSTITUIR POR: POST /financeiro/custos-fixos/gerar
- *
- * Gera as contas a pagar do mes a partir dos custos fixos. O servidor
- * precisa ser idempotente por (custo fixo, competencia): rodar duas vezes
- * no mesmo mes nao pode duplicar a conta.
- */
-export async function gerarContasDeCustosFixos(
-  custos: CustoFixo[],
-  competencia: string,
-): Promise<{ ok: true; geradas: number; jaExistiam: number }> {
-  await delay(1100)
-  void competencia
-
-  /* No exemplo, os que ja tem conta lancada no mes ficam de fora. */
-  const jaLancados = new Set(contasPagar.map((c) => c.fornecedor.toLowerCase()))
-  const geradas = custos.filter((c) => !jaLancados.has(c.nome.toLowerCase())).length
-
-  return { ok: true, geradas, jaExistiam: custos.length - geradas }
-}
-
-/* -------------------------------------------------------------------------- */
-/* Exportacao (previsto, ainda nao implementado)                              */
+/* Exportacao — NR-074                                                        */
 /* -------------------------------------------------------------------------- */
 
 export type FormatoExportacao = 'csv' | 'pdf'
 
-/**
- * SUBSTITUIR POR: GET /financeiro/titulos/export?formato=
- *
- * A estrutura ja existe para que a exportacao entre sem mexer nas telas: o
- * botao chama esta funcao e o servidor devolve o arquivo pronto. Gerar CSV
- * no cliente daria pressa, mas PDF nao — e ter dois caminhos diferentes
- * para a mesma acao acaba divergindo.
- */
-export async function exportar(formato: FormatoExportacao): Promise<{ ok: false; error: string }> {
-  await delay(400)
-  return {
-    ok: false,
-    error: `Exportação em ${formato.toUpperCase()} entra quando o backend expuser o endpoint.`,
-  }
+/** O nome do arquivo que o servidor sugeriu, tirado de `Content-Disposition`. */
+function nomeDoArquivo(contentDisposition: string | null): string | null {
+  if (contentDisposition === null) return null
+  return /filename="([^"]+)"/.exec(contentDisposition)?.[1] ?? null
 }
+
+/**
+ * Exporta a lista de titulos e ja dispara o download — RF-055 a RF-067.
+ *
+ * Nao passa por `pedir()`: ele sempre le a resposta como JSON, e um CSV ou
+ * PDF quebraria ali antes de chegar a tela. O sucesso aqui e um ARQUIVO, e
+ * nao um objeto — por isso o retorno so diz se deu certo, e nao devolve dado
+ * nenhum para a tela desenhar.
+ */
+export async function exportar(
+  tipo: TipoDeTitulo,
+  formato: FormatoExportacao,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  let resposta: Response
+
+  try {
+    resposta = await fetch(`/api/contas-a-${tipo}/exportar?formato=${formato}`, {
+      credentials: 'same-origin',
+    })
+  } catch {
+    return { ok: false, error: 'Sem conexão. Verifique sua internet.' }
+  }
+
+  if (!resposta.ok) {
+    const corpo = (await resposta.json().catch(() => ({}))) as { error?: { message?: string } }
+    return { ok: false, error: corpo.error?.message ?? 'Não foi possível exportar.' }
+  }
+
+  const blob = await resposta.blob()
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = nomeDoArquivo(resposta.headers.get('content-disposition')) ?? `titulos.${formato}`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+
+  return { ok: true }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Custos fixos contra a api — NR-110                                        */
+/* -------------------------------------------------------------------------- */
+
+export type CustoFixo = {
+  id: string
+  nome: string
+  valorCents: number
+  diaVencimento: number
+  planoContasId: string | null
+  planoContasNome: string | null
+}
+
+type CustoFixoDaApi = {
+  id: string
+  name: string
+  amountCents: number
+  dueDay: number
+  accountId: string | null
+  accountName: string | null
+}
+
+const paraCustoFixo = (c: CustoFixoDaApi): CustoFixo => ({
+  id: c.id,
+  nome: c.name,
+  valorCents: c.amountCents,
+  diaVencimento: c.dueDay,
+  planoContasId: c.accountId,
+  planoContasNome: c.accountName,
+})
+
+export const carregarCustosFixos = (): Promise<Resultado<CustoFixo[]>> =>
+  pedir<{ fixedCosts: CustoFixoDaApi[] }>('/api/custos-fixos').then((r) =>
+    r.ok ? { ok: true, dados: r.dados.fixedCosts.map(paraCustoFixo) } : r,
+  )
+
+export type DadosCustoFixo = {
+  nome: string
+  valorCents: number
+  diaVencimento: number
+  planoContasId: string | null
+}
+
+const corpoCustoFixo = (dados: DadosCustoFixo) => ({
+  name: dados.nome.trim(),
+  amountCents: dados.valorCents,
+  dueDay: dados.diaVencimento,
+  ...(dados.planoContasId === null ? {} : { accountId: dados.planoContasId }),
+})
+
+export const criarCustoFixo = (dados: DadosCustoFixo): Promise<Resultado<CustoFixo>> =>
+  pedir<CustoFixoDaApi>('/api/custos-fixos', {
+    method: 'POST',
+    body: JSON.stringify(corpoCustoFixo(dados)),
+  }).then((r) => (r.ok ? { ok: true, dados: paraCustoFixo(r.dados) } : r))
+
+export const editarCustoFixo = (id: string, dados: DadosCustoFixo): Promise<Resultado<CustoFixo>> =>
+  pedir<CustoFixoDaApi>(`/api/custos-fixos/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(corpoCustoFixo(dados)),
+  }).then((r) => (r.ok ? { ok: true, dados: paraCustoFixo(r.dados) } : r))
+
+export const excluirCustoFixo = (id: string): Promise<Resultado<unknown>> =>
+  pedir(`/api/custos-fixos/${encodeURIComponent(id)}`, { method: 'DELETE' })
+
+/**
+ * Gera as contas a pagar do mes — NR-110.
+ *
+ * Idempotente por (custo fixo, competencia): a garantia e do servidor — o
+ * indice unico parcial em `payables`, via `ON CONFLICT ... DO NOTHING`. Rodar
+ * duas vezes no mesmo mes nao duplica, e a resposta diz quantas entraram e
+ * quantas ja existiam.
+ */
+export const gerarContasDeCustosFixos = (
+  competencia: string,
+): Promise<Resultado<{ geradas: number; jaExistiam: number }>> =>
+  pedir<{ generatedCount: number; alreadyExistedCount: number }>('/api/custos-fixos/gerar', {
+    method: 'POST',
+    body: JSON.stringify({ competencia }),
+  }).then((r) =>
+    r.ok
+      ? {
+          ok: true,
+          dados: { geradas: r.dados.generatedCount, jaExistiam: r.dados.alreadyExistedCount },
+        }
+      : r,
+  )
 
 /* -------------------------------------------------------------------------- */
 /* Utilitarios de status                                                      */
@@ -327,6 +311,21 @@ export type ContasAReceberAgrupadas = {
 
 export const carregarContasAReceber = (): Promise<ResultadoContas<ContasAReceberAgrupadas>> =>
   pedir<ContasAReceberAgrupadas>('/api/contas-a-receber')
+
+/**
+ * Lanca recebivel avulso, que nao vem de venda — RF-065.
+ *
+ * So uma linha, sem recorrencia: RF-065 nao pede parcelamento para o avulso —
+ * quem precisa de varias parcelas lanca uma venda.
+ */
+export const lancarContaAReceber = (entrada: {
+  description: string
+  amountCents: number
+  dueDate: string
+  customerId?: string
+  accountId?: string
+}): Promise<ResultadoContas<ContaAReceber>> =>
+  pedir('/api/contas-a-receber', { method: 'POST', body: JSON.stringify(entrada) })
 
 /* -------------------------------------------------------------------------- */
 /* Baixa e estorno contra a api — NR-081, RF-059, RF-066, RF-067              */

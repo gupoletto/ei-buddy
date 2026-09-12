@@ -1,25 +1,63 @@
-import { useMemo, useState } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { FORMAS, listarVendas, type VendaHistorico } from '@/lib/vendas-api'
+import { FORMAS, listarHistoricoDeVendas, type VendaHistorico } from '@/lib/vendas-api'
 import { formatDateTime, formatMoney } from '@/lib/format'
 import Cabecalho from '@/components/Cabecalho'
 import Sanfona from '@/components/ui/Sanfona'
 import Botao from '@/components/ui/Botao'
-import { Etiqueta } from '@/components/ui/Cartao'
+import { Etiqueta, Vazio } from '@/components/ui/Cartao'
 import { cores, espaco, fonte, peso, raio } from '@/theme/tokens'
 
 /**
- * Historico de vendas.
+ * Historico de vendas — RF-036, US-021.
  *
  * Cada venda e uma sanfona: fechada mostra cliente, valor e situacao —
  * que e o que se procura ao conferir o dia. Abrir revela os itens, o
  * pagamento e a nota, sem trocar de tela.
+ *
+ * Mostrava cinco vendas de exemplo, sempre as mesmas: o faturamento e o
+ * ticket medio do topo somavam dinheiro que nao existia. Agora busca em
+ * `GET /sales`.
  */
 export default function Vendas() {
   const router = useRouter()
-  const [vendas] = useState<VendaHistorico[]>(() => listarVendas())
+  const [vendas, setVendas] = useState<VendaHistorico[]>([])
+  const [carregando, setCarregando] = useState(true)
+  const [erro, setErro] = useState<string | null>(null)
+
+  const buscar = useCallback(async () => {
+    const r = await listarHistoricoDeVendas()
+    setCarregando(false)
+
+    if (!r.ok) {
+      setErro(r.erro)
+      return
+    }
+
+    setErro(null)
+    setVendas(r.vendas)
+  }, [])
+
+  useEffect(() => {
+    /* `async` explicito: os `setState` vem todos depois do await, nunca
+       sincronos no corpo do efeito. */
+    void (async () => {
+      await buscar()
+    })()
+  }, [buscar])
+
+  function pedirEstorno() {
+    /* AINDA NAO EXISTE no backend — ver o comentario em `estornarVenda`,
+       em `vendas-api.ts`. Avisar e melhor que um botao que nao faz nada
+       quando tocado. */
+    Alert.alert(
+      'Estorno ainda não disponível',
+      'O estorno precisa desfazer estoque, título e nota fiscal juntos, e essa parte ainda não ' +
+        'foi construída — nem no computador. Por enquanto não há como estornar por aqui.',
+    )
+  }
 
   const resumo = useMemo(() => {
     const concluidas = vendas.filter((v) => v.status === 'concluida')
@@ -41,77 +79,101 @@ export default function Vendas() {
       />
 
       <ScrollView contentContainerStyle={estilos.conteudo}>
-        <View style={estilos.resumo}>
-          <View style={estilos.resumoItem}>
-            <Text style={estilos.resumoRotulo}>Faturamento</Text>
-            <Text style={estilos.resumoValor}>{formatMoney(resumo.total)}</Text>
-          </View>
-          <View style={estilos.resumoItem}>
-            <Text style={estilos.resumoRotulo}>Líquido</Text>
-            <Text style={[estilos.resumoValor, estilos.liquido]}>
-              {formatMoney(resumo.liquido)}
-            </Text>
-          </View>
-          <View style={estilos.resumoItem}>
-            <Text style={estilos.resumoRotulo}>Ticket médio</Text>
-            <Text style={estilos.resumoValor}>{formatMoney(resumo.ticket)}</Text>
-          </View>
-        </View>
-
-        {vendas.map((v) => (
-          <Sanfona
-            key={v.id}
-            titulo={`#${v.numero} · ${v.clienteNome}`}
-            resumo={`${formatDateTime(v.data)} · ${formatMoney(v.total)}`}
-            etiqueta={
-              v.status === 'estornada' ? (
-                <Etiqueta tom="erro">Estornada</Etiqueta>
-              ) : (
-                <Etiqueta tom="sucesso">{formatMoney(v.total)}</Etiqueta>
-              )
-            }
-          >
-            {/* Itens */}
-            {v.itens.map((i, idx) => (
-              <View key={idx} style={estilos.item}>
-                <Text style={estilos.itemQtd}>{i.quantidade}×</Text>
-                <Text style={estilos.itemNome} numberOfLines={1}>
-                  {i.descricao}
-                </Text>
-                <Text style={estilos.itemValor}>{formatMoney(i.precoUnitario * i.quantidade)}</Text>
+        {carregando ? (
+          <Vazio titulo="Carregando" descricao="Buscando o histórico de vendas." />
+        ) : erro !== null ? (
+          <Vazio
+            titulo="Não foi possível carregar"
+            descricao={erro}
+            acao={<Botao onPress={() => void buscar()}>Tentar de novo</Botao>}
+          />
+        ) : vendas.length === 0 ? (
+          <Vazio
+            titulo="Nenhuma venda ainda"
+            descricao="As vendas fechadas no PDV aparecem aqui."
+            acao={<Botao onPress={() => router.push('/pdv')}>Fazer a primeira venda</Botao>}
+          />
+        ) : (
+          <>
+            <View style={estilos.resumo}>
+              <View style={estilos.resumoItem}>
+                <Text style={estilos.resumoRotulo}>Faturamento</Text>
+                <Text style={estilos.resumoValor}>{formatMoney(resumo.total)}</Text>
               </View>
+              <View style={estilos.resumoItem}>
+                <Text style={estilos.resumoRotulo}>Líquido</Text>
+                <Text style={[estilos.resumoValor, estilos.liquido]}>
+                  {formatMoney(resumo.liquido)}
+                </Text>
+              </View>
+              <View style={estilos.resumoItem}>
+                <Text style={estilos.resumoRotulo}>Ticket médio</Text>
+                <Text style={estilos.resumoValor}>{formatMoney(resumo.ticket)}</Text>
+              </View>
+            </View>
+
+            {vendas.map((v) => (
+              <Sanfona
+                key={v.id}
+                titulo={`#${v.numero} · ${v.clienteNome}`}
+                resumo={`${formatDateTime(v.data)} · ${formatMoney(v.total)}`}
+                etiqueta={
+                  v.status === 'estornada' ? (
+                    <Etiqueta tom="erro">Estornada</Etiqueta>
+                  ) : (
+                    <Etiqueta tom="sucesso">{formatMoney(v.total)}</Etiqueta>
+                  )
+                }
+              >
+                {/* Itens */}
+                {v.itens.map((i, idx) => (
+                  <View key={idx} style={estilos.item}>
+                    <Text style={estilos.itemQtd}>{i.quantidade}×</Text>
+                    <Text style={estilos.itemNome} numberOfLines={1}>
+                      {i.descricao}
+                    </Text>
+                    <Text style={estilos.itemValor}>
+                      {formatMoney(i.precoUnitario * i.quantidade)}
+                    </Text>
+                  </View>
+                ))}
+
+                <View style={estilos.divisor} />
+
+                <Detalhe rotulo="Subtotal" valor={formatMoney(v.subtotal)} />
+                {v.desconto > 0 ? (
+                  <Detalhe rotulo="Desconto" valor={`- ${formatMoney(v.desconto)}`} />
+                ) : null}
+                <Detalhe rotulo="Total" valor={formatMoney(v.total)} forte />
+                <Detalhe
+                  rotulo="Pagamento"
+                  valor={v.pagamentos
+                    .map((p) => FORMAS.find((f) => f.valor === p.forma)?.rotulo ?? p.forma)
+                    .join(' + ')}
+                />
+                <Detalhe rotulo="Líquido" valor={formatMoney(v.valorLiquido)} />
+                <Detalhe
+                  rotulo="Nota fiscal"
+                  valor={
+                    v.nota
+                      ? `${v.nota.tipo === 'nfce' ? 'NFC-e' : 'NFS-e'} ${v.nota.numero}`
+                      : 'sem nota'
+                  }
+                />
+
+                {v.status !== 'estornada' ? (
+                  <Pressable
+                    style={estilos.estornar}
+                    accessibilityRole="button"
+                    onPress={pedirEstorno}
+                  >
+                    <Text style={estilos.estornarTexto}>Estornar venda</Text>
+                  </Pressable>
+                ) : null}
+              </Sanfona>
             ))}
-
-            <View style={estilos.divisor} />
-
-            <Detalhe rotulo="Subtotal" valor={formatMoney(v.subtotal)} />
-            {v.desconto > 0 ? (
-              <Detalhe rotulo="Desconto" valor={`- ${formatMoney(v.desconto)}`} />
-            ) : null}
-            <Detalhe rotulo="Total" valor={formatMoney(v.total)} forte />
-            <Detalhe
-              rotulo="Pagamento"
-              valor={v.pagamentos
-                .map((p) => FORMAS.find((f) => f.valor === p.forma)?.rotulo ?? p.forma)
-                .join(' + ')}
-            />
-            <Detalhe rotulo="Líquido" valor={formatMoney(v.valorLiquido)} />
-            <Detalhe
-              rotulo="Nota fiscal"
-              valor={
-                v.nota
-                  ? `${v.nota.tipo === 'nfce' ? 'NFC-e' : 'NFS-e'} ${v.nota.numero}`
-                  : 'sem nota'
-              }
-            />
-
-            {v.status !== 'estornada' ? (
-              <Pressable style={estilos.estornar} accessibilityRole="button">
-                <Text style={estilos.estornarTexto}>Estornar venda</Text>
-              </Pressable>
-            ) : null}
-          </Sanfona>
-        ))}
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   )

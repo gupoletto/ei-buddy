@@ -108,7 +108,12 @@ export const FORA_DA_EXPORTACAO: Readonly<Record<string, string>> = {
   schema_migrations: 'Controle de versao do schema.',
   /* Satelite 1:0..1: metadata de provedor, nao dado do titular. Segredo fica no cofre. */
   company_integrations: 'Metadata de fiscal/pagamentos/billing. Token mora no cofre.',
-  crm_cards: 'CRM ainda sem caso de uso ligado — tabela vazia no baseline.',
+  crm_cards:
+    'Quadro de CRM (NR-109) — tem caso de uso ligado, mas a exportacao ainda nao foi conectada. Fast-follow.',
+  crm_card_comments:
+    'Comentarios do quadro de CRM (NR-109) — mesmo motivo de `crm_cards`: exportacao ainda nao conectada.',
+  fixed_costs:
+    'Previsao de gasto recorrente (NR-110), nao movimento — o gasto de verdade e a conta a pagar gerada, essa sim incluida na exportacao.',
   conversations: 'Assistente ainda sem caso de uso ligado — tabela vazia no baseline.',
   messages: 'Assistente ainda sem caso de uso ligado — tabela vazia no baseline.',
   confirmations: 'Assistente ainda sem caso de uso ligado — tabela vazia no baseline.',

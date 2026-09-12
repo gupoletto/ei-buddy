@@ -1,18 +1,27 @@
-import { createPayableInputSchema, endRecurrenceInputSchema } from '@na-regua/contracts'
 import {
+  createPayableInputSchema,
+  createReceivableInputSchema,
+  endRecurrenceInputSchema,
+  exportarTitulosQuerySchema,
+} from '@na-regua/contracts'
+import {
+  type ChartOfAccountsRepository,
   createPayable,
   type CreatePayableDeps,
+  createReceivable,
   endRecurrence,
   type EndRecurrenceDeps,
   listPayables,
   type ListPayablesDeps,
   listReceivables,
   type ListReceivablesDeps,
+  type ManualReceivableUnitOfWork,
 } from '@na-regua/core'
-import type { FastifyInstance } from 'fastify'
+import type { FastifyInstance, FastifyReply } from 'fastify'
 import { requireContext } from '../plugins/execution-context.js'
 import { LIMITE_DE_ESCRITA } from '../plugins/rate-limit.js'
 import { validate } from '../plugins/validate.js'
+import { type LinhaExportavel, paraCsv, paraPdf } from './exportar-titulos.js'
 
 /**
  * Contas a pagar e a receber — NR-074, RF-055 a RF-066.
@@ -29,7 +38,37 @@ import { validate } from '../plugins/validate.js'
 
 export type ContasDeps = CreatePayableDeps &
   EndRecurrenceDeps &
-  ListReceivablesDeps & { readonly queries: ListPayablesDeps }
+  ListReceivablesDeps & {
+    readonly queries: ListPayablesDeps
+    /*
+     * Nome proprio, e nao `uow`: `CreatePayableDeps` ja usa essa chave para a
+     * unidade de trabalho de PAGAR. As duas sao tipos incompativeis — uma
+     * intersecao com o mesmo nome viraria `never`, e o TypeScript recusaria
+     * qualquer objeto que tentasse satisfazer `ContasDeps`.
+     */
+    readonly receivablesUow: ManualReceivableUnitOfWork
+    /** So para resolver o NOME do plano de conta na exportacao de pagar. */
+    readonly accounts: ChartOfAccountsRepository
+  }
+
+/** CSV ou PDF, com os cabecalhos de download — o resto das duas rotas e igual. */
+async function enviarExportacao(
+  reply: FastifyReply,
+  formato: 'csv' | 'pdf',
+  nomeArquivo: string,
+  titulo: string,
+  rotuloClassificacao: string,
+  geradoEm: Date,
+  linhas: readonly LinhaExportavel[],
+): Promise<FastifyReply> {
+  reply.header('Content-Disposition', `attachment; filename="${nomeArquivo}.${formato}"`)
+
+  if (formato === 'csv') {
+    return reply.type('text/csv; charset=utf-8').send(paraCsv(rotuloClassificacao, linhas))
+  }
+
+  return reply.type('application/pdf').send(Buffer.from(await paraPdf(titulo, geradoEm, linhas)))
+}
 
 export function registerContasRoutes(app: FastifyInstance, deps: ContasDeps): void {
   /**
@@ -72,6 +111,47 @@ export function registerContasRoutes(app: FastifyInstance, deps: ContasDeps): vo
   })
 
   /**
+   * Exportar em CSV ou PDF — o botao "Exportar" que a tela ja tinha, e que ate
+   * aqui so respondia com erro.
+   *
+   * Mesma lista de `GET /contas-a-pagar`, so serializada em outro formato — e
+   * por isso nao passa por `assertCanWrite`: e leitura, como a listagem que a
+   * origina.
+   */
+  app.get('/contas-a-pagar/exportar', async (request, reply) => {
+    const ctx = requireContext(request)
+    const { formato } = validate(exportarTitulosQuerySchema, request.query ?? {})
+
+    const [agrupadas, contas] = await Promise.all([
+      listPayables(deps.queries, ctx),
+      deps.accounts.list(ctx.companyId),
+    ])
+    const nomeDaConta = new Map(contas.map((c) => [c.id, c.name]))
+
+    const linhas: LinhaExportavel[] = agrupadas.grupos.flatMap((g) =>
+      g.payables.map((p) => ({
+        contraparte: p.supplier,
+        descricao: p.description,
+        classificacao: p.accountId === null ? '' : (nomeDaConta.get(p.accountId) ?? ''),
+        vencimento: p.dueDate,
+        valorCents: p.amountCents,
+        baixadoCents: p.settledAmountCents,
+        status: p.status,
+      })),
+    )
+
+    return enviarExportacao(
+      reply,
+      formato,
+      'contas-a-pagar',
+      'Contas a pagar',
+      'Plano de conta',
+      ctx.now,
+      linhas,
+    )
+  })
+
+  /**
    * O que a loja tem a receber — RF-064, RF-066.
    *
    * Mesma forma da lista a pagar, e de proposito: as duas telas sao a mesma
@@ -91,6 +171,55 @@ export function registerContasRoutes(app: FastifyInstance, deps: ContasDeps): vo
 
     return reply.code(200).send(await listReceivables(deps, ctx))
   })
+
+  /** Exportar em CSV ou PDF — mesma ideia de `/contas-a-pagar/exportar`. */
+  app.get('/contas-a-receber/exportar', async (request, reply) => {
+    const ctx = requireContext(request)
+    const { formato } = validate(exportarTitulosQuerySchema, request.query ?? {})
+
+    const agrupadas = await listReceivables(deps, ctx)
+
+    const linhas: LinhaExportavel[] = agrupadas.grupos.flatMap((g) =>
+      g.receivables.map((r) => ({
+        contraparte: r.customerName ?? 'Cliente não identificado',
+        descricao: r.description,
+        classificacao: r.installmentCount > 1 ? `${r.installmentNumber}/${r.installmentCount}` : '',
+        vencimento: r.dueDate,
+        valorCents: r.amountCents,
+        baixadoCents: r.settledAmountCents,
+        status: r.status,
+      })),
+    )
+
+    return enviarExportacao(
+      reply,
+      formato,
+      'contas-a-receber',
+      'Contas a receber',
+      'Parcela',
+      ctx.now,
+      linhas,
+    )
+  })
+
+  /**
+   * Lancar recebivel avulso, que nao vem de venda — RF-065.
+   *
+   * So uma linha, e nao uma lista como em `/contas-a-pagar`: RF-065 nao pede
+   * recorrencia para o avulso.
+   */
+  app.post(
+    '/contas-a-receber',
+    { config: { rateLimit: LIMITE_DE_ESCRITA } },
+    async (request, reply) => {
+      const ctx = requireContext(request)
+      const input = validate(createReceivableInputSchema, request.body)
+
+      const receivable = await createReceivable({ uow: deps.receivablesUow }, ctx, input)
+
+      return reply.code(201).send(receivable)
+    },
+  )
 
   /**
    * Encerrar a recorrencia — RF-058.

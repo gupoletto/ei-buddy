@@ -56,6 +56,17 @@ export const createProductInputSchema = z
     /** Abaixo disto a tela avisa que precisa repor. */
     minStock: z.number().int('Estoque minimo precisa ser inteiro.').nonnegative().default(0),
     category: z.string().trim().max(80).optional(),
+    /**
+     * Texto livre, e nao uma tabela de fornecedores — RF-017.
+     *
+     * A coluna existe desde a migration 0007 e nao tinha caminho ate ela: o
+     * formulario pedia o fornecedor e o cadastro descartava em silencio. Nao
+     * normalizar numa tabela propria e decisao consciente pelo mesmo motivo de
+     * `category`: e uma etiqueta de quem vendeu, nao uma entidade com CNPJ,
+     * contato e prazo de entrega — isso e o que `payables.supplier` guarda do
+     * lado de contas a pagar, e e um dado diferente.
+     */
+    supplier: z.string().trim().max(120).optional(),
   })
   .strict()
   .refine((p) => p.salePriceCents >= p.costPriceCents, {
@@ -82,6 +93,7 @@ export const updateProductInputSchema = z
     taxRate: rateSchema,
     minStock: z.number().int().nonnegative(),
     category: z.string().trim().max(80),
+    supplier: z.string().trim().max(120),
   })
   .partial()
   .strict()
@@ -111,6 +123,7 @@ export const productOutputSchema = z.object({
   stock: z.number().int(),
   minStock: z.number().int(),
   category: z.string().nullable(),
+  supplier: z.string().nullable(),
 })
 
 export type ProductOutput = z.infer<typeof productOutputSchema>
@@ -229,3 +242,17 @@ export const importProductsOutputSchema = z.object({
 })
 
 export type ImportProductsOutput = z.infer<typeof importProductsOutputSchema>
+
+/**
+ * Sugestoes do formulario de cadastro — categoria e fornecedor ja usados por
+ * algum produto da empresa.
+ *
+ * Nenhum dos dois normaliza numa tabela propria (ver `category`/`supplier`
+ * acima): a lista e literal o que ja foi digitado antes, e nao um cadastro.
+ */
+export const productSuggestionsOutputSchema = z.object({
+  categories: z.array(z.string()),
+  suppliers: z.array(z.string()),
+})
+
+export type ProductSuggestionsOutput = z.infer<typeof productSuggestionsOutputSchema>

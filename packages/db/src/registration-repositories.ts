@@ -455,6 +455,7 @@ type LinhaProduto = {
   stock: number
   min_stock: number
   category: string | null
+  supplier: string | null
   is_active: boolean
   created_at: Date
   ncm: string | null
@@ -479,6 +480,7 @@ const paraProduto = (l: LinhaProduto): ProductOutput => ({
   stock: l.stock,
   minStock: l.min_stock,
   category: l.category,
+  supplier: l.supplier,
 })
 
 export function createProductRepository(sql: Sql): ProductRepository {
@@ -491,11 +493,12 @@ export function createProductRepository(sql: Sql): ProductRepository {
           INSERT INTO products
             (company_id, description, barcode, internal_code, unit_of_measure,
              sale_price_cents, cost_price_cents, tax_rate, min_stock, category,
-             ncm, cfop, tax_situation_code,
+             supplier, ncm, cfop, tax_situation_code,
              created_by, created_at)
           VALUES (${p.companyId}, ${p.description}, ${p.barcode ?? null}, ${p.internalCode},
                   ${p.unitOfMeasure}, ${p.salePriceCents}, ${p.costPriceCents},
                   ${p.taxRate ?? null}, ${p.minStock}, ${p.category ?? null},
+                  ${p.supplier ?? null},
                   ${p.ncm}, ${p.cfop}, ${p.taxSituationCode},
                   ${p.createdBy}, ${p.createdAt})
           RETURNING *
@@ -663,6 +666,36 @@ export function createProductRepository(sql: Sql): ProductRepository {
         (tx) => tx<{ total: string }[]>`SELECT count(*)::text AS total FROM products`,
       )
       return numero(linha?.total ?? 0)
+    },
+
+    /**
+     * Categoria e fornecedor ja usados — as sugestoes do formulario.
+     *
+     * Uma varredura so, com as duas listas: `array_agg(DISTINCT col ORDER BY
+     * col)` ja devolve ordenado, e o `FILTER` descarta o nulo antes de
+     * agregar (produto sem categoria/fornecedor nao vira sugestao vazia).
+     * `COALESCE` cobre a empresa sem nenhum produto ainda — `array_agg` sobre
+     * zero linhas e `NULL`, nao lista vazia.
+     */
+    listSuggestions: async (companyId) => {
+      const [linha] = await withTenant(
+        sql,
+        companyId,
+        (tx) => tx<{ categories: string[]; suppliers: string[] }[]>`
+          SELECT
+            COALESCE(
+              array_agg(DISTINCT category ORDER BY category) FILTER (WHERE category IS NOT NULL),
+              '{}'
+            ) AS categories,
+            COALESCE(
+              array_agg(DISTINCT supplier ORDER BY supplier) FILTER (WHERE supplier IS NOT NULL),
+              '{}'
+            ) AS suppliers
+          FROM products
+          WHERE deleted_at IS NULL
+        `,
+      )
+      return { categories: linha?.categories ?? [], suppliers: linha?.suppliers ?? [] }
     },
   }
 }

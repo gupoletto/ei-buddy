@@ -1,20 +1,14 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import {
-  NOMES_BANCOS,
-  NOMES_CLIENTES,
-  NOMES_FORNECEDORES,
-  NOMES_PLANOS,
-  salvarTitulo,
-  TIPOS_RECEBIMENTO,
-} from '@/lib/financeiro-api'
+import { carregarPlano, criarConta, type ContaContabil } from '@/lib/contabilidade-api'
+import { lancarContaAPagar, lancarContaAReceber } from '@/lib/financeiro-api'
+import { listarClientes } from '@/lib/clientes-api'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/auth/Fields'
 import { IconClose } from '@/components/Icons'
 import CampoTag from '@/components/app/CampoTag'
 import styles from './financeiro.module.css'
-import { hoje } from '@/lib/format'
 
 function paraNumero(valor: string): number {
   const limpo = valor.replace(/\./g, '').replace(',', '.')
@@ -22,48 +16,70 @@ function paraNumero(valor: string): number {
   return Number.isFinite(n) ? n : 0
 }
 
-/*
- * A EMISSAO abria com uma constante fixa em 24/08/2026 — o vencimento sempre
- * nasceu vazio e obrigatorio, mas a emissao vinha preenchida com a data
- * errada. Emissao e a competencia do lancamento: uma conta lancada em setembro
- * e gravada como emitida em agosto cai no mes errado do DRE, e o mes fechado
- * muda depois de fechado.
- */
-
 /**
- * Lancamento de titulo, a pagar ou a receber.
+ * Lancamento de titulo, a pagar ou a receber — NR-074, RF-055, RF-065.
  *
- * As duas telas compartilham este formulario porque a estrutura e a mesma
- * — muda a contraparte (fornecedor x cliente) e os campos proprios de
- * recebimento (emissao e tipo).
+ * As duas telas compartilham este formulario porque a estrutura e quase a
+ * mesma — muda a contraparte (fornecedor em texto livre x cliente cadastrado)
+ * e se ha plano de conta.
+ *
+ * Tres campos do mock NAO TEM ONDE IR no schema real, e saem daqui: banco
+ * (e dado de BAIXA — `bankAccount` — nunca de lancamento), emissao (so
+ * `dueDate` existe; nao ha coluna para data de emissao separada) e tipo de
+ * recebimento (forma de pagamento tambem e fato da baixa, `method`). Coleta-los
+ * e descarta-los era o proprio defeito que esta tela tinha.
  */
 export default function FormularioTitulo({
   tipo,
+  contrapartesConhecidas,
   onSalvo,
   onCancelar,
 }: {
   tipo: 'pagar' | 'receber'
+  /** Nomes de quem ja apareceu na lista — sugestao real, e nao inventada. */
+  contrapartesConhecidas: string[]
   onSalvo: (mensagem: string) => void
   onCancelar: () => void
 }) {
   const ref = useRef<HTMLDivElement>(null)
 
-  const [banco, setBanco] = useState('')
   const [plano, setPlano] = useState('')
-  const [contraparte, setContraparte] = useState('')
-  const [emissao, setEmissao] = useState(hoje())
+  /** Fornecedor: texto livre (nao ha cadastro). Cliente: id de verdade. */
+  const [fornecedor, setFornecedor] = useState('')
+  const [clienteId, setClienteId] = useState('')
   const [vencimento, setVencimento] = useState('')
   const [valor, setValor] = useState('')
   const [descricao, setDescricao] = useState('')
-  const [tipoRecebimento, setTipoRecebimento] = useState<string>('pix')
 
-  /* Listas locais para o "(T)": criar um item aqui ja o deixa disponivel
-     no campo, sem recarregar a tela. */
-  const [bancos, setBancos] = useState(NOMES_BANCOS)
-  const [planos, setPlanos] = useState(NOMES_PLANOS)
-  const [contrapartes, setContrapartes] = useState(
-    tipo === 'pagar' ? NOMES_FORNECEDORES : NOMES_CLIENTES,
-  )
+  const [fornecedores, setFornecedores] = useState(contrapartesConhecidas)
+  const [clientes, setClientes] = useState<{ id: string; nome: string }[]>([])
+
+  /*
+   * O plano de conta e o plano de contas DE VERDADE (`GET /contas-contabeis`).
+   * `CampoTag` so conhece nome (string); resolver para `accountId` acontece
+   * no envio (`contaPeloNome`), e nao aqui — criar a conta so quando o
+   * formulario for de fato enviado evita sobrar uma conta vazia se a pessoa
+   * desistir no meio do preenchimento.
+   */
+  const [contas, setContas] = useState<ContaContabil[]>([])
+  /* Nomes digitados nesta sessao que ainda nao existem de verdade — so para a
+     sugestao reaparecer se a pessoa abrir o campo de novo. */
+  const [planosNovos, setPlanosNovos] = useState<string[]>([])
+
+  useEffect(() => {
+    void (async () => {
+      if (tipo === 'pagar') {
+        const r = await carregarPlano()
+        if (r.ok) {
+          setContas(r.dados.accounts.filter((c) => c.type === 'cost' || c.type === 'expense'))
+        }
+        return
+      }
+
+      const r = await listarClientes({})
+      if (r.ok) setClientes(r.dados.clientes.map((c) => ({ id: c.id, nome: c.nome })))
+    })()
+  }, [tipo])
 
   const [erros, setErros] = useState<Record<string, string>>({})
   const [salvando, setSalvando] = useState(false)
@@ -81,15 +97,26 @@ export default function FormularioTitulo({
     }
   }, [onCancelar, salvando])
 
-  const rotuloContraparte = tipo === 'pagar' ? 'Fornecedor' : 'Cliente'
+  /**
+   * O id da conta pelo NOME digitado — criando de verdade se o nome nao bate
+   * com nenhuma conta existente.
+   */
+  async function contaPeloNome(nome: string): Promise<{ ok: true; id: string } | { ok: false }> {
+    const existente = contas.find((c) => c.name.toLowerCase() === nome.trim().toLowerCase())
+    if (existente) return { ok: true, id: existente.id }
+
+    const criada = await criarConta({ name: nome.trim(), type: 'expense' })
+    return criada.ok ? { ok: true, id: criada.dados.id } : { ok: false }
+  }
 
   async function salvar(event: React.FormEvent) {
     event.preventDefault()
 
     const novos: Record<string, string> = {}
-    if (!banco) novos.banco = 'Escolha o banco.'
-    if (!contraparte) novos.contraparte = `Escolha o ${rotuloContraparte.toLowerCase()}.`
-    if (tipo === 'pagar' && !plano) novos.plano = 'Escolha o plano de conta.'
+    if (tipo === 'pagar') {
+      if (!fornecedor) novos.contraparte = 'Escolha o fornecedor.'
+      if (!plano) novos.plano = 'Escolha o plano de conta.'
+    }
     if (!vencimento) novos.vencimento = 'Informe a data de vencimento.'
     if (paraNumero(valor) <= 0) novos.valor = 'Informe um valor maior que zero.'
     if (!descricao.trim()) {
@@ -101,35 +128,46 @@ export default function FormularioTitulo({
 
     setSalvando(true)
 
-    /* SUBSTITUIR POR: POST /financeiro/titulos */
-    const r = await salvarTitulo(
-      tipo === 'pagar'
-        ? {
-            banco,
-            planoContas: plano,
-            fornecedor: contraparte,
-            vencimento,
-            valor: paraNumero(valor),
-            descricao,
-          }
-        : {
-            banco,
-            cliente: contraparte,
-            emissao,
-            vencimento,
-            referente: descricao,
-            tipo: tipoRecebimento,
-            valor: paraNumero(valor),
-          },
-    )
-    setSalvando(false)
+    if (tipo === 'pagar') {
+      const conta = await contaPeloNome(plano)
+      if (!conta.ok) {
+        setSalvando(false)
+        setErros({ geral: 'Não foi possível gravar o plano de conta. Tente de novo.' })
+        return
+      }
 
-    if (!r.ok) {
-      setErros({ geral: r.error })
+      const r = await lancarContaAPagar({
+        supplier: fornecedor.trim(),
+        description: descricao.trim(),
+        amountCents: Math.round(paraNumero(valor) * 100),
+        dueDate: vencimento,
+        accountId: conta.id,
+      })
+      setSalvando(false)
+
+      if (!r.ok) {
+        setErros({ geral: r.erro })
+        return
+      }
+
+      onSalvo('Conta a pagar lançada.')
       return
     }
 
-    onSalvo(tipo === 'pagar' ? 'Conta a pagar lancada.' : 'Conta a receber lancada.')
+    const r = await lancarContaAReceber({
+      description: descricao.trim(),
+      amountCents: Math.round(paraNumero(valor) * 100),
+      dueDate: vencimento,
+      ...(clienteId === '' ? {} : { customerId: clienteId }),
+    })
+    setSalvando(false)
+
+    if (!r.ok) {
+      setErros({ geral: r.erro })
+      return
+    }
+
+    onSalvo('Conta a receber lançada.')
   }
 
   const erroDe = (campo: string) =>
@@ -172,62 +210,54 @@ export default function FormularioTitulo({
         </header>
 
         <form onSubmit={salvar} noValidate className={styles.formCampos}>
-          <div className={styles.formLinha}>
-            <label className={styles.campo}>
-              <span>Banco</span>
-              <CampoTag
-                valor={banco}
-                opcoes={bancos}
-                onChange={setBanco}
-                onCriar={(novo) => setBancos((b) => [...b, novo])}
-                ariaLabel="Banco"
-                invalido={Boolean(erros.banco)}
-              />
-              {erroDe('banco')}
-            </label>
-
-            <label className={styles.campo}>
-              <span>{rotuloContraparte}</span>
-              <CampoTag
-                valor={contraparte}
-                opcoes={contrapartes}
-                onChange={setContraparte}
-                onCriar={(novo) => setContrapartes((c) => [...c, novo])}
-                ariaLabel={rotuloContraparte}
-                invalido={Boolean(erros.contraparte)}
-              />
-              {erroDe('contraparte')}
-            </label>
-          </div>
-
           {tipo === 'pagar' ? (
+            <div className={styles.formLinha}>
+              <label className={styles.campo}>
+                <span>Fornecedor</span>
+                <CampoTag
+                  valor={fornecedor}
+                  opcoes={fornecedores}
+                  onChange={setFornecedor}
+                  onCriar={(novo) => setFornecedores((f) => [...f, novo])}
+                  ariaLabel="Fornecedor"
+                  invalido={Boolean(erros.contraparte)}
+                />
+                {erroDe('contraparte')}
+              </label>
+
+              <label className={styles.campo}>
+                <span>Plano de conta</span>
+                <CampoTag
+                  valor={plano}
+                  opcoes={[...contas.map((c) => c.name), ...planosNovos]}
+                  onChange={setPlano}
+                  onCriar={(novo) => setPlanosNovos((p) => [...p, novo])}
+                  ariaLabel="Plano de conta"
+                  invalido={Boolean(erros.plano)}
+                />
+                {erroDe('plano')}
+              </label>
+            </div>
+          ) : (
             <label className={styles.campo}>
-              <span>Plano de conta</span>
-              <CampoTag
-                valor={plano}
-                opcoes={planos}
-                onChange={setPlano}
-                onCriar={(novo) => setPlanos((p) => [...p, novo])}
-                ariaLabel="Plano de conta"
-                invalido={Boolean(erros.plano)}
-              />
-              {erroDe('plano')}
+              <span>Cliente</span>
+              <select
+                className={styles.input}
+                value={clienteId}
+                onChange={(e) => setClienteId(e.target.value)}
+                aria-label="Cliente"
+              >
+                <option value="">Sem cliente identificado</option>
+                {clientes.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nome}
+                  </option>
+                ))}
+              </select>
             </label>
-          ) : null}
+          )}
 
           <div className={styles.formLinha}>
-            {tipo === 'receber' ? (
-              <label className={styles.campo}>
-                <span>Data de emissão</span>
-                <input
-                  type="date"
-                  className={styles.input}
-                  value={emissao}
-                  onChange={(e) => setEmissao(e.target.value)}
-                />
-              </label>
-            ) : null}
-
             <label className={styles.campo}>
               <span>Data de vencimento</span>
               <input
@@ -254,23 +284,6 @@ export default function FormularioTitulo({
             </label>
           </div>
 
-          {tipo === 'receber' ? (
-            <label className={styles.campo}>
-              <span>Tipo de recebimento</span>
-              <select
-                className={styles.input}
-                value={tipoRecebimento}
-                onChange={(e) => setTipoRecebimento(e.target.value)}
-              >
-                {TIPOS_RECEBIMENTO.map((t) => (
-                  <option key={t.valor} value={t.valor}>
-                    {t.rotulo}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
-
           <label className={styles.campo}>
             <span>{tipo === 'pagar' ? 'O que e' : 'Referente a'}</span>
             <input
@@ -278,7 +291,7 @@ export default function FormularioTitulo({
               value={descricao}
               onChange={(e) => setDescricao(e.target.value)}
               placeholder={
-                tipo === 'pagar' ? 'Pedido 4471, aluguel de agosto...' : 'Venda 1842, servico...'
+                tipo === 'pagar' ? 'Pedido 4471, aluguel de agosto...' : 'Aluguel, empréstimo...'
               }
               aria-invalid={Boolean(erros.descricao)}
             />

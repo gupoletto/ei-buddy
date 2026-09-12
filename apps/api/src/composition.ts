@@ -42,7 +42,10 @@ import {
   createAppointmentRepository,
   createBankTransactionWriter,
   createChartOfAccountsRepository,
+  createFixedCostPayableGenerator,
+  createFixedCostRepository,
   createConnectionRequests,
+  createCrmRepository,
   createInventoryHistory,
   createInventoryQueries,
   createInventoryUnitOfWork,
@@ -56,12 +59,14 @@ import {
   createSettlementQueries,
   createSettlementUnitOfWork,
   createSupportRepository,
+  createTeamRepository,
   createCompanyRepository,
   createCustomerRepository,
   createFiscalCredentials,
   createInvoiceStore,
   createSaleFiscalReader,
   createPayableQueries,
+  createManualReceivableUnitOfWork,
   createReceivableRepository,
   createPayableUnitOfWork,
   createProductRepository,
@@ -83,11 +88,13 @@ import type { ConnectionsRouteDeps } from './routes/connections.js'
 import type { ConciliacaoDeps } from './routes/conciliacao.js'
 import type { SaleRouteDeps } from './routes/sales.js'
 import type { ContabilidadeDeps } from './routes/contabilidade.js'
+import type { CustosFixosDeps } from './routes/custos-fixos.js'
 import type { BaixasDeps } from './routes/baixas.js'
 import type { EstoqueDeps } from './routes/estoque.js'
 import type { SuporteDeps } from './routes/suporte.js'
 import type { RelatoriosDeps } from './routes/relatorios.js'
 import type { ContasDeps } from './routes/contas.js'
+import type { CrmRouteDeps } from './routes/crm.js'
 import { createInvoiceQueue } from './invoice-queue.js'
 import { createConnectionNotifier } from './connection-notifier.js'
 import { createBrasilApiCepLookup } from './cep-lookup.js'
@@ -583,6 +590,17 @@ export function buildContabilidadeDeps(): ContabilidadeDeps {
   }
 }
 
+/** Custos fixos — NR-110. */
+export function buildCustosFixosDeps(): CustosFixosDeps {
+  const sql = getClient(env.DATABASE_URL)
+  return {
+    fixedCosts: createFixedCostRepository(sql),
+    generator: createFixedCostPayableGenerator(sql),
+    /* Mesma pendencia das outras: `db` nao expoe repositorio de auditoria. */
+    audit: createAuditTrail(sql),
+  }
+}
+
 /**
  * Configuracao da emissao fiscal — NR-042, RF-004.
  *
@@ -656,6 +674,8 @@ export function buildContasDeps(): ContasDeps {
     uow: createPayableUnitOfWork(sql),
     queries: createPayableQueries(sql),
     receivables: createReceivableRepository(sql),
+    receivablesUow: createManualReceivableUnitOfWork(sql),
+    accounts: createChartOfAccountsRepository(sql),
     ids: { next: () => randomUUID() },
     /* Mesma pendencia da autenticacao: `db` nao expoe repositorio de
        auditoria, entao a trilha do lancamento fica em memoria. */

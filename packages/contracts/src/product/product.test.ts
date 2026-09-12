@@ -49,6 +49,26 @@ describe('cadastro de produto', () => {
     const { costPriceCents: _, ...semCusto } = produto
     expect(createProductInputSchema.safeParse(semCusto).success).toBe(false)
   })
+
+  /*
+   * O defeito que isto guarda: a coluna `products.supplier` existia desde a
+   * migration 0007, mas nao havia caminho ate ela — o formulario pedia o
+   * fornecedor e o cadastro descartava em silencio.
+   */
+  it('aceita fornecedor e apara os espacos', () => {
+    const r = createProductInputSchema.parse({ ...produto, supplier: '  Torrefacao Aurora  ' })
+    expect(r.supplier).toBe('Torrefacao Aurora')
+  })
+
+  it('fornecedor e opcional — nem toda loja rastreia isso', () => {
+    expect(createProductInputSchema.parse(produto).supplier).toBeUndefined()
+  })
+
+  it('recusa fornecedor longo demais', () => {
+    expect(
+      createProductInputSchema.safeParse({ ...produto, supplier: 'x'.repeat(121) }).success,
+    ).toBe(false)
+  })
 })
 
 describe('edicao de produto', () => {
@@ -62,5 +82,9 @@ describe('edicao de produto', () => {
 
   it('recusa campo desconhecido', () => {
     expect(updateProductInputSchema.safeParse({ preco: 100 }).success).toBe(false)
+  })
+
+  it('aceita alterar so o fornecedor', () => {
+    expect(updateProductInputSchema.safeParse({ supplier: 'Engenho Doce' }).success).toBe(true)
   })
 })

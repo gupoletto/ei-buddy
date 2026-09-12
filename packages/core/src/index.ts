@@ -131,13 +131,20 @@ export type {
   PayableUnitOfWork,
 } from './ports/payable-repository.js'
 export { listReceivables } from './receivables/list-receivables.js'
-export { InMemoryReceivables } from './receivables/fakes.js'
+export { createReceivable } from './receivables/create-receivable.js'
+export type { CreateReceivableDeps } from './receivables/create-receivable.js'
+export { InMemoryManualReceivables, InMemoryReceivables } from './receivables/fakes.js'
 export type {
   GrupoDeRecebimento,
   ListReceivablesDeps,
   ReceivablesAgrupadas,
 } from './receivables/list-receivables.js'
-export type { ReceivableQueries } from './ports/receivable-repository.js'
+export type {
+  ManualReceivableTransaction,
+  ManualReceivableUnitOfWork,
+  NewManualReceivable,
+  ReceivableQueries,
+} from './ports/receivable-repository.js'
 export { listSettlements } from './settlements/list-settlements.js'
 export type { ListSettlementsDeps } from './settlements/list-settlements.js'
 export { reverseSettlement } from './settlements/reverse-settlement.js'
@@ -177,6 +184,7 @@ export {
   importProducts,
   generateInternalCode,
   listCatalog,
+  productSuggestions,
   registerProduct,
   searchProducts,
   TETO_DO_CATALOGO,
@@ -340,3 +348,32 @@ export { getCustomer, listCustomers } from './registration/register-customer.js'
 export { getTicket, listTickets, openTicket, readTicket, replyToTicket } from './support/tickets.js'
 export type { SupportDeps } from './support/tickets.js'
 export type { NewTicket, NewTicketMessage, SupportRepository } from './ports/support-repository.js'
+
+/* CRM — NR-109. */
+export { commentOnCrmCard, createCrmCard, listCrmBoard, listTeam, moveCrmCard } from './crm/crm.js'
+export type { CrmDeps, TeamDeps } from './crm/crm.js'
+export type { CrmRepository, NewCrmCard, NewCrmComment } from './ports/crm-repository.js'
+export type { TeamRepository } from './ports/team-repository.js'
+export { InMemoryCrm, InMemoryTeam } from './crm/fakes.js'
+
+/* Custos fixos — NR-110. */
+export {
+  createFixedCost,
+  deleteFixedCost,
+  listFixedCosts,
+  updateFixedCost,
+} from './fixed-costs/manage-fixed-costs.js'
+export type { FixedCostDeps } from './fixed-costs/manage-fixed-costs.js'
+export { generateFixedCostPayables } from './fixed-costs/generate-payables.js'
+export type {
+  GenerateFixedCostPayablesDeps,
+  GenerateFixedCostPayablesResult,
+} from './fixed-costs/generate-payables.js'
+export { InMemoryFixedCostGenerator, InMemoryFixedCosts } from './fixed-costs/fakes.js'
+export type {
+  FixedCostChanges,
+  FixedCostPayableDraft,
+  FixedCostPayableGenerator,
+  FixedCostRepository,
+  NewFixedCost,
+} from './ports/fixed-cost-repository.js'

@@ -13,6 +13,16 @@
  *
  * BAIXA E ESTORNO SAIRAM desta lista de pendencias na NR-081: sao reais, contra
  * a api, no fim do arquivo.
+ *
+ * PLANO DE CONTAS TAMBEM SAIU: e real, em `contabilidade-api.ts`, contra
+ * `GET /contas-contabeis` — a tela de Plano de contas usa aquele modulo agora.
+ * `listarPlanos` continua aqui, mock e sem tela que a chame, so porque
+ * `PlanoContas.gastoMes` era um numero inventado que nao pode ser reusado.
+ *
+ * CUSTO FIXO continua pendencia de verdade: nao ha tabela nem caso de uso, e a
+ * geracao da conta do mes precisa ser idempotente por (custo fixo,
+ * competencia) — rodar duas vezes nao pode duplicar. Sem isso construido,
+ * nao ha como esta linha da tabela deixar de ser mock.
  */
 
 import { chamarApi, type Resposta } from './api'
@@ -197,12 +207,26 @@ export function listarContasReceberDeExemplo(): ContaReceber[] {
   return contasReceber.map((c) => ({ ...c }))
 }
 
-/** SUBSTITUIR POR: GET /financeiro/planos */
+/**
+ * Sem chamador no momento.
+ *
+ * O plano de contas de VERDADE mora em `contabilidade-api.ts`
+ * (`carregarPlano`, contra `GET /contas-contabeis`), e e o que a tela de
+ * Plano de contas usa agora. Esta funcao fica ate custos fixos ganhar backend
+ * — o "gasto no mes" por conta dela era numero inventado, e nao pode voltar a
+ * ser usada sem que isso mude primeiro.
+ */
 export function listarPlanos(): PlanoContas[] {
   return planoContas.map((p) => ({ ...p }))
 }
 
-/** SUBSTITUIR POR: GET /financeiro/custos-fixos */
+/**
+ * Custo fixo recorrente NAO EXISTE no backend ainda — nem no web.
+ *
+ * Precisa de tabela propria e de um caso de uso que gere a conta a pagar do
+ * mes de forma idempotente (rodar duas vezes no mesmo mes nao pode duplicar).
+ * Ate isso ser construido, esta funcao continua mock e sem tela que a chame.
+ */
 export function listarCustosFixos(): CustoFixo[] {
   return custosFixos.map((c) => ({ ...c }))
 }

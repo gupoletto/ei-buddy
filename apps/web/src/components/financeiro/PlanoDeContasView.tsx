@@ -2,11 +2,13 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import {
+  carregarCustosFixos,
+  criarCustoFixo,
+  type CustoFixo,
+  type DadosCustoFixo,
+  editarCustoFixo,
   excluirCustoFixo,
   gerarContasDeCustosFixos,
-  listarCustosFixos,
-  NOMES_BANCOS,
-  salvarCustoFixo,
 } from '@/lib/financeiro-api'
 import {
   apagarConta,
@@ -16,7 +18,6 @@ import {
   ROTULO_DO_TIPO,
   type TipoDeConta,
 } from '@/lib/contabilidade-api'
-import type { CustoFixo } from '@/lib/types'
 import { formatMoney, mesDeHoje } from '@/lib/format'
 import { Badge, Card, EmptyState, PageHeader, Stat } from '@/components/ui/UI'
 import { SkeletonLinhas } from '@/components/ui/Skeleton'
@@ -24,7 +25,6 @@ import { Button } from '@/components/ui/Button'
 import Toast from '@/components/ui/Toast'
 import { Spinner } from '@/components/auth/Fields'
 import { IconCalendar, IconPlus, IconTrash } from '@/components/Icons'
-import CampoTag from '@/components/app/CampoTag'
 import { COMANDOS_PLANO_CONTAS } from '@/lib/comandos'
 import ComandosWhatsApp from '@/components/app/ComandosWhatsApp'
 import ConfirmarDialog from '@/components/app/ConfirmarDialog'
@@ -37,16 +37,13 @@ function paraNumero(valor: string): number {
 }
 
 export default function PlanoDeContasView() {
-  /*
-   * O plano de contas vem da api (NR-077). Custos fixos continuam no mock: eles
-   * sao outra coisa — uma previsao recorrente de gasto, sem tabela nem caso de
-   * uso — e misturar os dois aqui daria a impressao de que os dois sao reais.
-   */
   const [contas, setContas] = useState<ContaContabil[]>([])
   const [carregandoPlano, setCarregandoPlano] = useState(true)
   const [erroPlano, setErroPlano] = useState<string | null>(null)
 
-  const [custos, setCustos] = useState<CustoFixo[]>(() => listarCustosFixos())
+  const [custos, setCustos] = useState<CustoFixo[]>([])
+  const [carregandoCustos, setCarregandoCustos] = useState(true)
+  const [erroCustos, setErroCustos] = useState<string | null>(null)
 
   const [novoNome, setNovoNome] = useState('')
   const [novoTipo, setNovoTipo] = useState<TipoDeConta>('expense')
@@ -73,14 +70,27 @@ export default function PlanoDeContasView() {
     setContas(r.dados.accounts)
   }, [])
 
+  const buscarCustos = useCallback(async () => {
+    const r = await carregarCustosFixos()
+    setCarregandoCustos(false)
+
+    if (!r.ok) {
+      setErroCustos(r.erro)
+      return
+    }
+
+    setErroCustos(null)
+    setCustos(r.dados)
+  }, [])
+
   useEffect(() => {
     /* `async` explicito: os `setState` vem todos depois do await. */
     void (async () => {
-      await buscarPlano()
+      await Promise.all([buscarPlano(), buscarCustos()])
     })()
-  }, [buscarPlano])
+  }, [buscarPlano, buscarCustos])
 
-  const totalCustosFixos = custos.reduce((acc, c) => acc + c.valor, 0)
+  const totalCustosFixos = custos.reduce((acc, c) => acc + c.valorCents, 0) / 100
 
   /* ---------------------------------------------------------------- *
    * Plano de conta
@@ -136,9 +146,13 @@ export default function PlanoDeContasView() {
     if (!excluindo) return
 
     setProcessando(true)
-    /* SUBSTITUIR POR: DELETE /financeiro/custos-fixos/:id */
-    await excluirCustoFixo(excluindo.id)
+    const r = await excluirCustoFixo(excluindo.id)
     setProcessando(false)
+
+    if (!r.ok) {
+      setToast({ msg: r.erro, tone: 'error' })
+      return
+    }
 
     setCustos((c) => c.filter((x) => x.id !== excluindo.id))
     setExcluindo(null)
@@ -147,17 +161,21 @@ export default function PlanoDeContasView() {
 
   async function gerarContas() {
     setGerando(true)
-    /* SUBSTITUIR POR: POST /financeiro/custos-fixos/gerar */
-    /* O mes corrente, e nao `'2026-08'`: gerar as contas do custo fixo num mes
-       ja fechado joga lancamento no passado e desarruma o DRE daquele mes. */
-    const r = await gerarContasDeCustosFixos(custos, mesDeHoje())
+    /* O mes corrente, e nao um fixo: gerar as contas do custo fixo num mes ja
+       fechado joga lancamento no passado e desarruma o DRE daquele mes. */
+    const r = await gerarContasDeCustosFixos(mesDeHoje())
     setGerando(false)
+
+    if (!r.ok) {
+      setToast({ msg: r.erro, tone: 'error' })
+      return
+    }
 
     setToast({
       msg:
-        r.jaExistiam > 0
-          ? `${r.geradas} conta(s) gerada(s). ${r.jaExistiam} ja existiam neste mes e foram puladas.`
-          : `${r.geradas} conta(s) a pagar gerada(s) para agosto.`,
+        r.dados.jaExistiam > 0
+          ? `${r.dados.geradas} conta(s) gerada(s). ${r.dados.jaExistiam} ja existiam neste mes e foram puladas.`
+          : `${r.dados.geradas} conta(s) a pagar gerada(s) para este mes.`,
       tone: 'success',
     })
   }
@@ -300,7 +318,26 @@ export default function PlanoDeContasView() {
             </Button>
           }
         >
-          {custos.length === 0 ? (
+          {carregandoCustos ? (
+            <SkeletonLinhas />
+          ) : erroCustos !== null ? (
+            <EmptyState
+              title="Não deu para carregar os custos fixos"
+              description={erroCustos}
+              action={
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setCarregandoCustos(true)
+                    setErroCustos(null)
+                    void buscarCustos()
+                  }}
+                >
+                  Tentar de novo
+                </Button>
+              }
+            />
+          ) : custos.length === 0 ? (
             <EmptyState
               title="Nenhum custo fixo"
               description="Cadastre aluguel, energia, contabilidade — o que se repete todo mês. Depois dá para gerar as contas a pagar de uma vez."
@@ -320,12 +357,10 @@ export default function PlanoDeContasView() {
 
                   <span className={styles.custoPrincipal}>
                     <strong>{c.nome}</strong>
-                    <span>
-                      {c.planoContasNome} · {c.bancoNome}
-                    </span>
+                    <span>{c.planoContasNome ?? 'Sem classificação'}</span>
                   </span>
 
-                  <span className={styles.custoValor}>{formatMoney(c.valor)}</span>
+                  <span className={styles.custoValor}>{formatMoney(c.valorCents / 100)}</span>
 
                   <span className={styles.custoAcoes}>
                     <button
@@ -361,7 +396,7 @@ export default function PlanoDeContasView() {
       {formAberto ? (
         <FormCustoFixo
           custo={editando}
-          planos={contas.map((c) => c.name)}
+          contas={contas}
           onSalvo={(salvo) => {
             setCustos((atual) =>
               editando ? atual.map((c) => (c.id === salvo.id ? salvo : c)) : [...atual, salvo],
@@ -403,7 +438,7 @@ export default function PlanoDeContasView() {
             <div className={styles.estornoDetalhe}>
               <strong>{excluindo.nome}</strong>
               <span>
-                {formatMoney(excluindo.valor)} · todo dia {excluindo.diaVencimento}
+                {formatMoney(excluindo.valorCents / 100)} · todo dia {excluindo.diaVencimento}
               </span>
             </div>
           }
@@ -425,23 +460,20 @@ export default function PlanoDeContasView() {
 
 function FormCustoFixo({
   custo,
-  planos,
+  contas,
   onSalvo,
   onCancelar,
 }: {
   custo: CustoFixo | null
-  planos: string[]
+  /** O plano de contas DE VERDADE, ja carregado pela tela. */
+  contas: ContaContabil[]
   onSalvo: (custo: CustoFixo) => void
   onCancelar: () => void
 }) {
   const [nome, setNome] = useState(custo?.nome ?? '')
   const [dia, setDia] = useState(String(custo?.diaVencimento ?? ''))
-  const [valor, setValor] = useState(custo ? String(custo.valor).replace('.', ',') : '')
-  const [plano, setPlano] = useState(custo?.planoContasNome ?? '')
-  const [banco, setBanco] = useState(custo?.bancoNome ?? '')
-
-  const [listaPlanos, setListaPlanos] = useState(planos)
-  const [listaBancos, setListaBancos] = useState(NOMES_BANCOS)
+  const [valor, setValor] = useState(custo ? String(custo.valorCents / 100).replace('.', ',') : '')
+  const [contaId, setContaId] = useState(custo?.planoContasId ?? '')
 
   const [erro, setErro] = useState<string | null>(null)
   const [salvando, setSalvando] = useState(false)
@@ -451,32 +483,22 @@ function FormCustoFixo({
     setErro(null)
     setSalvando(true)
 
-    /* SUBSTITUIR POR: POST/PUT /financeiro/custos-fixos */
-    const r = await salvarCustoFixo({
-      id: custo?.id,
+    const dados: DadosCustoFixo = {
       nome,
       diaVencimento: Number(dia),
-      valor: paraNumero(valor),
-      planoContasNome: plano,
-      bancoNome: banco,
-    })
+      valorCents: Math.round(paraNumero(valor) * 100),
+      planoContasId: contaId === '' ? null : contaId,
+    }
+
+    const r = custo ? await editarCustoFixo(custo.id, dados) : await criarCustoFixo(dados)
     setSalvando(false)
 
     if (!r.ok) {
-      setErro(r.error)
+      setErro(r.erro)
       return
     }
 
-    onSalvo({
-      id: r.id,
-      nome: nome.trim(),
-      diaVencimento: Number(dia),
-      valor: paraNumero(valor),
-      planoContasId: custo?.planoContasId ?? '',
-      planoContasNome: plano,
-      bancoId: custo?.bancoId ?? '',
-      bancoNome: banco,
-    })
+    onSalvo(r.dados)
   }
 
   return (
@@ -533,29 +555,22 @@ function FormCustoFixo({
             </label>
           </div>
 
-          <div className={styles.formLinha}>
-            <label className={styles.campo}>
-              <span>Plano de conta</span>
-              <CampoTag
-                valor={plano}
-                opcoes={listaPlanos}
-                onChange={setPlano}
-                onCriar={(novo) => setListaPlanos((p) => [...p, novo])}
-                ariaLabel="Plano de conta"
-              />
-            </label>
-
-            <label className={styles.campo}>
-              <span>Banco</span>
-              <CampoTag
-                valor={banco}
-                opcoes={listaBancos}
-                onChange={setBanco}
-                onCriar={(novo) => setListaBancos((b) => [...b, novo])}
-                ariaLabel="Banco"
-              />
-            </label>
-          </div>
+          <label className={styles.campo}>
+            <span>Plano de conta</span>
+            <select
+              className={styles.input}
+              value={contaId}
+              onChange={(e) => setContaId(e.target.value)}
+              aria-label="Plano de conta"
+            >
+              <option value="">Sem classificação</option>
+              {contas.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </label>
 
           {erro ? (
             <p className={styles.baixaErro} role="alert">

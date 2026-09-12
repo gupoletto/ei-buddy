@@ -1,7 +1,10 @@
-import type { Role } from '@na-regua/contracts'
+import type { CreateReceivableInput, Role } from '@na-regua/contracts'
 import { describe, expect, it } from 'vitest'
+import { isAppError } from '../app-error.js'
+import { InMemoryAuditTrail } from '../audit/fakes.js'
 import type { ExecutionContext } from '../context.js'
-import { InMemoryReceivables } from './fakes.js'
+import { createReceivable } from './create-receivable.js'
+import { InMemoryManualReceivables, InMemoryReceivables } from './fakes.js'
 import { listReceivables } from './list-receivables.js'
 
 /**
@@ -188,5 +191,104 @@ describe('venda sem cliente identificado', () => {
 
     expect(doGrupo(r, 'today').receivables).toHaveLength(1)
     expect(doGrupo(r, 'today').receivables[0]?.customerName).toBeNull()
+  })
+})
+
+function recebivel(over: Partial<CreateReceivableInput> = {}): CreateReceivableInput {
+  return {
+    description: 'Aluguel de sala comercial',
+    amountCents: 80_000,
+    dueDate: '2026-09-15',
+    ...over,
+  }
+}
+
+/*
+ * A trilha nasce primeiro e entra na unidade de trabalho: desde a NR-087 a
+ * auditoria acontece DENTRO da transacao, e duas instancias fariam o teste
+ * procurar na vazia.
+ */
+function depsManual(audit = new InMemoryAuditTrail(), rec = new InMemoryManualReceivables(audit)) {
+  return { uow: rec, audit, rec }
+}
+
+describe('lancar recebivel avulso — RF-065', () => {
+  it('grava descricao, valor e vencimento', async () => {
+    const d = depsManual()
+
+    const gravado = await createReceivable(d, contexto(), recebivel())
+
+    expect(gravado.description).toBe('Aluguel de sala comercial')
+    expect(gravado.amountCents).toBe(80_000)
+    expect(gravado.dueDate).toBe('2026-09-15')
+    expect(gravado.status).toBe('open')
+  })
+
+  it('liquido e bruto sao o mesmo valor — nao ha tarifa de adquirente', async () => {
+    const d = depsManual()
+
+    const gravado = await createReceivable(d, contexto(), recebivel({ amountCents: 50_000 }))
+
+    expect(gravado.netAmountCents).toBe(50_000)
+  })
+
+  it('nasce sem nada baixado, e sem venda nem parcela', async () => {
+    const d = depsManual()
+
+    const gravado = await createReceivable(d, contexto(), recebivel())
+
+    expect(gravado.settledAmountCents).toBe(0)
+    expect(gravado.saleId).toBeNull()
+    expect(gravado.installmentNumber).toBe(1)
+    expect(gravado.installmentCount).toBe(1)
+  })
+
+  it('sem cliente identificado, o nome fica nulo', async () => {
+    const d = depsManual()
+
+    const gravado = await createReceivable(d, contexto(), recebivel())
+
+    expect(gravado.customerId).toBeNull()
+  })
+
+  it('com cliente, guarda o id', async () => {
+    const d = depsManual()
+
+    const gravado = await createReceivable(d, contexto(), recebivel({ customerId: 'cli-1' }))
+
+    expect(gravado.customerId).toBe('cli-1')
+  })
+})
+
+describe('autorizacao por papel — recebivel avulso', () => {
+  it.each(['owner', 'staff'] as const)('%s lanca recebivel', async (role) => {
+    const d = depsManual()
+
+    const gravado = await createReceivable(d, contexto({ role }), recebivel())
+
+    expect(gravado.id).toBeTruthy()
+  })
+
+  it('accountant nao lanca', async () => {
+    const d = depsManual()
+
+    try {
+      await createReceivable(d, contexto({ role: 'accountant' as Role }), recebivel())
+      expect.fail('deveria ter recusado')
+    } catch (erro) {
+      expect(isAppError(erro) && erro.code).toBe('FORBIDDEN')
+    }
+  })
+})
+
+describe('trilha de auditoria do recebivel avulso — RF-123', () => {
+  it('o lancamento deixa uma entrada', async () => {
+    const audit = new InMemoryAuditTrail()
+    const d = depsManual(audit)
+
+    await createReceivable(d, contexto(), recebivel())
+
+    expect(audit.total).toBe(1)
+    expect(audit.daEmpresa('emp-1')[0]?.after).toMatchObject({ amountCents: 80_000 })
   })
 })
