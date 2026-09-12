@@ -1,7 +1,7 @@
 import 'server-only'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
-import { chamarApi } from './api-server'
+import { chamarApi, chamarApiArquivo } from './api-server'
 import { SESSION_COOKIE } from './session'
 
 /**
@@ -72,4 +72,33 @@ export async function encaminhar(
 /** O corpo JSON do pedido, ou vazio — corpo malformado nao derruba o handler. */
 export async function corpoDe(request: Request): Promise<Record<string, unknown>> {
   return (await request.json().catch(() => ({}))) as Record<string, unknown>
+}
+
+/**
+ * Encaminhamento para uma resposta que NAO e JSON — exportar em CSV/PDF.
+ *
+ * `encaminhar` sempre le `resposta.json()`; um CSV quebraria ali antes de
+ * chegar ao navegador. Erro ainda vira um envelope JSON (o handler de erro do
+ * fetch da tela sabe ler isso), so o SUCESSO que muda de forma.
+ */
+export async function encaminharArquivo(caminho: string): Promise<NextResponse> {
+  const token = (await cookies()).get(SESSION_COOKIE)?.value
+  if (token === undefined) return semSessao()
+
+  const r = await chamarApiArquivo(caminho, token)
+
+  if (!r.ok) {
+    return NextResponse.json(
+      { error: { code: 'EXPORT_FAILED', message: r.message } },
+      { status: r.status },
+    )
+  }
+
+  return new NextResponse(r.bytes, {
+    status: 200,
+    headers: {
+      'content-type': r.contentType,
+      ...(r.contentDisposition === null ? {} : { 'content-disposition': r.contentDisposition }),
+    },
+  })
 }
