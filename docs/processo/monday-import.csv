@@ -89,3 +89,4 @@ NR-107 — Conexao entre usuarios por proximidade: busca cross-tenant e pedido a
 "NR-109 — Quadro de CRM: pendencias e contatos em Kanban, do banco ao mobile (comentario e equipe)",Sprint 6 — Catálogo 0909,Trilha 3 — Clientes,Done,Medium,4,Sprint 6,,,db contracts core api web mobile,—,docs/processo/task-ledger.md
 "NR-110 — Custos fixos: cadastro, edicao e ""gerar contas do mes"", do banco a tela",Sprint 6 — Catálogo 0909,Trilha 3 — Clientes,Done,Medium,4,Sprint 6,NR-077,,db contracts core api web,—,docs/processo/task-ledger.md
 "NR-111 — Pre-lancamento: landing sem acesso, lista de espera e painel de respostas do Super Admin",Sprint 6 — Catálogo 0909,Trilha 3 — Clientes,Done,Medium,5,Sprint 6,,,db contracts core api web,—,docs/processo/task-ledger.md
+"NR-112 — Painel da lista de espera: acesso provisorio por chave, sem esperar o primeiro Super Admin",Sprint 6 — Catálogo 0909,Trilha 3 — Clientes,Done,Medium,1,Sprint 6,NR-111,,api web,—,docs/processo/task-ledger.md

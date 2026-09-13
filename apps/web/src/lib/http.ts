@@ -15,7 +15,7 @@ export async function pedir<T>(caminho: string, init?: RequestInit): Promise<Res
   try {
     resposta = await fetch(caminho, {
       ...init,
-      headers: { 'content-type': 'application/json' },
+      headers: { 'content-type': 'application/json', ...init?.headers },
       /* O token esta num cookie `httpOnly`: sem isto ele nao acompanha o
          pedido e toda chamada volta 401. */
       credentials: 'same-origin',
