@@ -1,4 +1,5 @@
 import { pedir, type Resultado } from './http'
+import type { FairPrice, PainPoint, UsesSystem } from './waitlist-api'
 
 /**
  * O painel do Super Admin — ADR-0007, RF-131.
@@ -51,3 +52,53 @@ export const convidarSuperAdmin = (
     method: 'POST',
     body: JSON.stringify(name === undefined ? { email } : { email, name }),
   })
+
+/* -------------------------------------------------------------------------- */
+/* Lista de espera do pre-lancamento — NR-111                                 */
+/* -------------------------------------------------------------------------- */
+
+export type RespostaListaVip = {
+  id: string
+  name: string
+  businessType: string | null
+  phone: string
+  expectation: string
+  painPoints: PainPoint[]
+  painPointOther: string | null
+  usesSystem: UsesSystem | null
+  usesSystemOther: string | null
+  fairPrice: FairPrice | null
+  wantsUpdates: boolean
+  createdAt: string
+}
+
+export type PaginaDaListaVip = {
+  entries: RespostaListaVip[]
+  total: number
+  page: number
+  pageSize: number
+}
+
+export const listarRespostasListaVip = (
+  params: { q?: string; page?: number; pageSize?: number } = {},
+): Promise<Resultado<PaginaDaListaVip>> => {
+  const query = new URLSearchParams()
+  if (params.q) query.set('q', params.q)
+  if (params.page) query.set('page', String(params.page))
+  if (params.pageSize) query.set('pageSize', String(params.pageSize))
+  const qs = query.toString()
+  return pedir(`/api/admin/lista-vip${qs === '' ? '' : `?${qs}`}`)
+}
+
+export type ContagemPorChave<T extends string> = { value: T; count: number }
+
+export type ResumoDaListaVip = {
+  total: number
+  painPoints: ContagemPorChave<PainPoint>[]
+  usesSystem: ContagemPorChave<UsesSystem>[]
+  fairPrice: ContagemPorChave<FairPrice>[]
+  perDay: { date: string; count: number }[]
+}
+
+export const resumoListaVip = (): Promise<Resultado<ResumoDaListaVip>> =>
+  pedir('/api/admin/lista-vip/resumo')

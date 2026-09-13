@@ -99,3 +99,135 @@ describe.skipIf(!DATABASE_URL)('lista de espera — NR-111', () => {
     expect(Number(linha!.total)).toBeGreaterThanOrEqual(2)
   })
 })
+
+describe.skipIf(!DATABASE_URL)('painel do Super Admin — lista e agregados', () => {
+  let admin: Sql
+  let sql: Sql
+  let aplicacao: ConexaoDeAplicacao
+  let repo: ReturnType<typeof createWaitlistRepository>
+
+  const base = {
+    name: 'Maria Souza',
+    businessType: null,
+    phone: '41998765432',
+    expectation: 'Queria saber o que vendi no dia sem abrir planilha.',
+    painPoints: [] as const,
+    painPointOther: null,
+    usesSystem: null,
+    usesSystemOther: null,
+    fairPrice: null,
+    wantsUpdates: true,
+    createdAt: new Date('2026-09-12T09:00:00.000Z'),
+  }
+
+  beforeAll(async () => {
+    await migrate(MIGRATION_URL!)
+
+    admin = postgres(DATABASE_URL!, { max: 4, onnotice: () => {} })
+    aplicacao = await conectarComoAplicacao(admin, DATABASE_URL!)
+    sql = aplicacao.sql
+    repo = createWaitlistRepository(sql)
+
+    await repo.insert({
+      ...base,
+      name: 'Maria Souza',
+      painPoints: ['cash_flow', 'marketing'],
+      usesSystem: 'complicated',
+      fairPrice: 'up_to_29',
+      createdAt: new Date('2026-09-12T09:00:00.000Z'),
+    })
+    await repo.insert({
+      ...base,
+      name: 'Joao Lima',
+      phone: '41988887777',
+      painPoints: ['cash_flow'],
+      usesSystem: 'complicated',
+      fairPrice: 'from_30_to_49',
+      createdAt: new Date('2026-09-12T20:00:00.000Z'),
+    })
+    await repo.insert({
+      ...base,
+      name: 'Ana Paula',
+      phone: '41977776666',
+      businessType: 'Salao de beleza',
+      createdAt: new Date('2026-09-13T09:00:00.000Z'),
+    })
+  }, 60_000)
+
+  afterAll(async () => {
+    if (!sql) {
+      await admin?.end({ timeout: 5 })
+      return
+    }
+    await admin`DELETE FROM waitlist_entries`
+    await aplicacao.encerrar()
+    await admin.end({ timeout: 5 })
+  })
+
+  describe('list', () => {
+    it('devolve a pagina com o total, mais nova primeiro', async () => {
+      const r = await repo.list({ offset: 0, limite: 2 })
+
+      expect(r.total).toBe(3)
+      expect(r.entries.map((e) => e.name)).toEqual(['Ana Paula', 'Joao Lima'])
+    })
+
+    it('busca por nome estreita o total', async () => {
+      const r = await repo.list({ termo: 'maria', offset: 0, limite: 20 })
+
+      expect(r.total).toBe(1)
+      expect(r.entries[0]!.name).toBe('Maria Souza')
+    })
+
+    it('busca por ramo tambem encontra', async () => {
+      const r = await repo.list({ termo: 'salao', offset: 0, limite: 20 })
+
+      expect(r.entries.map((e) => e.name)).toEqual(['Ana Paula'])
+    })
+
+    it('busca por telefone tambem encontra', async () => {
+      const r = await repo.list({ termo: '41988887777', offset: 0, limite: 20 })
+
+      expect(r.entries.map((e) => e.name)).toEqual(['Joao Lima'])
+    })
+
+    it('sem termo nenhum, devolve tudo', async () => {
+      const r = await repo.list({ offset: 0, limite: 20 })
+
+      expect(r.total).toBe(3)
+    })
+  })
+
+  describe('stats', () => {
+    it('agrega dificuldade por contagem, maior primeiro', async () => {
+      const r = await repo.stats()
+
+      expect(r.total).toBe(3)
+      expect(r.painPoints).toEqual([
+        { value: 'cash_flow', count: 2 },
+        { value: 'marketing', count: 1 },
+      ])
+    })
+
+    it('agrega sistema e valor justo, ignorando quem nao respondeu', async () => {
+      const r = await repo.stats()
+
+      expect(r.usesSystem).toEqual([{ value: 'complicated', count: 2 }])
+      expect(r.fairPrice).toEqual(
+        expect.arrayContaining([
+          { value: 'up_to_29', count: 1 },
+          { value: 'from_30_to_49', count: 1 },
+        ]),
+      )
+    })
+
+    it('agrupa por dia, em ordem crescente', async () => {
+      const r = await repo.stats()
+
+      expect(r.perDay).toEqual([
+        { date: '2026-09-12', count: 2 },
+        { date: '2026-09-13', count: 1 },
+      ])
+    })
+  })
+})

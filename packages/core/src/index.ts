@@ -381,5 +381,13 @@ export type {
 /* Lista de espera do pre-lancamento — NR-111. */
 export { submitWaitlistEntry } from './waitlist/submit-waitlist-entry.js'
 export type { SubmitWaitlistEntryDeps } from './waitlist/submit-waitlist-entry.js'
+export { getWaitlistStats, listWaitlistEntries } from './waitlist/waitlist-admin.js'
+export type { WaitlistAdminDeps } from './waitlist/waitlist-admin.js'
 export { InMemoryWaitlist } from './waitlist/fakes.js'
-export type { NewWaitlistEntry, WaitlistRepository } from './ports/waitlist-repository.js'
+export type {
+  Contagem,
+  NewWaitlistEntry,
+  WaitlistFilter,
+  WaitlistRepository,
+  WaitlistStats,
+} from './ports/waitlist-repository.js'

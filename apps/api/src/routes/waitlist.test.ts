@@ -1,4 +1,4 @@
-import { InMemoryWaitlist } from '@na-regua/core'
+import { InMemoryPlatformAdminAccess, InMemoryWaitlist } from '@na-regua/core'
 import Fastify, { type FastifyInstance } from 'fastify'
 import { afterEach, describe, expect, it } from 'vitest'
 import { registerErrorHandler } from '../plugins/error-handler.js'
@@ -8,9 +8,11 @@ import { registerWaitlistRoutes } from './waitlist.js'
 /**
  * Lista de espera do pre-lancamento, pelo ciclo real do Fastify — NR-111.
  *
- * Sem `onRequest` de sessao, ao contrario das outras suites de rota: e
- * exatamente isso que esta suite prova — a rota funciona sem `principal`
- * nenhum, porque e publica.
+ * `POST /lista-vip` nao tem `onRequest` de sessao, ao contrario das outras
+ * suites de rota: e exatamente isso que a primeira parte desta suite prova —
+ * a rota funciona sem `principal` nem `sessionClaims` nenhum, porque e
+ * publica. `GET /admin/lista-vip*` exige `sessionClaims`, por isso o
+ * `buildApp` aceita um `userId` opcional para simular sessao.
  */
 
 const PAYLOAD_MINIMO = {
@@ -19,15 +21,19 @@ const PAYLOAD_MINIMO = {
   expectation: 'Queria saber o que vendi no dia sem abrir planilha.',
 }
 
-async function buildApp() {
+async function buildApp(userId: string | null = null) {
   const app = Fastify({ logger: false })
   registerErrorHandler(app)
   await registerRateLimit(app)
+  app.addHook('onRequest', async (request) => {
+    if (userId !== null) request.sessionClaims = { userId, companyId: null }
+  })
 
   const waitlist = new InMemoryWaitlist()
-  registerWaitlistRoutes(app, { waitlist })
+  const platformAdmin = new InMemoryPlatformAdminAccess({ aoEntrar: () => {}, aoSair: () => {} })
+  registerWaitlistRoutes(app, { waitlist, platformAdmin })
 
-  return { app, waitlist }
+  return { app, waitlist, platformAdmin }
 }
 
 let app: FastifyInstance
@@ -97,5 +103,56 @@ describe('lista de espera do pre-lancamento — POST /lista-vip', () => {
     })
 
     expect(r.statusCode).toBe(400)
+  })
+})
+
+describe('painel do Super Admin — GET /admin/lista-vip*', () => {
+  it('sem sessao nenhuma responde 401', async () => {
+    const c = await buildApp(null)
+    app = c.app
+
+    expect((await app.inject({ method: 'GET', url: '/admin/lista-vip' })).statusCode).toBe(401)
+    expect((await app.inject({ method: 'GET', url: '/admin/lista-vip/resumo' })).statusCode).toBe(
+      401,
+    )
+  })
+
+  it('com sessao mas sem ser Super Admin responde 403', async () => {
+    const c = await buildApp('user-comum')
+    app = c.app
+
+    const r = await app.inject({ method: 'GET', url: '/admin/lista-vip' })
+
+    expect(r.statusCode).toBe(403)
+  })
+
+  it('Super Admin ve a lista paginada', async () => {
+    const c = await buildApp('user-admin')
+    app = c.app
+    c.platformAdmin.tornarSuperAdmin('user-admin')
+    await app.inject({ method: 'POST', url: '/lista-vip', payload: PAYLOAD_MINIMO })
+
+    const r = await app.inject({ method: 'GET', url: '/admin/lista-vip' })
+
+    expect(r.statusCode).toBe(200)
+    expect(r.json().total).toBe(1)
+    expect(r.json().entries[0].name).toBe('Maria Souza')
+  })
+
+  it('Super Admin ve os agregados', async () => {
+    const c = await buildApp('user-admin')
+    app = c.app
+    c.platformAdmin.tornarSuperAdmin('user-admin')
+    await app.inject({
+      method: 'POST',
+      url: '/lista-vip',
+      payload: { ...PAYLOAD_MINIMO, painPoints: ['cash_flow'] },
+    })
+
+    const r = await app.inject({ method: 'GET', url: '/admin/lista-vip/resumo' })
+
+    expect(r.statusCode).toBe(200)
+    expect(r.json().total).toBe(1)
+    expect(r.json().painPoints).toEqual([{ value: 'cash_flow', count: 1 }])
   })
 })
