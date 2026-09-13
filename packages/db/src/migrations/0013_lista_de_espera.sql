@@ -6,9 +6,15 @@
 --
 -- Quem responde nao tem empresa cadastrada ainda — e por isso mesmo esta
 -- aqui, e nao dentro do fluxo de cadastro. E dado de PLATAFORMA, na mesma
--- categoria de `users`, `partners` e `coupons`: nenhuma das duas checagens de
--- `schema.test.ts` sobre `company_id` se aplica, porque as duas so examinam
--- tabela que TEM essa coluna. Nao ha lista de excecao para atualizar.
+-- categoria de `partners`/`coupons`/`platform_admins`: as duas checagens de
+-- `schema.test.ts` que exigem `company_id` numa coluna (politica de tenant, e
+-- indice comecando por ele) nao se aplicam, porque as duas so examinam tabela
+-- que TEM essa coluna — mas a checagem "toda tabela nasce com RLS" examina
+-- TODA tabela, sem essa condicao, e por isso `waitlist_entries` entrou no
+-- `NAO_TENANT` de `schema.test.ts`. A exportacao LGPD tambem pediu declaracao
+-- explicita: `FORA_DA_EXPORTACAO` em `privacy-repository.ts`, mesmo motivo de
+-- `partners`/`platform_admins` — quem respondeu nao e titular de empresa
+-- nenhuma para devolver pacote.
 --
 -- ---------------------------------------------------------------------------
 -- Por que as respostas fechadas gravam CHAVE em ingles, nao o texto da tela
