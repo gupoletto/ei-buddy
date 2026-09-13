@@ -602,6 +602,20 @@ export function buildCustosFixosDeps(): CustosFixosDeps {
 }
 
 /**
+ * O quadro de CRM e a equipe — NR-109.
+ *
+ * `team` le `company_users` direto — nao ha nada de CRM na porta, so o
+ * seletor de responsavel do card e o unico consumidor por enquanto.
+ */
+export function buildCrmDeps(): CrmRouteDeps {
+  const sql = getClient(env.DATABASE_URL)
+  return {
+    crm: createCrmRepository(sql),
+    team: createTeamRepository(sql),
+  }
+}
+
+/**
  * Configuracao da emissao fiscal — NR-042, RF-004.
  *
  * LANCA sem `SECRETS_KEY`, e nao guarda em texto puro. Um caminho alternativo

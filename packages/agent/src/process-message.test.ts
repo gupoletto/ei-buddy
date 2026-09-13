@@ -127,6 +127,7 @@ function casos(over: Partial<AgentUseCases> = {}): AgentUseCases {
           stock: 10,
           minStock: 0,
           category: null,
+          supplier: null,
         },
         {
           id: 'p-branca',
@@ -143,6 +144,7 @@ function casos(over: Partial<AgentUseCases> = {}): AgentUseCases {
           stock: 4,
           minStock: 0,
           category: null,
+          supplier: null,
         },
       ]
     },
