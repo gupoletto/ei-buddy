@@ -4,20 +4,18 @@ import { chamarApi } from './api'
  * PONTOS DE INTEGRACAO — MODULO DE PRODUTOS
  * ============================================================================
  *
- *  | Funcao                | Endpoint esperado              | Disparo           |
- *  |-----------------------|--------------------------------|-------------------|
- *  | buscarEan             | GET  /catalogo/ean/:ean        | busca por EAN     |
- *  | buscarNcm             | GET  /fiscal/ncm?q=            | busca assistida   |
- *  | salvarProduto         | POST/PUT /produtos[/:id]       | submit do form    |
- *  | ajustarEstoque        | POST /produtos/:id/ajustes     | ajuste manual     |
- *  | movimentacoesEstoque  | GET  /produtos/:id/movimentos  | historico         |
- *  | confirmarImportacao   | POST /produtos/importar        | importar planilha |
- *  | importarXmlCompra     | POST /compras/xml              | importar XML      |
+ *  | Funcao                | Endpoint esperado                       | Disparo           |
+ *  |-----------------------|------------------------------------------|-------------------|
+ *  | buscarEan             | GET  /produtos/codigo-de-barras/:codigo | busca por EAN     |
+ *  | salvarProduto         | POST/PUT /produtos[/:id]                | submit do form    |
+ *  | ajustarEstoque        | POST /produtos/:id/ajustes              | ajuste manual     |
+ *  | movimentacoesEstoque  | GET  /produtos/:id/movimentos           | historico         |
+ *  | confirmarImportacao   | POST /produtos/importar                 | importar planilha |
  *
- * O XML da nota de compra e lido no navegador so para MOSTRAR os itens
- * antes de confirmar. Quem grava entrada de estoque e custo e o servidor:
- * ele precisa validar a chave de acesso, evitar lancar a mesma nota duas
- * vezes e registrar quem importou.
+ * Busca assistida de NCM e importacao de XML de nota de compra NAO existem
+ * aqui: nenhuma das duas tem requisito por tras (ver `produtos-api.ts` do
+ * web), e a segunda nem faria sentido no mobile — quem esta no balcao com o
+ * celular na mao esta vendendo, nao dando entrada em mercadoria.
  */
 
 import type { Produto } from './types'
@@ -75,30 +73,6 @@ export async function buscarEan(ean: string): Promise<LeituraDeCodigo> {
   if (r.status === 404) return { situacao: 'novo', ean: limpo }
 
   return { situacao: 'erro', mensagem: r.message }
-}
-
-export type SugestaoNcm = { codigo: string; descricao: string }
-
-/** SUBSTITUIR POR: GET /fiscal/ncm?q=<descricao> */
-export async function buscarNcm(termo: string): Promise<SugestaoNcm[]> {
-  await delay(500)
-
-  const t = termo.trim().toLowerCase()
-  if (t.length < 3) return []
-
-  const tabela: SugestaoNcm[] = [
-    { codigo: '0901.21.00', descricao: 'Café torrado, não descafeinado' },
-    { codigo: '0402.99.00', descricao: 'Leite condensado e outros leites' },
-    { codigo: '0401.20.10', descricao: 'Leite UHT, teor de gordura até 3%' },
-    { codigo: '1701.13.00', descricao: 'Açúcar de cana em bruto' },
-    { codigo: '1905.31.00', descricao: 'Bolachas e biscoitos doces' },
-    { codigo: '1509.10.00', descricao: 'Azeite de oliva virgem' },
-    { codigo: '2202.10.00', descricao: 'Águas com adição de açúcar, refrigerantes' },
-    { codigo: '3401.11.00', descricao: 'Sabonetes de toucador' },
-    { codigo: '4823.20.90', descricao: 'Papel-filtro em folhas ou tiras' },
-  ]
-
-  return tabela.filter((n) => n.descricao.toLowerCase().includes(t) || n.codigo.startsWith(t))
 }
 
 /* -------------------------------------------------------------------------- */
@@ -267,17 +241,6 @@ export async function ajustarEstoque(
   }
   return { ok: true }
 }
-
-/* -------------------------------------------------------------------------- */
-/* XML de nota de compra — fica so no web                                     */
-/* -------------------------------------------------------------------------- */
-
-/*
- * A importacao de XML de nota de compra nao existe no mobile, por duas
- * razoes: o parser depende de DOMParser, que o React Native nao tem, e
- * conferir nota de fornecedor e tarefa de retaguarda. Quem esta no balcao
- * com o celular na mao esta vendendo, nao dando entrada em mercadoria.
- */
 
 /* -------------------------------------------------------------------------- */
 /* Utilitarios de tela                                                        */

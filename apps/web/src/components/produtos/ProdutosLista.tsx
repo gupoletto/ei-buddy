@@ -18,7 +18,6 @@ import { IconBox, IconPlus, IconSearch, IconUpload } from '@/components/Icons'
 import { COMANDOS_PRODUTOS } from '@/lib/comandos'
 import ComandosWhatsApp from '@/components/app/ComandosWhatsApp'
 import ImportarPlanilha from '@/components/app/ImportarPlanilha'
-import ImportarXml from './ImportarXml'
 import styles from './produtos.module.css'
 
 /**
@@ -106,7 +105,6 @@ export default function ProdutosLista() {
   const [erro, setErro] = useState<string | null>(null)
 
   const [importandoPlanilha, setImportandoPlanilha] = useState(false)
-  const [importandoXml, setImportandoXml] = useState(false)
 
   /**
    * A resposta que chegou fora de ordem e descartada.
@@ -205,10 +203,6 @@ export default function ProdutosLista() {
         subtitle="Catálogo, preços e estoque"
         actions={
           <>
-            <Button variant="secondary" onClick={() => setImportandoXml(true)}>
-              <IconUpload size={17} />
-              Importar XML
-            </Button>
             <Button variant="secondary" onClick={() => setImportandoPlanilha(true)}>
               <IconUpload size={17} />
               Importar planilha
@@ -291,7 +285,7 @@ export default function ProdutosLista() {
           ) : (
             <EmptyState
               title="Nenhum produto cadastrado"
-              description="Cadastre o primeiro produto, traga o catálogo de uma planilha ou importe o XML de uma nota de compra."
+              description="Cadastre o primeiro produto ou traga o catálogo de uma planilha."
               mascote
               action={
                 <div className={styles.emptyAcoes}>
@@ -301,9 +295,6 @@ export default function ProdutosLista() {
                   </ButtonLink>
                   <Button variant="secondary" onClick={() => setImportandoPlanilha(true)}>
                     Importar planilha
-                  </Button>
-                  <Button variant="secondary" onClick={() => setImportandoXml(true)}>
-                    Importar XML
                   </Button>
                 </div>
               }
@@ -397,8 +388,6 @@ export default function ProdutosLista() {
           onClose={() => setImportandoPlanilha(false)}
         />
       ) : null}
-
-      {importandoXml ? <ImportarXml onClose={() => setImportandoXml(false)} /> : null}
     </>
   )
 }
