@@ -23,11 +23,25 @@
  */
 export const BRAND = 'EiBuddy'
 
+/**
+ * Liga o modo pre-lancamento da landing.
+ *
+ * O app ainda nao tem partes essenciais prontas (integracoes de API, agente,
+ * WhatsApp) para abrir cadastro ao publico. Enquanto isto for `true`: sem
+ * botao de Entrar/Cadastrar, sem secao de Planos, e o topo da pagina convida
+ * para a lista de espera (`/lista-vip`) em vez de criar conta.
+ *
+ * Nada foi apagado por causa disto — `Pricing.tsx`, os links de conta no
+ * rodape e os CTAs de cadastro continuam no codigo. Virar `false` restaura
+ * tudo, porque e exatamente esse o dia que esta flag antecipa.
+ */
+export const PRE_LANCAMENTO = true
+
 export const nav = [
   { label: 'Módulos', href: '#modulos' },
   { label: 'Como funciona', href: '#como-funciona' },
   { label: 'Painel', href: '#painel' },
-  { label: 'Planos', href: '#planos' },
+  ...(PRE_LANCAMENTO ? [] : [{ label: 'Planos', href: '#planos' }]),
   { label: 'Dúvidas', href: '#duvidas' },
 ]
 
@@ -215,18 +229,23 @@ export const footerColumns = [
       { label: 'Módulos', href: '/#modulos' },
       { label: 'Como funciona', href: '/#como-funciona' },
       { label: 'Painel', href: '/#painel' },
-      { label: 'Planos', href: '/#planos' },
+      ...(PRE_LANCAMENTO ? [] : [{ label: 'Planos', href: '/#planos' }]),
       { label: 'Dúvidas', href: '/#duvidas' },
     ],
   },
-  {
-    title: 'Conta',
-    links: [
-      { label: 'Entrar', href: '/login' },
-      { label: 'Criar conta', href: '/criar-conta' },
-      { label: 'Recuperar senha', href: '/recuperar-senha' },
-    ],
-  },
+  /* Sem conta para entrar ou criar em pre-lancamento — ver PRE_LANCAMENTO. */
+  ...(PRE_LANCAMENTO
+    ? []
+    : [
+        {
+          title: 'Conta',
+          links: [
+            { label: 'Entrar', href: '/login' },
+            { label: 'Criar conta', href: '/criar-conta' },
+            { label: 'Recuperar senha', href: '/recuperar-senha' },
+          ],
+        },
+      ]),
   {
     /*
      * Suporte publico ainda nao existe como pagina: /app/suporte fica atras do

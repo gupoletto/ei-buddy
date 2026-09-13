@@ -76,6 +76,7 @@ import {
   createSaleUnitOfWork,
   createSupplierDirectory,
   createUserDirectory,
+  createWaitlistRepository,
   getClient,
   lerChaveDeSegredo,
   type DatabaseHealth,
@@ -89,6 +90,7 @@ import type { ConciliacaoDeps } from './routes/conciliacao.js'
 import type { SaleRouteDeps } from './routes/sales.js'
 import type { ContabilidadeDeps } from './routes/contabilidade.js'
 import type { CustosFixosDeps } from './routes/custos-fixos.js'
+import type { WaitlistRouteDeps } from './routes/waitlist.js'
 import type { BaixasDeps } from './routes/baixas.js'
 import type { EstoqueDeps } from './routes/estoque.js'
 import type { SuporteDeps } from './routes/suporte.js'
@@ -599,6 +601,12 @@ export function buildCustosFixosDeps(): CustosFixosDeps {
     /* Mesma pendencia das outras: `db` nao expoe repositorio de auditoria. */
     audit: createAuditTrail(sql),
   }
+}
+
+/** Lista de espera do pre-lancamento — NR-111. */
+export function buildWaitlistDeps(): WaitlistRouteDeps {
+  const sql = getClient(env.DATABASE_URL)
+  return { waitlist: createWaitlistRepository(sql) }
 }
 
 /**

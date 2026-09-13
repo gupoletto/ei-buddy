@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import { PRE_LANCAMENTO } from '@/content/site'
 import { IconArrowRight } from './Icons'
 import styles from './CtaBuddy.module.css'
 
@@ -17,25 +18,33 @@ export default function CtaBuddy() {
       <div className="container">
         <div className={styles.card}>
           <div className={styles.copy}>
-            <span className={styles.badge}>Comece hoje</span>
+            <span className={styles.badge}>
+              {PRE_LANCAMENTO ? 'Ajude a construir' : 'Comece hoje'}
+            </span>
 
             <h2 className={styles.title}>
               Deixe o <span className="gradientText">Buddy</span> cuidar da papelada
             </h2>
 
             <p className={styles.lead}>
-              Crie sua conta em dois minutos e use todos os módulos desde o primeiro dia. Sem
-              instalação, sem contrato de fidelidade e sem cobrança por usuário.
+              {PRE_LANCAMENTO
+                ? 'O EiBuddy ainda está em construção. Entre para o Grupo VIP de Pré-Lançamento e ajude a moldar o produto antes de todo mundo.'
+                : 'Crie sua conta em dois minutos e use todos os módulos desde o primeiro dia. Sem instalação, sem contrato de fidelidade e sem cobrança por usuário.'}
             </p>
 
             <div className={styles.ctas}>
-              <Link href="/criar-conta" className="btn btnPrimary">
-                Começar agora
+              <Link
+                href={PRE_LANCAMENTO ? '/lista-vip' : '/criar-conta'}
+                className="btn btnPrimary"
+              >
+                {PRE_LANCAMENTO ? 'Entrar para a lista VIP' : 'Começar agora'}
                 <IconArrowRight size={18} />
               </Link>
-              <a href="#planos" className="btn btnGhost">
-                Ver o plano
-              </a>
+              {PRE_LANCAMENTO ? null : (
+                <a href="#planos" className="btn btnGhost">
+                  Ver o plano
+                </a>
+              )}
             </div>
           </div>
 

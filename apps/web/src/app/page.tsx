@@ -8,7 +8,9 @@ import Footer from '@/components/Footer'
 import Header from '@/components/Header'
 import Hero from '@/components/Hero'
 import Modules from '@/components/Modules'
+import PreLancamentoBanner from '@/components/PreLancamentoBanner'
 import Pricing from '@/components/Pricing'
+import { PRE_LANCAMENTO } from '@/content/site'
 
 export default function Home() {
   return (
@@ -16,6 +18,7 @@ export default function Home() {
       <Header />
 
       <main>
+        {PRE_LANCAMENTO ? <PreLancamentoBanner /> : null}
         <Hero />
         <Modules />
 
@@ -99,7 +102,7 @@ export default function Home() {
 
         <DashboardPreview />
         <Benefits />
-        <Pricing />
+        {PRE_LANCAMENTO ? null : <Pricing />}
         <FAQ />
         <CtaBuddy />
       </main>

@@ -23,7 +23,7 @@ const DATABASE_URL = process.env.DATABASE_URL
 const MIGRATION_URL = process.env.DATABASE_MIGRATION_URL ?? DATABASE_URL
 
 /** Tabelas que NAO sao de negocio e por isso nao seguem a regra do company_id. */
-const NAO_TENANT = new Set(['schema_migrations', 'partners', 'coupons'])
+const NAO_TENANT = new Set(['schema_migrations', 'partners', 'coupons', 'waitlist_entries'])
 
 describe.skipIf(!DATABASE_URL)('schema de cadastros — NR-008', () => {
   /** Administrador: papel de teste, concessoes e leitura de catalogo. */

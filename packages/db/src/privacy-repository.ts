@@ -138,6 +138,9 @@ export const FORA_DA_EXPORTACAO: Readonly<Record<string, string>> = {
      transparencia legitima mas de natureza diferente do que a portabilidade
      do art. 18 pede. */
   platform_admin_access: 'Trilha de acesso administrativo (RF-131), nao dado gerado pelo titular.',
+  /* NR-111: quem responde nao tem empresa ainda — nao ha titular-empresa para
+     devolver o pacote. Mesma categoria de `partners`/`platform_admins`. */
+  waitlist_entries: 'Lista de espera do pre-lancamento, sem tenant.',
 }
 
 /**

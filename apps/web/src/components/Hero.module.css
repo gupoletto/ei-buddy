@@ -9,6 +9,11 @@
     var(--bg);
 }
 
+/** Quando o `PreLancamentoBanner` ja cobriu o header fixo por cima. */
+.naoEhOPrimeiro {
+  padding-top: 56px;
+}
+
 .grid {
   display: grid;
   gap: 44px;
@@ -306,6 +311,10 @@
 @media (min-width: 940px) {
   .hero {
     padding-top: calc(var(--header-h) + 76px);
+  }
+
+  .naoEhOPrimeiro {
+    padding-top: 76px;
   }
 
   .grid {
