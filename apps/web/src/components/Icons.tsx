@@ -109,6 +109,15 @@ export function IconArrowRight({ size = 24, className }: IconProps) {
   )
 }
 
+export function IconArrowLeft({ size = 24, className }: IconProps) {
+  return (
+    <svg {...svgProps(size, className)}>
+      <path d="M5 12h14" />
+      <path d="M11 6l-6 6 6 6" />
+    </svg>
+  )
+}
+
 export function IconMenu({ size = 24, className }: IconProps) {
   return (
     <svg {...svgProps(size, className)}>

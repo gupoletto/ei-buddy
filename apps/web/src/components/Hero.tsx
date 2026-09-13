@@ -41,7 +41,7 @@ export default function Hero() {
 
           <div className={styles.ctas}>
             <Link href={PRE_LANCAMENTO ? '/lista-vip' : '/criar-conta'} className="btn btnPrimary">
-              {PRE_LANCAMENTO ? 'Entrar para a lista VIP' : 'Começar agora'}
+              {PRE_LANCAMENTO ? 'Entrar para o Grupo VIP' : 'Começar agora'}
               <IconArrowRight size={18} />
             </Link>
             <a href="#painel" className="btn btnGhost">
