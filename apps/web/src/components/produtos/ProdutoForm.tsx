@@ -3,21 +3,14 @@
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
-import {
-  buscarEan,
-  buscarNcm,
-  calcularMargem,
-  carregarSugestoes,
-  salvarProduto,
-  type SugestaoNcm,
-} from '@/lib/produtos-api'
+import { calcularMargem, carregarSugestoes, salvarProduto } from '@/lib/produtos-api'
 import { formatMoney, formatPercent } from '@/lib/format'
 import { validateRequired, type FieldError } from '@/lib/validation'
 import { Button, ButtonLink } from '@/components/ui/Button'
 import { Card, Field, FormGrid, Input, PageHeader } from '@/components/ui/UI'
 import Toast from '@/components/ui/Toast'
 import { Spinner } from '@/components/auth/Fields'
-import { IconBarcode, IconSearch, IconTrash } from '@/components/Icons'
+import { IconBarcode, IconTrash } from '@/components/Icons'
 import LeitorCodigoBarras from '@/components/app/LeitorCodigoBarras'
 import CampoTag from '@/components/app/CampoTag'
 import styles from './produtoForm.module.css'
@@ -72,13 +65,7 @@ export default function ProdutoForm() {
   }, [])
 
   const [erros, setErros] = useState<Record<string, FieldError>>({})
-  const [buscandoEan, setBuscandoEan] = useState(false)
-  const [avisoEan, setAvisoEan] = useState<string | null>(null)
   const [lendoCodigo, setLendoCodigo] = useState(false)
-
-  const [termoNcm, setTermoNcm] = useState('')
-  const [sugestoesNcm, setSugestoesNcm] = useState<SugestaoNcm[]>([])
-  const [buscandoNcm, setBuscandoNcm] = useState(false)
 
   const [salvando, setSalvando] = useState(false)
   const [toast, setToast] = useState<{ msg: string; tone: 'success' | 'error' } | null>(null)
@@ -87,54 +74,6 @@ export default function ProdutoForm() {
   const venda = paraNumero(precoVenda)
   const margem = calcularMargem(custo, venda)
   const lucro = venda - custo
-
-  /* ---------------------------------------------------------------- *
-   * EAN
-   * ---------------------------------------------------------------- */
-
-  async function consultarEan(codigoBarras?: string) {
-    const alvo = (codigoBarras ?? ean).trim()
-    if (!alvo) {
-      setAvisoEan('Informe o código de barras.')
-      return
-    }
-
-    setEan(alvo)
-    setAvisoEan(null)
-    setBuscandoEan(true)
-
-    /* SUBSTITUIR POR: GET /catalogo/ean/:ean */
-    const r = await buscarEan(alvo)
-    setBuscandoEan(false)
-
-    if (!r.ok) {
-      setAvisoEan(r.error)
-      return
-    }
-
-    setDescricao(r.dados.descricao)
-    setNcm(r.dados.ncm)
-    if (!categoria) setCategoria(r.dados.categoria)
-    setToast({ msg: 'Dados preenchidos pelo código de barras.', tone: 'success' })
-  }
-
-  /* ---------------------------------------------------------------- *
-   * NCM assistido
-   * ---------------------------------------------------------------- */
-
-  async function consultarNcm() {
-    const termo = termoNcm.trim() || descricao.trim()
-    if (termo.length < 3) {
-      setSugestoesNcm([])
-      return
-    }
-
-    setBuscandoNcm(true)
-    /* SUBSTITUIR POR: GET /fiscal/ncm?q= */
-    const r = await buscarNcm(termo)
-    setBuscandoNcm(false)
-    setSugestoesNcm(r)
-  }
 
   /* ---------------------------------------------------------------- *
    * Imagem
@@ -229,10 +168,7 @@ export default function ProdutoForm() {
               <div className={styles.inline}>
                 <Input
                   value={ean}
-                  onChange={(e) => {
-                    setEan(e.target.value.replace(/\D/g, ''))
-                    setAvisoEan(null)
-                  }}
+                  onChange={(e) => setEan(e.target.value.replace(/\D/g, ''))}
                   placeholder="7891000000000"
                   inputMode="numeric"
                 />
@@ -244,21 +180,7 @@ export default function ProdutoForm() {
                 >
                   <IconBarcode size={16} />
                 </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => consultarEan()}
-                  disabled={buscandoEan}
-                >
-                  {buscandoEan ? <Spinner size={14} /> : <IconSearch size={15} />}
-                  Buscar
-                </Button>
               </div>
-              {avisoEan ? (
-                <span className={styles.aviso} role="status">
-                  {avisoEan}
-                </span>
-              ) : null}
             </Field>
 
             <Field label="Código interno" span={6}>
@@ -346,43 +268,7 @@ export default function ProdutoForm() {
                 inputMode="numeric"
               />
             </Field>
-
-            <Field label="Não sabe o NCM?" span={12} hint="Descreva o produto e escolha na lista.">
-              <div className={styles.inline}>
-                <Input
-                  value={termoNcm}
-                  onChange={(e) => setTermoNcm(e.target.value)}
-                  placeholder={descricao || 'cafe torrado'}
-                />
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={consultarNcm}
-                  disabled={buscandoNcm}
-                >
-                  {buscandoNcm ? <Spinner size={14} /> : <IconSearch size={15} />}
-                  Buscar
-                </Button>
-              </div>
-            </Field>
           </FormGrid>
-
-          {sugestoesNcm.length > 0 ? (
-            <ul className={styles.sugestoes}>
-              {sugestoesNcm.map((s) => (
-                <li key={s.codigo}>
-                  <button
-                    type="button"
-                    className={`${styles.sugestao} ${ncm === s.codigo ? styles.sugestaoAtiva : ''}`}
-                    onClick={() => setNcm(s.codigo)}
-                  >
-                    <strong>{s.codigo}</strong>
-                    <span>{s.descricao}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : null}
         </Card>
 
         {/* ---------------- Precos ---------------- */}
@@ -525,7 +411,7 @@ export default function ProdutoForm() {
 
       {lendoCodigo ? (
         <LeitorCodigoBarras
-          onDetectar={(codigoLido) => void consultarEan(codigoLido)}
+          onDetectar={(codigoLido) => setEan(codigoLido.replace(/\D/g, ''))}
           onClose={() => setLendoCodigo(false)}
         />
       ) : null}

@@ -5,28 +5,26 @@
  *
  *  | Funcao                | Endpoint esperado              | Disparo           |
  *  |-----------------------|--------------------------------|-------------------|
- *  | buscarEan             | GET  /catalogo/ean/:ean        | busca por EAN     |
- *  | buscarNcm             | GET  /fiscal/ncm?q=            | busca assistida   |
  *  | salvarProduto         | POST/PUT /produtos[/:id]       | submit do form    |
  *  | confirmarImportacao   | POST /produtos/importar        | importar planilha |
- *  | importarXmlCompra     | POST /compras/xml              | importar XML      |
  *
  * CATEGORIA E FORNECEDOR SAIRAM DESTA LISTA — `carregarSugestoes` fala com
  * `GET /produtos/sugestoes`, real desde a NR-072.1: nao e mais a mesma lista
  * de exemplo para toda loja, e sim categoria/fornecedor que o proprio
  * lojista ja digitou.
  *
- * O XML da nota de compra e lido no navegador so para MOSTRAR os itens
- * antes de confirmar. Quem grava entrada de estoque e custo e o servidor:
- * ele precisa validar a chave de acesso, evitar lancar a mesma nota duas
- * vezes e registrar quem importou.
+ * BUSCA POR EAN, BUSCA ASSISTIDA DE NCM E IMPORTACAO DE XML DE COMPRA SAIRAM
+ * DAQUI TAMBEM — nenhuma das tres tem requisito por tras (nem RF nem US as
+ * pede) em lugar nenhum de `docs/produto/`. RF-017/018/019 sao sobre ler um
+ * codigo de barras para achar ou criar produto no PROPRIO catalogo, o que
+ * `POST /produtos` ja faz (recusa codigo repetido — ver `salvarProduto`).
+ * Simular uma base de dado nacional de EAN, uma tabela de NCM ou uma
+ * importacao de nota fiscal de compra era prometer uma integracao que nunca
+ * foi pedida — o mesmo defeito do campo "Banco" que saiu do formulario de
+ * titulo (NR-074).
  */
 
 import { pedir, type Resultado } from './http'
-import { produtos } from './mock-data'
-import type { Produto } from './types'
-
-const delay = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 /* -------------------------------------------------------------------------- */
 /* Categorias e fornecedores                                                  */
@@ -50,89 +48,6 @@ export const carregarSugestoes = (): Promise<Resultado<SugestoesDoFormulario>> =
       ? { ok: true, dados: { categorias: r.dados.categories, fornecedores: r.dados.suppliers } }
       : r,
   )
-
-/* -------------------------------------------------------------------------- */
-/* Consulta por EAN                                                           */
-/* -------------------------------------------------------------------------- */
-
-export type DadosEan = {
-  descricao: string
-  ncm: string
-  categoria: string
-}
-
-export type EanResult = { ok: true; dados: DadosEan } | { ok: false; error: string }
-
-/** SUBSTITUIR POR: GET /catalogo/ean/:ean */
-export async function buscarEan(ean: string): Promise<EanResult> {
-  await delay(850)
-
-  const limpo = ean.replace(/\D/g, '')
-  if (limpo.length < 8) {
-    return { ok: false, error: 'Código de barras incompleto.' }
-  }
-
-  /* Primeiro procura no proprio catalogo — se o produto ja existe, o mais
-     util e avisar, nao criar um duplicado. */
-  const jaCadastrado = produtos.find((p) => p.ean === limpo)
-  if (jaCadastrado) {
-    return {
-      ok: false,
-      error: `Este codigo ja esta no produto "${jaCadastrado.descricao}".`,
-    }
-  }
-
-  const base: Record<string, DadosEan> = {
-    '7891000100103': {
-      descricao: 'Leite condensado 395g',
-      ncm: '0402.99.00',
-      categoria: 'Mercearia',
-    },
-    '7894900011517': {
-      descricao: 'Refrigerante cola 2L',
-      ncm: '2202.10.00',
-      categoria: 'Bebidas',
-    },
-  }
-
-  const dados = base[limpo]
-  if (!dados) {
-    return {
-      ok: false,
-      error: 'Código não encontrado na base. Preencha os dados manualmente.',
-    }
-  }
-
-  return { ok: true, dados }
-}
-
-/* -------------------------------------------------------------------------- */
-/* Busca assistida de NCM                                                     */
-/* -------------------------------------------------------------------------- */
-
-export type SugestaoNcm = { codigo: string; descricao: string }
-
-/** SUBSTITUIR POR: GET /fiscal/ncm?q=<descricao> */
-export async function buscarNcm(termo: string): Promise<SugestaoNcm[]> {
-  await delay(500)
-
-  const t = termo.trim().toLowerCase()
-  if (t.length < 3) return []
-
-  const tabela: SugestaoNcm[] = [
-    { codigo: '0901.21.00', descricao: 'Cafe torrado, nao descafeinado' },
-    { codigo: '0402.99.00', descricao: 'Leite condensado e outros leites' },
-    { codigo: '0401.20.10', descricao: 'Leite UHT, teor de gordura ate 3%' },
-    { codigo: '1701.13.00', descricao: 'Acucar de cana em bruto' },
-    { codigo: '1905.31.00', descricao: 'Bolachas e biscoitos doces' },
-    { codigo: '1509.10.00', descricao: 'Azeite de oliva virgem' },
-    { codigo: '2202.10.00', descricao: 'Aguas com adicao de acucar, refrigerantes' },
-    { codigo: '3401.11.00', descricao: 'Sabonetes de toucador' },
-    { codigo: '4823.20.90', descricao: 'Papel-filtro em folhas ou tiras' },
-  ]
-
-  return tabela.filter((n) => n.descricao.toLowerCase().includes(t) || n.codigo.startsWith(t))
-}
 
 /* -------------------------------------------------------------------------- */
 /* Gravacao                                                                   */
@@ -364,110 +279,6 @@ export async function confirmarImportacaoProdutos(
  * e o saldo continuava errado — ele acreditava por causa da mensagem.
  * --------------------------------------------------------------------------
  */
-
-/* -------------------------------------------------------------------------- */
-/* XML de nota de compra                                                      */
-/* -------------------------------------------------------------------------- */
-
-export type ItemXml = {
-  codigoFornecedor: string
-  descricao: string
-  ean: string
-  ncm: string
-  quantidade: number
-  valorUnitario: number
-  /** Produto ja cadastrado que combina com o item, quando houver. */
-  produtoVinculado: Produto | null
-}
-
-export type NotaXml = {
-  numero: string
-  emitente: string
-  emissao: string
-  itens: ItemXml[]
-}
-
-/**
- * Le uma NF-e a partir do XML, no proprio navegador.
- *
- * Usa DOMParser (nativo) em vez de biblioteca: o que precisamos e um
- * punhado de campos por item, e a leitura aqui e apenas para montar a
- * previa. A gravacao continua sendo do servidor.
- */
-export function lerXmlNfe(
-  texto: string,
-): { ok: true; nota: NotaXml } | { ok: false; error: string } {
-  let doc: Document
-  try {
-    doc = new DOMParser().parseFromString(texto, 'application/xml')
-  } catch {
-    return { ok: false, error: 'Não foi possível ler o XML.' }
-  }
-
-  if (doc.querySelector('parsererror')) {
-    return { ok: false, error: 'O arquivo não é um XML válido.' }
-  }
-
-  const texto1 = (el: Element | null | undefined, tag: string): string =>
-    el?.getElementsByTagName(tag)[0]?.textContent?.trim() ?? ''
-
-  const infNFe = doc.getElementsByTagName('infNFe')[0]
-  if (!infNFe) {
-    return { ok: false, error: 'Este XML não parece ser de uma NF-e.' }
-  }
-
-  const ide = infNFe.getElementsByTagName('ide')[0]
-  const emit = infNFe.getElementsByTagName('emit')[0]
-
-  const dets = Array.from(infNFe.getElementsByTagName('det'))
-  if (dets.length === 0) {
-    return { ok: false, error: 'A nota não tem itens.' }
-  }
-
-  const itens: ItemXml[] = dets.map((det) => {
-    const prod = det.getElementsByTagName('prod')[0]
-    const ean = texto1(prod, 'cEAN')
-    const eanLimpo = ean && ean !== 'SEM GTIN' ? ean : ''
-    const codigo = texto1(prod, 'cProd')
-
-    /* Casa com o catalogo por EAN e, se nao achar, pelo codigo. */
-    const vinculado =
-      produtos.find((p) => eanLimpo && p.ean === eanLimpo) ??
-      produtos.find((p) => p.codigo === codigo) ??
-      null
-
-    return {
-      codigoFornecedor: codigo,
-      descricao: texto1(prod, 'xProd'),
-      ean: eanLimpo,
-      ncm: texto1(prod, 'NCM'),
-      quantidade: Number(texto1(prod, 'qCom')) || 0,
-      valorUnitario: Number(texto1(prod, 'vUnCom')) || 0,
-      produtoVinculado: vinculado,
-    }
-  })
-
-  return {
-    ok: true,
-    nota: {
-      numero: texto1(ide, 'nNF'),
-      emitente: texto1(emit, 'xNome'),
-      emissao: (texto1(ide, 'dhEmi') || texto1(ide, 'dEmi')).slice(0, 10),
-      itens,
-    },
-  }
-}
-
-/** SUBSTITUIR POR: POST /compras/xml — grava entrada de estoque e custo. */
-export async function importarXmlCompra(
-  nota: NotaXml,
-  decisoes: Record<string, 'vincular' | 'criar' | 'ignorar'>,
-): Promise<{ ok: true; entradas: number } | { ok: false; error: string }> {
-  await delay(1300)
-  void nota
-  const entradas = Object.values(decisoes).filter((d) => d !== 'ignorar').length
-  return { ok: true, entradas }
-}
 
 /* -------------------------------------------------------------------------- */
 /* Utilitarios de tela                                                        */
