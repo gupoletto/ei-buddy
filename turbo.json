@@ -10,7 +10,11 @@
     "LOG_LEVEL",
     "PAGMAXX_*",
     "WHATSAPP_*",
-    "FISCAL_*"
+    "FISCAL_*",
+    "AGENT_PROVIDER",
+    "AGENT_MODEL",
+    "AGENT_MONTHLY_BUDGET_CENTS",
+    "OPENAI_API_KEY"
   ],
   "tasks": {
     "dev": {

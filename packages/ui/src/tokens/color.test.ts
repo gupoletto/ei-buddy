@@ -6,8 +6,8 @@ import { brand, dark, light } from './color.js'
  * RNF-055 executavel.
  *
  * Cada par aqui e uma combinacao que aparece de verdade nas telas. O teste
- * existe para que trocar um token — o que vai acontecer quando a DEC-001
- * fechar — nao consiga degradar o contraste em silencio.
+ * existe para que trocar um token — o que vai acontecer quando o EiBuddy
+ * tiver arte propria — nao consiga degradar o contraste em silencio.
  */
 
 const paresClaro: ReadonlyArray<readonly [string, string, string]> = [

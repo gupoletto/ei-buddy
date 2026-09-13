@@ -540,9 +540,11 @@ compromisso.
 
 ## E11 — Assistente WhatsApp
 
-> A tese central do produto. Depende de
-> [DEC-003](../decisoes/README.md#dec-003), [DEC-007](../decisoes/README.md#dec-007),
-> [DEC-008](../decisoes/README.md#dec-008) e [DEC-011](../decisoes/README.md#dec-011).
+> A tese central do produto. O runtime fechou
+> ([ADR-0010](../decisoes/adr/0010-mastra-e-gpt-4o-mini.md)). Ainda dependem de
+> [DEC-003](../decisoes/README.md#dec-003) (WhatsApp) e
+> [DEC-011](../decisoes/README.md#dec-011) (memória). Identidade já fechou
+> ([DEC-008](../decisoes/README.md#dec-008)).
 
 #### US-046 — Vincular o número da loja
 

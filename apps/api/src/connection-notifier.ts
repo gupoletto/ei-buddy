@@ -42,7 +42,7 @@ export function createConnectionNotifier(connection: Redis): ConnectionNotifier 
         requestedAt: new Date().toISOString(),
         body:
           `${pedido.requesterCompanyName} quer se conectar com a ${pedido.targetCompanyName} ` +
-          `no Ei Buddy. Entre no app para aceitar ou recusar.`,
+          `no EiBuddy. Entre no app para aceitar ou recusar.`,
       }
 
       await fila.add(FILA_DE_WHATSAPP, mensagem, {

@@ -111,7 +111,7 @@ export default function Login() {
       >
         <ScrollView contentContainerStyle={estilos.conteudo} keyboardShouldPersistTaps="handled">
           <View style={estilos.marca}>
-            <Text style={estilos.marcaNome}>Ei Buddy</Text>
+            <Text style={estilos.marcaNome}>EiBuddy</Text>
           </View>
 
           <View style={estilos.cabecalho}>

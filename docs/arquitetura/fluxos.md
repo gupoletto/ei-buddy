@@ -94,7 +94,7 @@ sequenceDiagram
     participant WA as Provedor WhatsApp
     participant A as apps/api
     participant AG as packages/agent
-    participant LLM as Provedor LLM
+    participant LLM as OpenAI gpt-4o-mini
     participant C as core.registerSale
 
     L->>WA: "venda pro João: 2 camisetas M a 49,90, pagou no Pix"

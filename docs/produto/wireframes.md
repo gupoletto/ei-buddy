@@ -1,4 +1,4 @@
-# ZapGestor — Wireframe 1
+# EiBuddy — Wireframe 1
 
 > Fonte: [ZapGestor_Apresentacao.pdf](../assets/ZapGestor_Apresentacao.pdf) · página 5 (módulos) e páginas 6–10 (campos e fluxos).
 >
@@ -12,7 +12,7 @@ Todas as telas usam o mesmo casco. O assistente Zap (WhatsApp) é um painel late
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│  ZapGestor          Empresa: [ Barbearia Central ▼ ]    🔔  👤  [Zap ▸]     │
+│  EiBuddy            Empresa: [ Barbearia Central ▼ ]    🔔  👤  [Zap ▸]     │
 ├────────────┬───────────────────────────────────────────────────┬─────────────┤
 │            │                                                   │             │
 │  Emp       │                                                   │  Zap        │

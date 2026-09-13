@@ -1,7 +1,9 @@
 import Fastify from 'fastify'
 import {
+  assertAgentUsavelEmProducao,
   assertAuthUsavelEmProducao,
   buildAgendaDeps,
+  buildAgentDeps,
   buildAuthDeps,
   buildCadastroDeps,
   buildConciliacaoDeps,
@@ -46,6 +48,7 @@ import { registerRelatoriosRoutes } from './routes/relatorios.js'
 import { registerPrivacidadeRoutes } from './routes/privacidade.js'
 import { registerSuporteRoutes } from './routes/suporte.js'
 import { registerSaleRoutes } from './routes/sales.js'
+import { registerAgentRoutes } from './routes/agent.js'
 
 // RNF-058: log estruturado (JSON) com requestId, companyId e userId.
 const app = Fastify({
@@ -117,6 +120,7 @@ async function registrarRotas(): Promise<void> {
   registerCrmRoutes(app, buildCrmDeps())
   registerPrivacidadeRoutes(app, buildPrivacidadeDeps())
   registerEmissaoRoutes(app, buildEmissaoDeps())
+  registerAgentRoutes(app, await buildAgentDeps())
 
   /*
    * A falta da chave de cifragem NAO impede a api de subir: ela desliga uma
@@ -146,6 +150,7 @@ async function main(): Promise<void> {
   /* Antes de tudo: autenticacao de desenvolvimento nao sobe em producao.
      Sincrono e sem I/O, entao vem antes ate da checagem de isolamento. */
   assertAuthUsavelEmProducao()
+  assertAgentUsavelEmProducao()
 
   await registrarRotas()
 

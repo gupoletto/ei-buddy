@@ -140,7 +140,7 @@ export default function MenuLateral(props: DrawerContentComponentProps) {
   return (
     <View style={[estilos.menu, { paddingTop: insets.top + espaco.lg }]}>
       <View style={estilos.marca}>
-        <Text style={estilos.marcaNome}>Ei Buddy</Text>
+        <Text style={estilos.marcaNome}>EiBuddy</Text>
       </View>
 
       {/*

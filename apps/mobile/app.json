@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Ei Buddy",
+    "name": "EiBuddy",
     "slug": "ei-buddy",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -27,7 +27,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "O Ei Buddy usa a camera para ler o codigo de barras dos produtos."
+          "cameraPermission": "O EiBuddy usa a camera para ler o codigo de barras dos produtos."
         }
       ]
     ],

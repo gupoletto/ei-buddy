@@ -26,6 +26,8 @@ minimumReleaseAgeExclude:
   - expo-modules-autolinking@57.0.11
   - expo-modules-core@57.0.13
   - expo@57.0.16
+  # Recente demais para o gate de idade — ADR-0010, runtime do assistente.
+  - '@mastra/core@1.66.0'
 
 # vite entra so como engine do vitest (peer). A resolucao natural cai numa
 # versao <=6.4.2, que carrega GHSA-fx2h-pf6j-xcff (alta) e mais duas moderadas.

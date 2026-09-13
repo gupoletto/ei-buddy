@@ -19,7 +19,8 @@ Os ambientes do sistema e a matriz completa de variáveis de ambiente.
 > realista? gere sintética a partir do schema.
 
 **Staging e production ainda não existem** — dependem de
-[DEC-009](../decisoes/README.md#dec-009).
+[DEC-009](../decisoes/README.md#dec-009). O domínio público de produção é
+**eibuddy.com.br** ([ADR-0011](../decisoes/adr/0011-eibuddy-nome-e-dominio.md)).
 
 ## Regras
 
@@ -124,14 +125,14 @@ do sistema — ver [`seguranca.md`](../arquitetura/seguranca.md#certificado-digi
 | `BANKING_CLIENT_ID`     |      |  🔒  | vazio  | —                           |
 | `BANKING_CLIENT_SECRET` |      |  🔒  | vazio  | —                           |
 
-### Agente / LLM — [DEC-007](../decisoes/README.md#dec-007)
+### Agente / LLM — [ADR-0010](../decisoes/adr/0010-mastra-e-gpt-4o-mini.md)
 
-| Variável                     | Obr. | Seg. | local             | Descrição                                                             |
-| ---------------------------- | :--: | :--: | ----------------- | --------------------------------------------------------------------- |
-| `AGENT_PROVIDER`             |  ✅  |      | `fake`            | `fake` \| provedor escolhido                                          |
-| `ANTHROPIC_API_KEY`          |      |  🔒  | vazio             | —                                                                     |
-| `AGENT_MODEL`                |      |      | `claude-sonnet-5` | identificador do modelo                                               |
-| `AGENT_MONTHLY_BUDGET_CENTS` |      |      | —                 | teto por empresa ([RNF-073](../produto/requisitos-nao-funcionais.md)) |
+| Variável                     | Obr. | Seg. | local                | Descrição                                                             |
+| ---------------------------- | :--: | :--: | -------------------- | --------------------------------------------------------------------- |
+| `AGENT_PROVIDER`             |  ✅  |      | `fake`               | `fake` \| `mastra`                                                    |
+| `OPENAI_API_KEY`             |      |  🔒  | vazio                | obrigatória só com `AGENT_PROVIDER=mastra`                            |
+| `AGENT_MODEL`                |      |      | `openai/gpt-4o-mini` | formato Mastra `provedor/modelo`                                      |
+| `AGENT_MONTHLY_BUDGET_CENTS` |      |      | —                    | teto por empresa ([RNF-073](../produto/requisitos-nao-funcionais.md)) |
 
 ### Webhooks em desenvolvimento
 

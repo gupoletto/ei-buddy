@@ -58,7 +58,7 @@ flowchart LR
 | -------------------------------- | ------------------------------------------------------------------------------------- |
 | Pix, boleto, link, cartão online | Só depois do Asaas **aprovar** a loja. O dinheiro cai na conta Asaas **dela**.        |
 | Dinheiro ou maquininha           | Só registro no ERP. O Asaas nem é chamado.                                            |
-| Mensalidade do ZapGestor         | Cobra na **nossa** conta Asaas, independente da conta da loja.                        |
+| Mensalidade do EiBuddy           | Cobra na **nossa** conta Asaas, independente da conta da loja.                        |
 | Cadastro da empresa no ERP       | **Não** obriga Asaas. Quem não vai usar Pix/boleto/link/cartão opera só com registro. |
 
 **Trava:** Pix, boleto, link e cartão só se `company_integrations.payments_onboarding_status =

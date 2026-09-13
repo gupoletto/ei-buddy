@@ -9,7 +9,24 @@
  * fronteiras na CI barra o PR — e com razao.
  */
 import { randomUUID } from 'node:crypto'
-import { createDefaultSaleSettings } from '@na-regua/core'
+import {
+  buildRevenueByMonth,
+  createDefaultSaleSettings,
+  listReceivables,
+  listSales,
+  registerCustomer,
+  registerSale,
+  searchProducts,
+} from '@na-regua/core'
+import {
+  createAgentRuntime,
+  createToolCatalog,
+  FakeLlm,
+  type AgentUseCases,
+  type LlmPort,
+  type ToolDescriptor,
+} from '@na-regua/agent'
+import type { AgentRouteDeps } from './routes/agent.js'
 import type { AgendaDeps } from './routes/agenda.js'
 import type { IdentityProvider, IdentityRegistrar } from '@na-regua/core'
 import type { AuthRouteDeps } from './routes/auth.js'
@@ -585,6 +602,20 @@ export function buildCustosFixosDeps(): CustosFixosDeps {
 }
 
 /**
+ * O quadro de CRM e a equipe — NR-109.
+ *
+ * `team` le `company_users` direto — nao ha nada de CRM na porta, so o
+ * seletor de responsavel do card e o unico consumidor por enquanto.
+ */
+export function buildCrmDeps(): CrmRouteDeps {
+  const sql = getClient(env.DATABASE_URL)
+  return {
+    crm: createCrmRepository(sql),
+    team: createTeamRepository(sql),
+  }
+}
+
+/**
  * Configuracao da emissao fiscal — NR-042, RF-004.
  *
  * LANCA sem `SECRETS_KEY`, e nao guarda em texto puro. Um caminho alternativo
@@ -666,15 +697,79 @@ export function buildContasDeps(): ContasDeps {
 }
 
 /**
- * O quadro de CRM e a equipe — NR-109.
+ * Recusa subir em producao com o LLM falso — ADR-0010.
  *
- * `team` le `company_users` direto — nao ha nada de CRM na porta, so o
- * seletor de responsavel do card e o unico consumidor por enquanto.
+ * `AGENT_PROVIDER=fake` so reconhece tres consultas da US-047 e nao fala com
+ * modelo nenhum. Publicar assim seria um assistente de mentira no ar.
  */
-export function buildCrmDeps(): CrmRouteDeps {
-  const sql = getClient(env.DATABASE_URL)
+export function assertAgentUsavelEmProducao(): void {
+  if (env.NODE_ENV === 'production' && env.AGENT_PROVIDER === 'fake') {
+    throw new Error(
+      'AGENT_PROVIDER=fake nao chama modelo nenhum e nao pode rodar em producao. ' +
+        'Defina AGENT_PROVIDER=mastra e OPENAI_API_KEY (ADR-0010).',
+    )
+  }
+}
+
+async function criarLlmDoAgente(tools: readonly ToolDescriptor[]): Promise<LlmPort> {
+  if (env.AGENT_PROVIDER !== 'mastra') return new FakeLlm()
+
+  if (env.OPENAI_API_KEY === undefined) {
+    throw new Error(
+      'AGENT_PROVIDER=mastra exige OPENAI_API_KEY (ADR-0010). ' +
+        'Para desenvolver sem chave, use AGENT_PROVIDER=fake.',
+    )
+  }
+
+  const { createMastraLlm } = await import('@na-regua/agent/mastra')
+  return createMastraLlm({
+    model: env.AGENT_MODEL,
+    apiKey: env.OPENAI_API_KEY,
+    tools,
+  })
+}
+
+/**
+ * Runtime do assistente — NR-060, ADR-0010.
+ *
+ * Sem WhatsApp: o canal e o POST /agent/messages com a sessao do lojista.
+ * Confirmacoes ficam em memoria ate a NR-061. Memoria da conversa e DEC-011.
+ */
+export async function buildAgentDeps(): Promise<AgentRouteDeps> {
+  const sales = buildSaleDeps()
+  const cadastro = buildCadastroDeps()
+  const contas = buildContasDeps()
+  const relatorios = buildRelatoriosDeps()
+
+  const useCases: AgentUseCases = {
+    listSales: (ctx, input) => listSales(sales, ctx, input),
+    listReceivables: (ctx) => listReceivables(contas, ctx),
+    registerCustomer: (ctx, input) => registerCustomer(cadastro, ctx, input),
+    registerSale: (ctx, input) =>
+      registerSale(
+        sales,
+        {
+          ...ctx,
+          idempotencyKey: ctx.idempotencyKey ?? `agent:${ctx.requestId}`,
+        },
+        input,
+      ),
+    searchProducts: (ctx, input) =>
+      searchProducts(cadastro, ctx, {
+        ...(input.q === undefined || input.q.trim() === '' ? {} : { termo: input.q }),
+        limite: input.pageSize,
+      }),
+    revenueByMonth: (ctx, input) => buildRevenueByMonth(relatorios, ctx, input),
+  }
+
+  const tools = createToolCatalog(useCases)
+  const llm = await criarLlmDoAgente(tools)
+
   return {
-    crm: createCrmRepository(sql),
-    team: createTeamRepository(sql),
+    runtime: createAgentRuntime({
+      useCases,
+      llm,
+      timeZone: env.TZ,
+    }),
   }
 }

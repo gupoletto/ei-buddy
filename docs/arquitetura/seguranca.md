@@ -183,14 +183,14 @@ recurso existe.
 
 Riscos que só existem porque há um LLM no caminho:
 
-| Risco                                                               | Controle                                                                                                                                                                      |
-| ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Injeção de prompt** — cliente manda texto que tenta virar comando | O agente só executa via _tool call_ tipada; texto nunca vira SQL nem chamada arbitrária                                                                                       |
-| **Escalada de privilégio** — agente faz o que o usuário não pode    | O agente chama `core` com o mesmo `ExecutionContext`; papel é verificado no caso de uso                                                                                       |
-| **Ação não intencionada**                                           | Confirmação explícita antes de qualquer efeito com valor ([RF-103](../produto/requisitos-funcionais.md))                                                                      |
-| **Vazamento entre conversas**                                       | Contexto isolado por empresa; nunca compartilhado ([RF-106](../produto/requisitos-funcionais.md))                                                                             |
-| **Dado sensível enviado ao provedor de LLM**                        | Envia-se o mínimo necessário ([RNF-075](../produto/requisitos-nao-funcionais.md)); o provedor é subprocessador declarado ([RNF-036](../produto/requisitos-nao-funcionais.md)) |
-| **Alucinação com consequência financeira**                          | O agente nunca calcula: `domain` calcula, o agente apenas transporta ([RF-101](../produto/requisitos-funcionais.md))                                                          |
+| Risco                                                               | Controle                                                                                                                                                                                                                              |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Injeção de prompt** — cliente manda texto que tenta virar comando | O agente só executa via _tool call_ tipada; texto nunca vira SQL nem chamada arbitrária                                                                                                                                               |
+| **Escalada de privilégio** — agente faz o que o usuário não pode    | O agente chama `core` com o mesmo `ExecutionContext`; papel é verificado no caso de uso                                                                                                                                               |
+| **Ação não intencionada**                                           | Confirmação explícita antes de qualquer efeito com valor ([RF-103](../produto/requisitos-funcionais.md))                                                                                                                              |
+| **Vazamento entre conversas**                                       | Contexto isolado por empresa; nunca compartilhado ([RF-106](../produto/requisitos-funcionais.md))                                                                                                                                     |
+| **Dado sensível enviado ao provedor de LLM**                        | Envia-se o mínimo necessário ([RNF-075](../produto/requisitos-nao-funcionais.md)); a OpenAI é subprocessador declarado ([RNF-036](../produto/requisitos-nao-funcionais.md), [ADR-0010](../decisoes/adr/0010-mastra-e-gpt-4o-mini.md)) |
+| **Alucinação com consequência financeira**                          | O agente nunca calcula: `domain` calcula, o agente apenas transporta ([RF-101](../produto/requisitos-funcionais.md))                                                                                                                  |
 
 A última linha é a mais importante do documento: **o LLM interpreta linguagem,
 nunca decide valor.** Total, imposto, tarifa e parcela vêm de `domain`. Se um
@@ -273,7 +273,7 @@ seria um ponto de exfiltração por funcionário. E ninguém pelo WhatsApp
 - Dado pessoal nunca em log ([RNF-034](../produto/requisitos-nao-funcionais.md)),
   com varredura automatizada por CPF, telefone e e-mail
 - Auditoria guarda antes/depois **sem** dado pessoal nos campos sensíveis
-- Ao provedor de LLM vai o mínimo necessário
+- Ao provedor de LLM (OpenAI, [ADR-0010](../decisoes/adr/0010-mastra-e-gpt-4o-mini.md)) vai o mínimo necessário
 - Mensagens retidas pelo prazo mínimo declarado, com expurgo verificável
   ([RNF-035](../produto/requisitos-nao-funcionais.md))
 

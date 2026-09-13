@@ -167,3 +167,52 @@ describe('assertAuthUsavelEmProducao — ADR-0002', () => {
     expect(() => assertAuthUsavelEmProducao()).not.toThrow()
   })
 })
+
+/**
+ * A guarda simetrica do assistente — ADR-0010.
+ *
+ * Subir em producao com `AGENT_PROVIDER=fake` publicaria um reconhecedor de
+ * tres frases no lugar do modelo. O local continua no falso, sem chave.
+ */
+describe('assertAgentUsavelEmProducao — ADR-0010', () => {
+  async function comAmbiente(over: Record<string, string>) {
+    vi.resetModules()
+    for (const [chave, valor] of Object.entries({ ...AMBIENTE, ...over })) {
+      vi.stubEnv(chave, valor)
+    }
+    return import('./composition.js')
+  }
+
+  it('recusa producao com o provedor falso', async () => {
+    const { assertAgentUsavelEmProducao } = await comAmbiente({
+      NODE_ENV: 'production',
+      AGENT_PROVIDER: 'fake',
+    })
+
+    expect(() => assertAgentUsavelEmProducao()).toThrow(/nao pode rodar em producao/)
+  })
+
+  it('a recusa diz o que configurar', async () => {
+    const { assertAgentUsavelEmProducao } = await comAmbiente({
+      NODE_ENV: 'production',
+      AGENT_PROVIDER: 'fake',
+    })
+
+    expect(() => assertAgentUsavelEmProducao()).toThrow(/AGENT_PROVIDER=mastra/)
+  })
+
+  it('aceita producao com Mastra', async () => {
+    const { assertAgentUsavelEmProducao } = await comAmbiente({
+      NODE_ENV: 'production',
+      AGENT_PROVIDER: 'mastra',
+    })
+
+    expect(() => assertAgentUsavelEmProducao()).not.toThrow()
+  })
+
+  it.each(['development', 'test'])('aceita %s com o provedor falso', async (NODE_ENV) => {
+    const { assertAgentUsavelEmProducao } = await comAmbiente({ NODE_ENV, AGENT_PROVIDER: 'fake' })
+
+    expect(() => assertAgentUsavelEmProducao()).not.toThrow()
+  })
+})

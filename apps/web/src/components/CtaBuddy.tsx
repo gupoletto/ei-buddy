@@ -43,7 +43,7 @@ export default function CtaBuddy() {
             <div className={styles.glow} aria-hidden="true" />
             <Image
               src="/buddy.png"
-              alt="Buddy, o mascote do Ei Buddy, com o polegar levantado"
+              alt="Buddy, o mascote do EiBuddy, com o polegar levantado"
               fill
               className={styles.imagem}
               sizes="(min-width: 940px) 380px, 260px"

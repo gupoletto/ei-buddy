@@ -92,3 +92,46 @@ describe('BETTER_AUTH_SECRET', () => {
     expect(loadApiEnv({ ...base, BETTER_AUTH_SECRET: '' }).BETTER_AUTH_SECRET).toBeUndefined()
   })
 })
+
+/**
+ * Assistente — ADR-0010.
+ *
+ * O falso e o padrao para `pnpm dev` subir sem chave da OpenAI. `mastra`
+ * exige a chave na composicao, nao neste schema: exigir aqui barraria o
+ * boot local, onde o provedor e o falso.
+ */
+describe('agente — ADR-0010', () => {
+  it('aplica o provedor falso e o modelo inicial', () => {
+    const env = loadApiEnv(base)
+    expect(env.AGENT_PROVIDER).toBe('fake')
+    expect(env.AGENT_MODEL).toBe('openai/gpt-4o-mini')
+    expect(env.OPENAI_API_KEY).toBeUndefined()
+    expect(env.AGENT_MONTHLY_BUDGET_CENTS).toBeUndefined()
+  })
+
+  it('aceita o provedor Mastra e a chave', () => {
+    const env = loadApiEnv({
+      ...base,
+      AGENT_PROVIDER: 'mastra',
+      OPENAI_API_KEY: 'sk-teste',
+      AGENT_MODEL: 'openai/gpt-4o',
+    })
+    expect(env.AGENT_PROVIDER).toBe('mastra')
+    expect(env.OPENAI_API_KEY).toBe('sk-teste')
+    expect(env.AGENT_MODEL).toBe('openai/gpt-4o')
+  })
+
+  it('converte o teto mensal', () => {
+    expect(
+      loadApiEnv({ ...base, AGENT_MONTHLY_BUDGET_CENTS: '5000' }).AGENT_MONTHLY_BUDGET_CENTS,
+    ).toBe(5000)
+  })
+
+  it('trata chave vazia como ausente', () => {
+    expect(loadApiEnv({ ...base, OPENAI_API_KEY: '' }).OPENAI_API_KEY).toBeUndefined()
+  })
+
+  it('recusa provedor desconhecido', () => {
+    expect(() => loadApiEnv({ ...base, AGENT_PROVIDER: 'langchain' })).toThrow()
+  })
+})

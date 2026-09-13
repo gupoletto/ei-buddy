@@ -3,7 +3,8 @@
 Tokens de design e componentes compartilhados entre web e mobile.
 
 **Estado:** 🟢 tokens implementados · componentes ainda não · paleta provisória
-enquanto [DEC-001](../../docs/decisoes/README.md#dec-001) / [QST-011](../../docs/decisoes/README.md#qst-011) não fecham · `NR-011`
+(ProComércio) até existir arte própria do EiBuddy
+([ADR-0011](../../docs/decisoes/adr/0011-eibuddy-nome-e-dominio.md)) · `NR-011`
 
 ## Responsabilidade
 
@@ -25,14 +26,15 @@ de apresentação, e `Money.format()` é a única forma correta de fazê-lo.
 
 ## Bloqueio de marca
 
-O [material de rebranding](../../docs/assets/pro-comercio-rebranding.md) traz a
-paleta ProComércio (`#1E2A78` `#39C8BD` `#6D33DD`), as fontes (BC Alphapipe,
-BD Colonius) e **cinco paletas de marcas derivadas**. Ainda não se sabe se este
-produto é uma dessas marcas derivadas e, se for, qual — [QST-011](../../docs/decisoes/README.md#qst-011).
+O nome do produto fechou: **EiBuddy**
+([ADR-0011](../../docs/decisoes/adr/0011-eibuddy-nome-e-dominio.md)). O
+[material de rebranding](../../docs/assets/pro-comercio-rebranding.md) continua
+sendo a fonte da paleta provisória (`#1E2A78` `#39C8BD` `#6D33DD`) e das
+fontes (BC Alphapipe, BD Colonius) — ProComércio **não** é o nome do ERP.
 
-**Mitigação aplicada:** a paleta provisória é a do ProComércio e vive em
-[`src/tokens/color.ts`](src/tokens/color.ts). Quando a marca fechar, troca-se
-esse arquivo — os dois clientes acompanham sem refatoração.
+**Mitigação aplicada:** a paleta provisória vive em
+[`src/tokens/color.ts`](src/tokens/color.ts). Quando houver arte própria do
+EiBuddy, troca-se esse arquivo — os dois clientes acompanham sem refatoração.
 
 ## Restrições que vêm dos requisitos
 

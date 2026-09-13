@@ -28,7 +28,7 @@ Três pontos costumam sair errados. O fluxo real:
    Focus ter aceito o JSON e o PFX — **não** é credenciamento na SEFAZ nem
    no emissor nacional.
 2. **O token não é do usuário.** É o token da **empresa emitente** na Focus
-   (`token_producao` / `token_homologacao`). Login do lojista no ZapGestor é
+   (`token_producao` / `token_homologacao`). Login do lojista no EiBuddy é
    outro assunto. Há ainda o **token da conta plataforma** (revenda /
    integração multi-CNPJ), usado só em `/v2/empresas` e nas APIs acessórias.
 3. **Emissão não devolve sempre a nota pronta.** NFC-e é síncrona (autorização
