@@ -13,15 +13,15 @@ export const metadata: Metadata = {
 /**
  * Pesquisa do pre-lancamento — NR-111.
  *
- * Header e Footer iguais aos da landing, como em `PaginaLegal.tsx`: quem
- * chegou por um link precisa de caminho de volta. Sem os botoes de
- * Entrar/Cadastrar (`PRE_LANCAMENTO` em `content/site.ts`), o Header nao
- * empurra ninguem para um cadastro que ainda nao existe.
+ * Footer igual ao da landing, como em `PaginaLegal.tsx`: quem chegou por um
+ * link precisa de caminho de volta. O Header usa `comVoltar`: os links de
+ * `nav` apontam para secoes da landing (`#modulos` etc.) que nao existem
+ * aqui, entao viram so um link de volta para `/`.
  */
 export default function ListaVipPage() {
   return (
     <>
-      <Header />
+      <Header comVoltar />
 
       <main className={styles.pagina}>
         <div className={`container ${styles.corpo}`}>

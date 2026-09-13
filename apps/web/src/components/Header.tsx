@@ -3,10 +3,22 @@
 import Link from 'next/link'
 import { type MouseEvent, useEffect, useState } from 'react'
 import { BRAND, nav, PRE_LANCAMENTO } from '@/content/site'
-import { IconClose, IconMenu } from './Icons'
+import { IconArrowLeft, IconClose, IconMenu } from './Icons'
 import styles from './Header.module.css'
 
-export default function Header() {
+type HeaderProps = {
+  /**
+   * Paginas fora da landing (a pesquisa do pre-lancamento, por exemplo) nao
+   * tem as secoes que `nav` aponta (`#modulos` etc.) — mostrar aqueles links
+   * ali so pareceria quebrado. Neste modo o header vira so marca + um link de
+   * volta para a landing, visivel em qualquer largura de tela (o nav/acoes
+   * normal so aparece a partir de 900px, e aqui nao ha menu mobile para
+   * cobrir a lacuna abaixo disso).
+   */
+  comVoltar?: boolean
+}
+
+export default function Header({ comVoltar = false }: HeaderProps) {
   const [open, setOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
 
@@ -58,79 +70,90 @@ export default function Header() {
           <span className={styles.brandName}>{BRAND}</span>
         </a>
 
-        <nav className={styles.nav} aria-label="Seções do site">
-          {nav.map((item) => (
-            <a key={item.href} href={item.href} className={styles.navLink}>
-              {item.label}
-            </a>
-          ))}
-        </nav>
+        {comVoltar ? (
+          <Link href="/" className={styles.voltar}>
+            <IconArrowLeft size={16} />
+            Voltar para o site
+          </Link>
+        ) : (
+          <>
+            <nav className={styles.nav} aria-label="Seções do site">
+              {nav.map((item) => (
+                <a key={item.href} href={item.href} className={styles.navLink}>
+                  {item.label}
+                </a>
+              ))}
+            </nav>
 
-        {/* Div sempre presente: e ela quem tem `margin-left: auto` no layout
-            flex do header. Removendo a div (e nao so o conteudo), o menu
-            hamburguer perderia a ancora e a barra ficaria desalinhada acima
-            de 900px, largura em que ele fica escondido. */}
-        <div className={styles.actions}>
+            {/* Div sempre presente: e ela quem tem `margin-left: auto` no layout
+                flex do header. Removendo a div (e nao so o conteudo), o menu
+                hamburguer perderia a ancora e a barra ficaria desalinhada acima
+                de 900px, largura em que ele fica escondido. */}
+            <div className={styles.actions}>
+              {PRE_LANCAMENTO ? null : (
+                <>
+                  <Link href="/login" className={styles.login}>
+                    Entrar
+                  </Link>
+                  <Link href="/criar-conta" className="btn btnPrimary">
+                    Começar agora
+                  </Link>
+                </>
+              )}
+            </div>
+
+            <button
+              type="button"
+              className={styles.menuButton}
+              onClick={() => setOpen((v) => !v)}
+              aria-expanded={open}
+              aria-controls="menu-mobile"
+              aria-label={open ? 'Fechar menu' : 'Abrir menu'}
+            >
+              {open ? <IconClose /> : <IconMenu />}
+            </button>
+          </>
+        )}
+      </div>
+
+      {comVoltar ? null : (
+        <div
+          id="menu-mobile"
+          className={`${styles.mobilePanel} ${open ? styles.mobileOpen : ''}`}
+          hidden={!open}
+        >
+          <nav className={styles.mobileNav} aria-label="Seções do site">
+            {nav.map((item) => (
+              <a
+                key={item.href}
+                href={item.href}
+                className={styles.mobileLink}
+                onClick={() => setOpen(false)}
+              >
+                {item.label}
+              </a>
+            ))}
+          </nav>
           {PRE_LANCAMENTO ? null : (
             <>
-              <Link href="/login" className={styles.login}>
-                Entrar
-              </Link>
-              <Link href="/criar-conta" className="btn btnPrimary">
+              <Link
+                href="/criar-conta"
+                className={`btn btnPrimary ${styles.mobileCta}`}
+                onClick={() => setOpen(false)}
+              >
                 Começar agora
+              </Link>
+              <Link
+                href="/login"
+                className={`btn btnGhost ${styles.mobileCta}`}
+                onClick={() => setOpen(false)}
+              >
+                Entrar
               </Link>
             </>
           )}
         </div>
-
-        <button
-          type="button"
-          className={styles.menuButton}
-          onClick={() => setOpen((v) => !v)}
-          aria-expanded={open}
-          aria-controls="menu-mobile"
-          aria-label={open ? 'Fechar menu' : 'Abrir menu'}
-        >
-          {open ? <IconClose /> : <IconMenu />}
-        </button>
-      </div>
-
-      <div
-        id="menu-mobile"
-        className={`${styles.mobilePanel} ${open ? styles.mobileOpen : ''}`}
-        hidden={!open}
-      >
-        <nav className={styles.mobileNav} aria-label="Seções do site">
-          {nav.map((item) => (
-            <a
-              key={item.href}
-              href={item.href}
-              className={styles.mobileLink}
-              onClick={() => setOpen(false)}
-            >
-              {item.label}
-            </a>
-          ))}
-        </nav>
-        {PRE_LANCAMENTO ? null : (
-          <>
-            <Link
-              href="/criar-conta"
-              className={`btn btnPrimary ${styles.mobileCta}`}
-              onClick={() => setOpen(false)}
-            >
-              Começar agora
-            </Link>
-            <Link
-              href="/login"
-              className={`btn btnGhost ${styles.mobileCta}`}
-              onClick={() => setOpen(false)}
-            >
-              Entrar
-            </Link>
-          </>
-        )}
-      </div>
+      )}
     </header>
   )
 }

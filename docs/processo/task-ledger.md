@@ -51,7 +51,7 @@ consome. A porta é declarada pelo núcleo; a seta aponta para dentro
 |                               | Tarefas | Dias |
 | ----------------------------- | ------: | ---: |
 | Total                         |      90 |  231 |
-| ✅ Concluídas                 |      79 |  191 |
+| ✅ Concluídas                 |      80 |  196 |
 | 🚧 Bloqueadas por decisão     |       6 |   20 |
 | 🚧 Bloqueadas por dependência |       2 |    7 |
 | ⬜ A fazer, pode começar hoje |       2 |    8 |
@@ -225,7 +225,7 @@ voltam a ⬜.
 | NR-108 | Sugestao de conexao por filtragem colaborativa de ramo, sem IA (ADR-0009)                |   🔵   | `db` `contracts` `core` `api` `web`          |   1 | NR-107                                 | —    | RF-01 (spec, aditivo)      |   ✅   |
 | NR-109 | Quadro de CRM: pendencias e contatos em Kanban, do banco ao mobile (comentario e equipe) |   🟢   | `db` `contracts` `core` `api` `web` `mobile` |   4 | —                                      | —    | —                          |   ✅   |
 | NR-110 | Custos fixos: cadastro, edicao e "gerar contas do mes", do banco a tela                  |   🟢   | `db` `contracts` `core` `api` `web`          |   4 | NR-077                                 | —    | —                          |   ✅   |
-| NR-111 | Pre-lancamento: landing sem acesso, lista de espera e painel de respostas do Super Admin |   🟢   | `db` `contracts` `core` `api` `web`          |   5 | —                                      | —    | —                          |   🟨   |
+| NR-111 | Pre-lancamento: landing sem acesso, lista de espera e painel de respostas do Super Admin |   🟢   | `db` `contracts` `core` `api` `web`          |   5 | —                                      | —    | —                          |   ✅   |
 
 ---
 

@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import type { ReactNode } from 'react'
 import { BRAND } from '@/content/site'
@@ -35,6 +36,15 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           <IconShield size={18} />
           {BRAND} · Super Admin
         </span>
+
+        <nav className={styles.nav} aria-label="Painel do Super Admin">
+          <Link href="/admin" className={styles.navLink}>
+            Empresas
+          </Link>
+          <Link href="/admin/lista-vip" className={styles.navLink}>
+            Lista de espera
+          </Link>
+        </nav>
 
         <div className={styles.topActions}>
           <ThemeToggle />

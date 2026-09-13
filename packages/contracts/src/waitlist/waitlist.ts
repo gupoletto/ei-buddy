@@ -76,3 +76,47 @@ export const waitlistEntryOutputSchema = z.object({
 })
 
 export type WaitlistEntryOutput = z.infer<typeof waitlistEntryOutputSchema>
+
+/* -------------------------------------------------------------------------- */
+/* Painel do Super Admin                                                      */
+/* -------------------------------------------------------------------------- */
+
+export const PAGINA_PADRAO_DA_LISTA_VIP = 20
+export const PAGINA_MAXIMA_DA_LISTA_VIP = 100
+
+export const listWaitlistEntriesQuerySchema = z
+  .object({
+    q: z.string().trim().max(120).optional(),
+    page: z.coerce.number().int().min(1, 'A primeira pagina e a 1.').default(1),
+    pageSize: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(PAGINA_MAXIMA_DA_LISTA_VIP, `A pagina vai ate ${PAGINA_MAXIMA_DA_LISTA_VIP} itens.`)
+      .default(PAGINA_PADRAO_DA_LISTA_VIP),
+  })
+  .strict()
+
+export type ListWaitlistEntriesQuery = z.infer<typeof listWaitlistEntriesQuerySchema>
+
+export const listWaitlistEntriesOutputSchema = z.object({
+  entries: z.array(waitlistEntryOutputSchema),
+  total: z.number().int(),
+  page: z.number().int(),
+  pageSize: z.number().int(),
+})
+
+export type ListWaitlistEntriesOutput = z.infer<typeof listWaitlistEntriesOutputSchema>
+
+const contagemSchema = <T extends z.ZodTypeAny>(valor: T) =>
+  z.object({ value: valor, count: z.number().int() })
+
+export const waitlistStatsOutputSchema = z.object({
+  total: z.number().int(),
+  painPoints: z.array(contagemSchema(painPointSchema)),
+  usesSystem: z.array(contagemSchema(usesSystemSchema)),
+  fairPrice: z.array(contagemSchema(fairPriceSchema)),
+  perDay: z.array(z.object({ date: z.string(), count: z.number().int() })),
+})
+
+export type WaitlistStatsOutput = z.infer<typeof waitlistStatsOutputSchema>

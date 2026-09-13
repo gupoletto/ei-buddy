@@ -8,37 +8,16 @@ import {
   TextAreaField,
 } from '@/components/lista-vip/CamposDaPesquisa'
 import { maskPhone, validatePhone, validateRequired, type FieldError } from '@/lib/validation'
-import { enviarListaVip, type FairPrice, type PainPoint, type UsesSystem } from '@/lib/waitlist-api'
+import {
+  enviarListaVip,
+  OPCOES_DIFICULDADE,
+  OPCOES_SISTEMA,
+  OPCOES_VALOR,
+  type FairPrice,
+  type PainPoint,
+  type UsesSystem,
+} from '@/lib/waitlist-api'
 import styles from './lista-vip.module.css'
-
-const OPCOES_DIFICULDADE: { value: PainPoint; label: string }[] = [
-  { value: 'cash_flow', label: 'Controlar o dinheiro' },
-  { value: 'more_customers', label: 'Conseguir mais clientes' },
-  { value: 'sales_organization', label: 'Organizar as vendas' },
-  { value: 'inventory', label: 'Controlar produtos e estoque' },
-  { value: 'collections', label: 'Cobrar clientes' },
-  { value: 'routine', label: 'Organizar minha rotina' },
-  { value: 'profit_visibility', label: 'Saber se estou tendo lucro' },
-  { value: 'marketing', label: 'Divulgar meu negócio' },
-  { value: 'other', label: 'Outra' },
-]
-
-const OPCOES_SISTEMA: { value: UsesSystem; label: string }[] = [
-  { value: 'none', label: 'Não uso nenhum sistema' },
-  { value: 'complicated', label: 'Sim, mas acho complicado' },
-  { value: 'expensive', label: 'Sim, mas acho caro' },
-  { value: 'satisfied', label: 'Sim e estou satisfeito' },
-  { value: 'other', label: 'Outro' },
-]
-
-const OPCOES_VALOR: { value: FairPrice; label: string }[] = [
-  { value: 'up_to_29', label: 'Até R$ 29' },
-  { value: 'from_30_to_49', label: 'R$ 30 a R$ 49' },
-  { value: 'from_50_to_69', label: 'R$ 50 a R$ 69' },
-  { value: 'from_70_to_99', label: 'R$ 70 a R$ 99' },
-  { value: 'above_100', label: 'Acima de R$ 100' },
-  { value: 'not_sure', label: 'Ainda não sei dizer' },
-]
 
 export default function ListaVipForm() {
   const [name, setName] = useState('')

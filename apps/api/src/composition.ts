@@ -606,7 +606,7 @@ export function buildCustosFixosDeps(): CustosFixosDeps {
 /** Lista de espera do pre-lancamento — NR-111. */
 export function buildWaitlistDeps(): WaitlistRouteDeps {
   const sql = getClient(env.DATABASE_URL)
-  return { waitlist: createWaitlistRepository(sql) }
+  return { waitlist: createWaitlistRepository(sql), platformAdmin: createPlatformAdminAccess(sql) }
 }
 
 /**

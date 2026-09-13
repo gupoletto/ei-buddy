@@ -30,6 +30,29 @@
   color: var(--app-text);
 }
 
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 20px;
+}
+
+.navLink {
+  padding: 7px 12px;
+  border-radius: var(--radius-sm);
+  color: var(--app-muted);
+  font-size: 13.5px;
+  font-weight: 500;
+  transition:
+    color var(--transition),
+    background-color var(--transition);
+}
+
+.navLink:hover {
+  color: var(--app-text);
+  background: var(--app-field);
+}
+
 .topActions {
   display: flex;
   align-items: center;

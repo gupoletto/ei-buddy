@@ -81,6 +81,23 @@
   color: var(--brand-accent-dark);
 }
 
+/* --- Link de volta (paginas fora da landing, ex.: a pesquisa) --- */
+
+.voltar {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: color var(--transition);
+}
+
+.voltar:hover {
+  color: var(--brand-primary);
+}
+
 /* --- Botao do menu mobile --- */
 
 .menuButton {
