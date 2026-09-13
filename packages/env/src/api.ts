@@ -84,6 +84,16 @@ export const apiEnvSchema = baseEnvSchema.extend({
     if (v === undefined || v === '') return undefined
     return v
   }, z.coerce.number().int().positive().optional()),
+
+  /**
+   * Chave provisoria de `/admin/lista-vip*` — NR-111.
+   *
+   * Antes de existir o primeiro Super Admin, quem manda esta chave no
+   * cabecalho `x-waitlist-admin-key` entra sem sessao. Opcional: ausente,
+   * so o caminho normal (sessao + isPlatformAdmin) funciona — mesmo criterio
+   * de `SECRETS_KEY`, uma funcionalidade a menos e melhor que travar o boot.
+   */
+  WAITLIST_ADMIN_KEY: opcionalNaoVazia,
 })
 
 export type ApiEnv = z.infer<typeof apiEnvSchema>

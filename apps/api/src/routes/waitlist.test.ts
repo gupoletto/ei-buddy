@@ -21,7 +21,7 @@ const PAYLOAD_MINIMO = {
   expectation: 'Queria saber o que vendi no dia sem abrir planilha.',
 }
 
-async function buildApp(userId: string | null = null) {
+async function buildApp(userId: string | null = null, waitlistAdminKey?: string) {
   const app = Fastify({ logger: false })
   registerErrorHandler(app)
   await registerRateLimit(app)
@@ -31,7 +31,7 @@ async function buildApp(userId: string | null = null) {
 
   const waitlist = new InMemoryWaitlist()
   const platformAdmin = new InMemoryPlatformAdminAccess({ aoEntrar: () => {}, aoSair: () => {} })
-  registerWaitlistRoutes(app, { waitlist, platformAdmin })
+  registerWaitlistRoutes(app, { waitlist, platformAdmin, waitlistAdminKey })
 
   return { app, waitlist, platformAdmin }
 }
@@ -154,5 +154,68 @@ describe('painel do Super Admin — GET /admin/lista-vip*', () => {
     expect(r.statusCode).toBe(200)
     expect(r.json().total).toBe(1)
     expect(r.json().painPoints).toEqual([{ value: 'cash_flow', count: 1 }])
+  })
+})
+
+describe('painel do Super Admin — chave provisoria sem sessao (NR-111)', () => {
+  it('sem sessao mas com a chave certa ve a lista e os agregados', async () => {
+    const c = await buildApp(null, 'segredo-de-teste')
+    app = c.app
+    await app.inject({ method: 'POST', url: '/lista-vip', payload: PAYLOAD_MINIMO })
+
+    const lista = await app.inject({
+      method: 'GET',
+      url: '/admin/lista-vip',
+      headers: { 'x-waitlist-admin-key': 'segredo-de-teste' },
+    })
+    const resumo = await app.inject({
+      method: 'GET',
+      url: '/admin/lista-vip/resumo',
+      headers: { 'x-waitlist-admin-key': 'segredo-de-teste' },
+    })
+
+    expect(lista.statusCode).toBe(200)
+    expect(lista.json().total).toBe(1)
+    expect(resumo.statusCode).toBe(200)
+    expect(resumo.json().total).toBe(1)
+  })
+
+  it('chave errada sem sessao responde 401, nao 403 — nao ha usuario para checar isPlatformAdmin', async () => {
+    const c = await buildApp(null, 'segredo-de-teste')
+    app = c.app
+
+    const r = await app.inject({
+      method: 'GET',
+      url: '/admin/lista-vip',
+      headers: { 'x-waitlist-admin-key': 'chave-inventada' },
+    })
+
+    expect(r.statusCode).toBe(401)
+  })
+
+  it('sem WAITLIST_ADMIN_KEY configurada, a chave no cabecalho nao substitui a sessao', async () => {
+    const c = await buildApp(null, undefined)
+    app = c.app
+
+    const r = await app.inject({
+      method: 'GET',
+      url: '/admin/lista-vip',
+      headers: { 'x-waitlist-admin-key': 'qualquer-coisa' },
+    })
+
+    expect(r.statusCode).toBe(401)
+  })
+
+  it('chave certa nao precisa de isPlatformAdmin — o proprio segredo e a autorizacao', async () => {
+    const c = await buildApp(null, 'segredo-de-teste')
+    app = c.app
+
+    const r = await app.inject({
+      method: 'GET',
+      url: '/admin/lista-vip/resumo',
+      headers: { 'x-waitlist-admin-key': 'segredo-de-teste' },
+    })
+
+    expect(r.statusCode).toBe(200)
   })
 })

@@ -22,6 +22,15 @@ import { SESSION_COOKIE } from '@/lib/session'
  * presa: o proxy veria o cookie e deixaria passar, e cada tela receberia 401.
  */
 export function proxy(request: NextRequest) {
+  /*
+   * Excecao provisoria — NR-111. Antes de existir o primeiro Super Admin, o
+   * painel da lista de espera aceita a chave de `x-waitlist-admin-key` em vez
+   * de sessao (ver ChaveDeAcessoListaVip/apps/api/routes/waitlist.ts). Sem
+   * isto o proxy redirecionaria para `/login` antes da pagina sequer
+   * perguntar pela chave. Remover quando o painel exigir sessao de verdade.
+   */
+  if (request.nextUrl.pathname === '/admin/lista-vip') return NextResponse.next()
+
   const temSessao = Boolean(request.cookies.get(SESSION_COOKIE)?.value)
 
   if (temSessao) return NextResponse.next()
