@@ -50,7 +50,7 @@ consome. A porta é declarada pelo núcleo; a seta aponta para dentro
 
 |                               | Tarefas | Dias |
 | ----------------------------- | ------: | ---: |
-| Total                         |      89 |  226 |
+| Total                         |      90 |  231 |
 | ✅ Concluídas                 |      79 |  191 |
 | 🚧 Bloqueadas por decisão     |       6 |   20 |
 | 🚧 Bloqueadas por dependência |       2 |    7 |
@@ -225,6 +225,7 @@ voltam a ⬜.
 | NR-108 | Sugestao de conexao por filtragem colaborativa de ramo, sem IA (ADR-0009)                |   🔵   | `db` `contracts` `core` `api` `web`          |   1 | NR-107                                 | —    | RF-01 (spec, aditivo)      |   ✅   |
 | NR-109 | Quadro de CRM: pendencias e contatos em Kanban, do banco ao mobile (comentario e equipe) |   🟢   | `db` `contracts` `core` `api` `web` `mobile` |   4 | —                                      | —    | —                          |   ✅   |
 | NR-110 | Custos fixos: cadastro, edicao e "gerar contas do mes", do banco a tela                  |   🟢   | `db` `contracts` `core` `api` `web`          |   4 | NR-077                                 | —    | —                          |   ✅   |
+| NR-111 | Pre-lancamento: landing sem acesso, lista de espera e painel de respostas do Super Admin |   🟢   | `db` `contracts` `core` `api` `web`          |   5 | —                                      | —    | —                          |   🟨   |
 
 ---
 
@@ -344,10 +345,10 @@ O retrabalho que resta é visual (tokens), não naming.
 | ------------------------------- | ------: | ---: | ---------------------------------------------- |
 | 🔵 1 — Núcleo & Dados           |      33 |   83 | Sugestão de conexão (NR-108) somou ao NR-107   |
 | 🟠 2 — Plataforma & Integrações |      28 |   75 | a mais carregada; Asaas fechou 3 decisões dela |
-| 🟢 3 — Clientes                 |      25 |   62 | custos fixos gera conta a pagar (NR-110)       |
+| 🟢 3 — Clientes                 |      26 |   67 | lista de espera de pré-lançamento (NR-111)     |
 | Compartilhada                   |       3 |    6 | documentação (NR-002, NR-088, NR-106)          |
 
-Somando: **226 dias-desenvolvedor** em 89 tarefas. Com 3 pessoas, isso é cerca
+Somando: **231 dias-desenvolvedor** em 90 tarefas. Com 3 pessoas, isso é cerca
 de 13 semanas de trabalho — desde que nada fique bloqueado, o que não é o caso
 hoje.
 

@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { highlights } from '@/content/site'
+import { highlights, PRE_LANCAMENTO } from '@/content/site'
 import { IconArrowRight, IconBolt, IconTrendUp } from './Icons'
 import styles from './Hero.module.css'
 
@@ -13,8 +13,14 @@ const recentSales = [
 ]
 
 export default function Hero() {
+  /* Em pre-lancamento, o `PreLancamentoBanner` vem antes e ja e o primeiro
+     bloco depois do header fixo — o `id="top"` e o padding que compensa o
+     header vao para ele; aqui bastaria a folga normal entre secoes. */
   return (
-    <section className={styles.hero} id="top">
+    <section
+      className={`${styles.hero} ${PRE_LANCAMENTO ? styles.naoEhOPrimeiro : ''}`}
+      id={PRE_LANCAMENTO ? undefined : 'top'}
+    >
       <div className={`container ${styles.grid}`}>
         <div className={styles.copy}>
           <span className={styles.badge}>
@@ -34,8 +40,8 @@ export default function Hero() {
           </p>
 
           <div className={styles.ctas}>
-            <Link href="/criar-conta" className="btn btnPrimary">
-              Começar agora
+            <Link href={PRE_LANCAMENTO ? '/lista-vip' : '/criar-conta'} className="btn btnPrimary">
+              {PRE_LANCAMENTO ? 'Entrar para a lista VIP' : 'Começar agora'}
               <IconArrowRight size={18} />
             </Link>
             <a href="#painel" className="btn btnGhost">
@@ -43,7 +49,9 @@ export default function Hero() {
             </a>
           </div>
 
-          <p className={styles.note}>Plano único, sem fidelidade. Cancele quando quiser.</p>
+          {PRE_LANCAMENTO ? null : (
+            <p className={styles.note}>Plano único, sem fidelidade. Cancele quando quiser.</p>
+          )}
         </div>
 
         {/* Mockup ilustrativo do produto */}

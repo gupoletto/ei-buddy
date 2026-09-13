@@ -377,3 +377,9 @@ export type {
   FixedCostRepository,
   NewFixedCost,
 } from './ports/fixed-cost-repository.js'
+
+/* Lista de espera do pre-lancamento — NR-111. */
+export { submitWaitlistEntry } from './waitlist/submit-waitlist-entry.js'
+export type { SubmitWaitlistEntryDeps } from './waitlist/submit-waitlist-entry.js'
+export { InMemoryWaitlist } from './waitlist/fakes.js'
+export type { NewWaitlistEntry, WaitlistRepository } from './ports/waitlist-repository.js'

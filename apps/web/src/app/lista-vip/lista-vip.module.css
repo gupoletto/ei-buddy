@@ -1,0 +1,20 @@
+.pagina {
+  padding-top: calc(var(--header-h) + 56px);
+  padding-bottom: 72px;
+}
+
+.corpo {
+  max-width: 62ch;
+  margin-inline: auto;
+}
+
+.agradecimento {
+  text-align: center;
+}
+
+.agradecimentoTexto {
+  margin-top: 14px;
+  font-size: 15.5px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}

@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { type MouseEvent, useEffect, useState } from 'react'
-import { BRAND, nav } from '@/content/site'
+import { BRAND, nav, PRE_LANCAMENTO } from '@/content/site'
 import { IconClose, IconMenu } from './Icons'
 import styles from './Header.module.css'
 
@@ -66,13 +66,21 @@ export default function Header() {
           ))}
         </nav>
 
+        {/* Div sempre presente: e ela quem tem `margin-left: auto` no layout
+            flex do header. Removendo a div (e nao so o conteudo), o menu
+            hamburguer perderia a ancora e a barra ficaria desalinhada acima
+            de 900px, largura em que ele fica escondido. */}
         <div className={styles.actions}>
-          <Link href="/login" className={styles.login}>
-            Entrar
-          </Link>
-          <Link href="/criar-conta" className="btn btnPrimary">
-            Começar agora
-          </Link>
+          {PRE_LANCAMENTO ? null : (
+            <>
+              <Link href="/login" className={styles.login}>
+                Entrar
+              </Link>
+              <Link href="/criar-conta" className="btn btnPrimary">
+                Começar agora
+              </Link>
+            </>
+          )}
         </div>
 
         <button
@@ -104,20 +112,24 @@ export default function Header() {
             </a>
           ))}
         </nav>
-        <Link
-          href="/criar-conta"
-          className={`btn btnPrimary ${styles.mobileCta}`}
-          onClick={() => setOpen(false)}
-        >
-          Começar agora
-        </Link>
-        <Link
-          href="/login"
-          className={`btn btnGhost ${styles.mobileCta}`}
-          onClick={() => setOpen(false)}
-        >
-          Entrar
-        </Link>
+        {PRE_LANCAMENTO ? null : (
+          <>
+            <Link
+              href="/criar-conta"
+              className={`btn btnPrimary ${styles.mobileCta}`}
+              onClick={() => setOpen(false)}
+            >
+              Começar agora
+            </Link>
+            <Link
+              href="/login"
+              className={`btn btnGhost ${styles.mobileCta}`}
+              onClick={() => setOpen(false)}
+            >
+              Entrar
+            </Link>
+          </>
+        )}
       </div>
     </header>
   )
